@@ -42,20 +42,9 @@ public class HybriDroidDriver {
     private final Properties properties;
     private final IClassHierarchy cha;
 
-    public HybriDroidDriver(String sdk, String prop) throws CallGraphBuilderCancelException, ClassHierarchyException {
-        File propFile = new File(prop);
-        properties = new Properties();
-        try {
-            properties.load(new FileInputStream(propFile));
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        this.cha = buildClassHierarchy(sdk);
+    public HybriDroidDriver(Properties prop, IClassHierarchy cha) throws ClassHierarchyException {
+        properties = prop;
+        this.cha = cha;
     }
 
     public Set<BridgeClass> getBridgeClassesUsedInAJI(){
@@ -106,39 +95,5 @@ public class HybriDroidDriver {
             }
         }
         return res;
-    }
-
-    private IClassHierarchy buildClassHierarchy(String sdk) throws CallGraphBuilderCancelException, ClassHierarchyException {
-        AnalysisScope scope = AnalysisScope.createJavaAnalysisScope();
-        //Set DexClassLoader as class loader.
-        scope.setLoaderImpl(ClassLoaderReference.Primordial, "com.ibm.wala.dalvik.classLoader.WDexClassLoaderImpl");
-        scope.setLoaderImpl(ClassLoaderReference.Application, "com.ibm.wala.dalvik.classLoader.WDexClassLoaderImpl");
-
-        File exclusionsFile = new File(CallGraphTestUtil.REGRESSION_EXCLUSIONS);
-
-        try {
-            //Set exclusions.
-            InputStream fs = exclusionsFile.exists() ? new FileInputStream(exclusionsFile) : FileProvider.class.getClassLoader()
-                    .getResourceAsStream(exclusionsFile.getName());
-            scope.setExclusions(new FileOfClasses(fs));
-            fs.close();
-
-            //Add Android libraries to analysis scope.
-            String lib = LocalFileReader.androidJar(properties).getPath();
-            if (lib.endsWith(".dex"))
-                scope.addToScope(ClassLoaderReference.Primordial, DexFileModule.make(new File(lib)));
-            else if (lib.endsWith(".jar"))
-                scope.addToScope(ClassLoaderReference.Primordial, new JarFileModule(new JarFile(new File(lib))));
-
-            //Add Android application to analysis scope.
-            if (sdk.endsWith(".jar"))
-                scope.addToScope(ClassLoaderReference.Application, new JarFileModule(new JarFile(new File(sdk))));
-
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return ClassHierarchy.make(scope);
     }
 }

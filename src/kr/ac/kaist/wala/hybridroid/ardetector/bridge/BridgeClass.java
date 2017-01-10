@@ -55,7 +55,7 @@ public class BridgeClass {
         return false;
     }
 
-    static class BridgeMethod {
+    public static class BridgeMethod {
         private MethodReference mr;
 
         public BridgeMethod(MethodReference mr){
