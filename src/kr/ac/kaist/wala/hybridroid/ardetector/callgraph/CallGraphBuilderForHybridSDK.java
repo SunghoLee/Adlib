@@ -1,20 +1,28 @@
 package kr.ac.kaist.wala.hybridroid.ardetector.callgraph;
 
+import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.JarFileModule;
+import com.ibm.wala.classLoader.NewSiteReference;
+import com.ibm.wala.classLoader.ProgramCounter;
 import com.ibm.wala.core.tests.callGraph.CallGraphTestUtil;
 import com.ibm.wala.dalvik.classLoader.DexFileModule;
 import com.ibm.wala.ipa.callgraph.*;
+import com.ibm.wala.ipa.callgraph.propagation.*;
 import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFABuilder;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.config.FileOfClasses;
+import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.io.FileProvider;
 import kr.ac.kaist.hybridroid.utils.LocalFileReader;
 
 import java.io.*;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 import java.util.jar.JarFile;
 
 /**
@@ -78,7 +86,7 @@ public class CallGraphBuilderForHybridSDK {
             else if (lib.endsWith(".jar"))
                 scope.addToScope(ClassLoaderReference.Primordial, new JarFileModule(new JarFile(new File(lib))));
 
-            //Add Android application to analysis scope.
+            //Add a SDK library to analysis scope.
             if (sdk.endsWith(".jar"))
                 scope.addToScope(ClassLoaderReference.Application, new JarFileModule(new JarFile(new File(sdk))));
 
@@ -97,7 +105,15 @@ public class CallGraphBuilderForHybridSDK {
     }
 
     protected CallGraphBuilder makeDelegateBuilder(IClassHierarchy cha, AnalysisOptions options){
-        return new nCFABuilder(2, cha, options, new AnalysisCache(), null, null);
+        nCFABuilder builder = new nCFABuilder(2, cha, options, new AnalysisCache(), null, null);
+        Set<TypeReference> entryClasses = new HashSet<TypeReference>();
+        for(Entrypoint e : entries){
+            IClass klass = e.getMethod().getDeclaringClass();
+
+            entryClasses.add(e.getMethod().getDeclaringClass().getReference());
+        }
+        builder.setInstanceKeys(new SelectiveClassBasedInstanceKey(new ClassBasedInstanceKeys(options, cha), new AllocationSiteInNodeFactory(options, cha), entryClasses));
+        return builder;
     }
 
     protected void setTargetSelectors(AnalysisOptions options, IClassHierarchy cha){
@@ -106,6 +122,66 @@ public class CallGraphBuilderForHybridSDK {
     }
 
     public CallGraph makeCallGraph() throws CallGraphBuilderCancelException {
-        return delegate.makeCallGraph(options, null);
+        CallGraph cg = delegate.makeCallGraph(options, null);
+        PointerAnalysis<InstanceKey> pa = delegate.getPointerAnalysis();
+        for(PointerKey pk : pa.getPointerKeys()){
+            if(pk.toString().contains("Primordial"))
+                continue;
+            System.out.println("PK: " + pk);
+            for(InstanceKey ik : pa.getPointsToSet(pk)){
+                if(ik instanceof ConcreteTypeKey)
+                    System.out.println("\tIK: " + ik);
+            }
+        }
+
+        return cg;
+    }
+
+    private class SelectiveClassBasedInstanceKey implements InstanceKeyFactory{
+        private final InstanceKeyFactory classBased;
+        private final InstanceKeyFactory siteBased;
+        private final Set<TypeReference> instanceTypes;
+
+        public SelectiveClassBasedInstanceKey(ClassBasedInstanceKeys classBased, AllocationSiteInNodeFactory siteBased, Set<TypeReference> instanceTypes){
+            this.classBased = classBased;
+            this.siteBased = siteBased;
+            this.instanceTypes = instanceTypes;
+        }
+
+        @Override
+        public InstanceKey getInstanceKeyForAllocation(CGNode node, NewSiteReference allocation) {
+            if(options.getClassTargetSelector() == null)
+                Assertions.UNREACHABLE("Must set a ClassTargetSelector to use SelectiveClassBasedInstanceKey");
+
+            IClass klass = options.getClassTargetSelector().getAllocatedTarget(node, allocation);
+            if(klass != null) {
+                TypeReference allocationType = options.getClassTargetSelector().getAllocatedTarget(node, allocation).getReference();
+                if (instanceTypes.contains(allocationType))
+                    return classBased.getInstanceKeyForAllocation(node, allocation);
+                else
+                    return siteBased.getInstanceKeyForAllocation(node, allocation);
+            }else
+                return siteBased.getInstanceKeyForAllocation(node, allocation);
+        }
+
+        @Override
+        public InstanceKey getInstanceKeyForMultiNewArray(CGNode node, NewSiteReference allocation, int dim) {
+            return siteBased.getInstanceKeyForMultiNewArray(node, allocation, dim);
+        }
+
+        @Override
+        public <T> InstanceKey getInstanceKeyForConstant(TypeReference type, T S) {
+            return siteBased.getInstanceKeyForConstant(type, S);
+        }
+
+        @Override
+        public InstanceKey getInstanceKeyForPEI(CGNode node, ProgramCounter instr, TypeReference type) {
+            return siteBased.getInstanceKeyForPEI(node, instr, type);
+        }
+
+        @Override
+        public InstanceKey getInstanceKeyForMetadataObject(Object obj, TypeReference objType) {
+            return siteBased.getInstanceKeyForMetadataObject(obj, objType);
+        }
     }
 }
