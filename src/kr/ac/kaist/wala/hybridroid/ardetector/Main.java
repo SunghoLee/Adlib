@@ -14,8 +14,12 @@ public class Main {
         String prop = args[0];
         String sdk = args[1];
 
+        long start = System.currentTimeMillis();
         CallGraphBuilderForHybridSDK builder = new CallGraphBuilderForHybridSDK(prop, sdk);
         CallGraph cg = builder.makeCallGraph();
         VisualizeCGTest.visualizeCallGraph(cg, "cfg_out", false);
+        VisualizeCGTest.printIR(cg, "ir");
+        long end = System.currentTimeMillis();
+        System.out.println("#AnalysisTime: " + ((end - start)/1000d) + "s");
     }
 }
