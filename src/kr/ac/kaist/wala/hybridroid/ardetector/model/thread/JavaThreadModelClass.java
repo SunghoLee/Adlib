@@ -1,7 +1,6 @@
 package kr.ac.kaist.wala.hybridroid.ardetector.model.thread;
 
 import com.ibm.wala.classLoader.*;
-import com.ibm.wala.dalvik.ipa.callgraph.androidModel.AndroidModelClass;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.MethodSummary;
 import com.ibm.wala.ipa.summaries.SummarizedMethod;
@@ -22,72 +21,37 @@ import java.util.*;
 /**
  * Created by leesh on 14/01/2017.
  */
-public class AndroidThreadModelClass extends SyntheticClass{
+public class JavaThreadModelClass extends SyntheticClass{
 
 
-    public static final TypeReference ANDROID_THREAD_MODEL_CLASS = TypeReference.findOrCreate(
-            ClassLoaderReference.Primordial, TypeName.string2TypeName("Lkr/ac/kaist/wala/AndroidThreadModelClass"));
-
-//    public static final TypeReference ANDROID_THREAD_MODEL_CLASS = TypeReference.findOrCreate(
-//            ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/util/Timer"));
+    public static final TypeReference JAVA_THREAD_MODEL_CLASS = TypeReference.findOrCreate(
+            ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/lang/Thread"));
 
     public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
     public static final Selector START_SELECTOR = Selector.make("start()V");
 
-    public static final TypeName TIMERTASK_TYPE_NAME = TypeName.string2TypeName("Ljava/util/TimerTask");
-    public static Selector SCHEDULE_AT_FIXED_RATE_SELECTOR1 = Selector.make("scheduleAtFixedRate(Ljava/util/TimerTask;JJ)V");
-    public static Selector SCHEDULE_AT_FIXED_RATE_SELECTOR2 = Selector.make("scheduleAtFixedRate(Ljava/util/TimerTask;Ljava/util/Date;J)V");
-    public static Selector SCHEDULE_SELECTOR1 = Selector.make("schedule(Ljava/util/TimerTask;J)V");
-    public static Selector SCHEDULE_SELECTOR2 = Selector.make("schedule(Ljava/util/TimerTask;JJ)V");
-    public static Selector SCHEDULE_SELECTOR3 = Selector.make("schedule(Ljava/util/TimerTask;Ljava/util/Date;)V");
-    public static Selector SCHEDULE_SELECTOR4 = Selector.make("schedule(Ljava/util/TimerTask;Ljava/util/Date;J)V");
-
-
-    private static Set<Selector> RUN_SELECTOR_SET;
-
-    static{
-        RUN_SELECTOR_SET = new HashSet<>();
-        RUN_SELECTOR_SET.add(SCHEDULE_AT_FIXED_RATE_SELECTOR1);
-        RUN_SELECTOR_SET.add(SCHEDULE_AT_FIXED_RATE_SELECTOR2);
-        RUN_SELECTOR_SET.add(SCHEDULE_SELECTOR1);
-        RUN_SELECTOR_SET.add(SCHEDULE_SELECTOR2);
-        RUN_SELECTOR_SET.add(SCHEDULE_SELECTOR3);
-        RUN_SELECTOR_SET.add(SCHEDULE_SELECTOR4);
-    }
-
     private IClassHierarchy cha;
 
-    public static AndroidThreadModelClass getInstance(IClassHierarchy cha) {
-        IClass thread = cha.lookupClass(ANDROID_THREAD_MODEL_CLASS);
-        AndroidThreadModelClass mClass;
-        if (thread == null) {
-            mClass = new AndroidThreadModelClass(cha);
-        } else if (!(thread instanceof AndroidModelClass)) {
-            throw new IllegalArgumentException(String.format("android model class does not have expected type %s, but %s!", AndroidModelClass.class, thread.getClass().toString()));
-        } else {
-            mClass = (AndroidThreadModelClass) thread;
+    private static JavaThreadModelClass klass;
+
+    public static JavaThreadModelClass getInstance(IClassHierarchy cha) {
+        if(klass == null){
+            klass = new JavaThreadModelClass(cha);
         }
-        return mClass;
+        return klass;
     }
 
-    private AndroidThreadModelClass(IClassHierarchy cha) {
-        super(ANDROID_THREAD_MODEL_CLASS, cha);
+    private JavaThreadModelClass(IClassHierarchy cha) {
+        super(JAVA_THREAD_MODEL_CLASS, cha);
         this.cha = cha;
 
-        initMethodsForTimeTask();
-        initMethodForThread();
+        initMethodsForThread();
 
         this.addMethod(this.clinit());
-        this.cha.addClass(this);
     }
 
-    private void initMethodsForTimeTask(){
-        for(Selector s : RUN_SELECTOR_SET)
-            this.addMethod(this.runOfTimeTask(s));
-    }
-
-    private void initMethodForThread(){
+    private void initMethodsForThread(){
         this.addMethod(this.runOfRunnable(START_SELECTOR));
     }
 
@@ -105,35 +69,6 @@ public class AndroidThreadModelClass extends SyntheticClass{
         int ssaNo = 1;
 
         TypeReference timerTaskTR = TypeReference.findOrCreate(ClassLoaderReference.Application, RUNNABLE_TYPE_NAME);
-
-        final SSAValue timerTaskV = new SSAValue(ssaNo++, timerTaskTR, runRef);
-        final int pc = run.getNextProgramCounter();
-        final MethodReference timerTaskRunMR = MethodReference.findOrCreate(timerTaskTR, RUN_SELECTOR);
-        final List<SSAValue> params = new ArrayList<SSAValue>();
-        params.add(timerTaskV);
-        final SSAValue exception = new SSAValue(ssaNo++, TypeReference.JavaLangException, runRef);
-        final CallSiteReference site = CallSiteReference.make(pc, timerTaskRunMR, IInvokeInstruction.Dispatch.VIRTUAL);
-
-        final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
-        run.addStatement(runCall);
-
-        return new SummarizedMethodWithNames(runRef, run, this);
-    }
-
-    /**
-     *  Generate schedule of Timer for AndroidThreadModelClass.
-     *
-     *  run call TimerTask's run method
-     */
-    private SummarizedMethod runOfTimeTask(Selector s) {
-        final MethodReference runRef = MethodReference.findOrCreate(this.getReference(), s);
-        final VolatileMethodSummary run = new VolatileMethodSummary(new MethodSummary(runRef));
-        run.setStatic(false);
-        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
-
-        int ssaNo = 2;
-
-        TypeReference timerTaskTR = TypeReference.findOrCreate(ClassLoaderReference.Application, TIMERTASK_TYPE_NAME);
 
         final SSAValue timerTaskV = new SSAValue(ssaNo++, timerTaskTR, runRef);
         final int pc = run.getNextProgramCounter();

@@ -24,7 +24,7 @@ public class HybridSDKModel {
         for(BridgeClass bridge : bridges){
             for(BridgeClass.BridgeMethod m : bridge.getAccessibleMethods()){
                 IMethod entry = cha.resolveMethod(m.getMethodReference());
-//                if(entry.toString().contains("Lcom/suyduu/guzqhq288899/AbstractWebView$a, sendSms(Ljava/lang/String;Ljava/lang/String;)V"))
+                if(entry.getName().toString().contains("location"))
                 if(entry != null){
                     entries.add(new AndroidEntryPoint(AndroidEntryPoint.ExecutionOrder.MIDDLE_OF_LOOP, entry, cha));
                 }

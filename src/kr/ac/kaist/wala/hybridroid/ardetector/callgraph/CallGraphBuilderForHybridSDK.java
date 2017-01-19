@@ -15,13 +15,15 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.LambdaMethodTargetSelector;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
-import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.config.FileOfClasses;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.io.FileProvider;
 import kr.ac.kaist.hybridroid.utils.LocalFileReader;
-import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.AndroidThreadModelClass;
+import kr.ac.kaist.wala.hybridroid.ardetector.model.context.AndroidContextWrapperModelClass;
+import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.JavaThreadModelClass;
+import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.JavaThreadPoolExecutorModelClass;
+import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.JavaTimerModelClass;
 
 import java.io.*;
 import java.util.HashSet;
@@ -98,6 +100,7 @@ public class CallGraphBuilderForHybridSDK {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+
         return scope;
     }
 
@@ -123,7 +126,7 @@ public class CallGraphBuilderForHybridSDK {
 
     protected void setTargetSelectors(AnalysisOptions options, IClassHierarchy cha){
 //        com.ibm.wala.ipa.callgraph.impl.Util.addDefaultSelectors(options, cha);
-        options.setSelector(new ThreadModelMethodTargetSelector(new LambdaMethodTargetSelector(new ClassHierarchyMethodTargetSelector(cha)), cha));
+        options.setSelector(new ThreadModelMethodTargetSelector(new ContextModelMethodTargetSelector(new LambdaMethodTargetSelector(new ClassHierarchyMethodTargetSelector(cha)), cha), cha));
         options.setSelector(new ClassHierarchyClassTargetSelector(cha));
         options.setUseConstantSpecificKeys(true);
     }
@@ -131,13 +134,30 @@ public class CallGraphBuilderForHybridSDK {
     public CallGraph makeCallGraph() throws CallGraphBuilderCancelException {
         CallGraph cg = delegate.makeCallGraph(options, null);
         PointerAnalysis<InstanceKey> pa = delegate.getPointerAnalysis();
-//        for(PointerKey pk : pa.getPointerKeys()){
-//            if(pk.toString().contains("Primordial"))
-//                continue;
-//            System.out.println("PK: " + pk);
-//            for(InstanceKey ik : pa.getPointsToSet(pk)){
-//                if(ik instanceof ConcreteTypeKey)
-//                    System.out.println("\tIK: " + ik);
+//        for(CGNode n: cg){
+//            if(n.toString().contains("Node: < Application, Lcom/millennialmedia/internal/utils/EnvironmentUtils, init(Landroid/app/Application;)V > Context: Everywhere")){
+//                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n, 4);
+//                System.out.println(pk.toString());
+//                for(InstanceKey ik : pa.getPointsToSet(pk)){
+//                    System.out.println("ik: " + ik);
+//                }
+//                PointerKey npk = pa.getHeapModel().getPointerKeyForLocal(n, 1);
+//                System.out.println(npk.toString());
+//                for(InstanceKey ik : pa.getPointsToSet(npk)){
+//                    System.out.println("ik: " + ik);
+//                }
+//            }
+//            else if(n.toString().contains("Node: synthetic < Primordial, Landroid/content/Context, getApplicationContext()Landroid/content/Context; > Context: Everywhere")){
+////                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n, 2);
+////                System.out.println(pk.toString());
+////                for(InstanceKey ik : pa.getPointsToSet(pk)){
+////                    System.out.println("ik: " + ik);
+////                }
+//                PointerKey pk2 = pa.getHeapModel().getPointerKeyForLocal(n, 1);
+//                System.out.println(pk2.toString());
+//                for(InstanceKey ik : pa.getPointsToSet(pk2)){
+//                    System.out.println("ik: " + ik);
+//                }
 //            }
 //        }
 
@@ -192,25 +212,55 @@ public class CallGraphBuilderForHybridSDK {
         }
     }
 
+    public static class ContextModelMethodTargetSelector implements MethodTargetSelector{
+        final private MethodTargetSelector base;
+        final private IClassHierarchy cha;
+        final private IClass contextWrapperModelClass;
+        public ContextModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha){
+            this.base = base;
+            this.cha = cha;
+            this.contextWrapperModelClass = AndroidContextWrapperModelClass.getInstance(cha);
+        }
+
+        @Override
+        public IMethod getCalleeTarget(CGNode caller, CallSiteReference site, IClass receiver) {
+            IMethod target = base.getCalleeTarget(caller, site, receiver);
+
+            if(site.isDispatch() && receiver != null && target != null) {
+                if (target.getDeclaringClass().getName().equals(AndroidContextWrapperModelClass.ANDROID_CONTEXT_WRAPPER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETSYSTEMSERVICE_SELECTOR)) {
+                    return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                } else if (target.getDeclaringClass().getName().equals(AndroidContextWrapperModelClass.ANDROID_CONTEXT_WRAPPER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETAPPLICATIONCONTEXT_SELECTOR)) {
+                    return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                }
+            }
+            return target;
+        }
+    }
+
     public static class ThreadModelMethodTargetSelector implements MethodTargetSelector{
         private MethodTargetSelector base;
-        private static TypeName TIMER_TYPE = TypeName.string2TypeName("Ljava/util/Timer");
-        private static TypeName THREAD_TYPE = TypeName.string2TypeName("Ljava/lang/Thread");
+
         private static Set<Selector> SCHEDULE_SELECTOR_SET;
         private static Set<Selector> RUN_SELECTOR_SET;
+        private static Set<Selector> EXECUTE_SELECTOR_SET;
+        private IClass timerModelClass;
         private IClass threadModelClass;
+        private IClass threadPoolExecutorModelClass;
 
         static{
             SCHEDULE_SELECTOR_SET = new HashSet<>();
-            SCHEDULE_SELECTOR_SET.add(AndroidThreadModelClass.SCHEDULE_AT_FIXED_RATE_SELECTOR1);
-            SCHEDULE_SELECTOR_SET.add(AndroidThreadModelClass.SCHEDULE_AT_FIXED_RATE_SELECTOR2);
-            SCHEDULE_SELECTOR_SET.add(AndroidThreadModelClass.SCHEDULE_SELECTOR1);
-            SCHEDULE_SELECTOR_SET.add(AndroidThreadModelClass.SCHEDULE_SELECTOR2);
-            SCHEDULE_SELECTOR_SET.add(AndroidThreadModelClass.SCHEDULE_SELECTOR3);
-            SCHEDULE_SELECTOR_SET.add(AndroidThreadModelClass.SCHEDULE_SELECTOR4);
+            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_AT_FIXED_RATE_SELECTOR1);
+            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_AT_FIXED_RATE_SELECTOR2);
+            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR1);
+            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR2);
+            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR3);
+            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR4);
 
             RUN_SELECTOR_SET = new HashSet<>();
-            RUN_SELECTOR_SET.add(AndroidThreadModelClass.START_SELECTOR);
+            RUN_SELECTOR_SET.add(JavaThreadModelClass.START_SELECTOR);
+
+            EXECUTE_SELECTOR_SET = new HashSet<>();
+            EXECUTE_SELECTOR_SET.add(JavaThreadPoolExecutorModelClass.EXECUTE_SELECTOR);
         }
 
         public ThreadModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha){
@@ -220,26 +270,29 @@ public class CallGraphBuilderForHybridSDK {
         }
 
         private void initThreadModel(IClassHierarchy cha){
-            threadModelClass = cha.lookupClass(AndroidThreadModelClass.ANDROID_THREAD_MODEL_CLASS);
-
-            if (threadModelClass == null) {
-                // add to cha
-                threadModelClass = AndroidThreadModelClass.getInstance(cha);
-                cha.addClass(threadModelClass);
-            }
+            if(timerModelClass == null)
+                timerModelClass = JavaTimerModelClass.getInstance(cha);
+            if(threadModelClass == null)
+                threadModelClass = JavaThreadModelClass.getInstance(cha);
+            if(threadPoolExecutorModelClass == null)
+                threadPoolExecutorModelClass = JavaThreadPoolExecutorModelClass.getInstance(cha);
         }
 
         @Override
         public IMethod getCalleeTarget(CGNode caller, CallSiteReference site, IClass receiver) {
-            if(site.isDispatch() && receiver != null) {
-                if(receiver.getName().equals(TIMER_TYPE) && SCHEDULE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
+            IMethod target = base.getCalleeTarget(caller, site, receiver);
+
+            if(site.isDispatch() && receiver != null && target != null) {
+                if(target.getDeclaringClass().getName().equals(JavaTimerModelClass.JAVA_TIMER_MODEL_CLASS.getName()) && SCHEDULE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
+                    return timerModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                }else if(target.getDeclaringClass().getName().equals(JavaThreadModelClass.JAVA_THREAD_MODEL_CLASS.getName()) && RUN_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())){
                     return threadModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                }else if(receiver.getName().equals(THREAD_TYPE) && RUN_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())){
-                    return threadModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                }else if(target.getDeclaringClass().getName().equals(JavaThreadPoolExecutorModelClass.JAVA_THREAD_POOL_EXECUTOR_MODEL_CLASS.getName()) && EXECUTE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())){
+                    return threadPoolExecutorModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }
             }
 
-            return base.getCalleeTarget(caller, site, receiver);
+            return target;
         }
     }
 }
