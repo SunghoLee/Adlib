@@ -24,8 +24,9 @@ public class HybridSDKModel {
         for(BridgeClass bridge : bridges){
             for(BridgeClass.BridgeMethod m : bridge.getAccessibleMethods()){
                 IMethod entry = cha.resolveMethod(m.getMethodReference());
-                if(entry.getName().toString().contains("location"))
+                if(entry.getName().toString().equals("open"))
                 if(entry != null){
+                    System.err.println("#Entry: " + entry);
                     entries.add(new AndroidEntryPoint(AndroidEntryPoint.ExecutionOrder.MIDDLE_OF_LOOP, entry, cha));
                 }
             }
