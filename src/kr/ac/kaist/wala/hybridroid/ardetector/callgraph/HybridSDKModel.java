@@ -25,6 +25,7 @@ public class HybridSDKModel {
             for(BridgeClass.BridgeMethod m : bridge.getAccessibleMethods()){
                 IMethod entry = cha.resolveMethod(m.getMethodReference());
                 if(entry.getName().toString().equals("open"))
+//                if(entry.getName().toString().equals("savePictureToPhotoLibrary"))
                 if(entry != null){
                     System.err.println("#Entry: " + entry);
                     entries.add(new AndroidEntryPoint(AndroidEntryPoint.ExecutionOrder.MIDDLE_OF_LOOP, entry, cha));

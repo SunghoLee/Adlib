@@ -3,6 +3,7 @@ package kr.ac.kaist.wala.hybridroid.ardetector.callgraph;
 import com.ibm.wala.classLoader.*;
 import com.ibm.wala.core.tests.callGraph.CallGraphTestUtil;
 import com.ibm.wala.dalvik.classLoader.DexFileModule;
+import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.dalvik.ipa.callgraph.impl.AndroidEntryPoint;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.ClassHierarchyClassTargetSelector;
@@ -69,13 +70,6 @@ public class CallGraphBuilderForHybridSDK {
     protected Iterable<AndroidEntryPoint> findEntrypoints(IClassHierarchy cha) throws ClassHierarchyException {
         return HybridSDKModel.getEntrypoints(properties, cha);
 
-//        System.out.println("----");
-//        for(IClass c: cha){
-//            if(c.getClassLoader().toString().contains("Application") && c.toString().contains("tk/likeberry"))
-//                System.out.println("K: " + c);
-//        }
-//        System.out.println("----");
-//
 //        Set<AndroidEntryPointLocator.LocatorFlags> flags = HashSetFactory.make();
 //        flags.add(AndroidEntryPointLocator.LocatorFlags.INCLUDE_CALLBACKS);
 //        flags.add(AndroidEntryPointLocator.LocatorFlags.EP_HEURISTIC);
@@ -104,24 +98,18 @@ public class CallGraphBuilderForHybridSDK {
             fs.close();
 
             //Add Android libraries to analysis scope.
-            //            String lib = LocalFileReader.androidJar(properties).getPath();
-//            if (lib.endsWith(".dex"))
-//                scope.addToScope(ClassLoaderReference.Primordial, DexFileModule.make(new File(lib)));
-//            else if (lib.endsWith(".jar"))
-//                scope.addToScope(ClassLoaderReference.Primordial, new JarFileModule(new JarFile(new File(lib))));
-
-
             String lib = LocalFileReader.androidJar(properties).getPath();
             if (lib.endsWith(".dex"))
                 scope.addToScope(ClassLoaderReference.Primordial, DexFileModule.make(new File(lib)));
             else if (lib.endsWith(".jar"))
                 scope.addToScope(ClassLoaderReference.Primordial, new JarFileModule(new JarFile(new File(lib))));
 
-            //Add a SDK library to analysis scope.
+            //Add a SDK to analysis scope.
             if (sdk.endsWith(".jar"))
                 scope.addToScope(ClassLoaderReference.Application, new JarFileModule(new JarFile(new File(sdk))));
-            else if (sdk.endsWith(".apk"))
+            else if (sdk.endsWith(".apk")) {
                 scope.addToScope(ClassLoaderReference.Application, DexFileModule.make(new File(sdk)));
+            }
 
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -140,7 +128,8 @@ public class CallGraphBuilderForHybridSDK {
 
     protected CallGraphBuilder makeDelegateBuilder(IClassHierarchy cha, AnalysisOptions options){
 //        nCFABuilder builder = new nCFABuilder(2, cha, options, new AnalysisCache(), null, null);
-        nCFABuilder builder = new nCFABuilder(0, cha, options, new AnalysisCache(), null, null);
+        nCFABuilder builder = new nCFABuilder(0, cha, options, new AnalysisCache(new DexIRFactory()), null, null);
+
         Set<TypeReference> entryClasses = new HashSet<TypeReference>();
         for(Entrypoint e : entries){
             IClass klass = e.getMethod().getDeclaringClass();

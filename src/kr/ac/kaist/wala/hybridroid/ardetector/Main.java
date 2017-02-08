@@ -4,6 +4,7 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import kr.ac.kaist.hybridroid.utils.VisualizeCGTest;
+import kr.ac.kaist.wala.hybridroid.ardetector.analyzer.CallingComponentAnalysis;
 import kr.ac.kaist.wala.hybridroid.ardetector.callgraph.CallGraphBuilderForHybridSDK;
 
 /**
@@ -17,6 +18,8 @@ public class Main {
         long start = System.currentTimeMillis();
         CallGraphBuilderForHybridSDK builder = new CallGraphBuilderForHybridSDK(prop, sdk);
         CallGraph cg = builder.makeCallGraph();
+        CallingComponentAnalysis cca = new CallingComponentAnalysis(cg);
+        cca.getCallingContexts();
         VisualizeCGTest.visualizeCallGraph(cg, "cfg_out", false);
         VisualizeCGTest.printIR(cg, "ir");
         long end = System.currentTimeMillis();
