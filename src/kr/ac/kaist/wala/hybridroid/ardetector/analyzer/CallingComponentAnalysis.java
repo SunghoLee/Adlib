@@ -44,6 +44,15 @@ public class CallingComponentAnalysis {
         public Selector getSelector(){
             return selector;
         }
+
+        public static CallingMethod matchMethod(Selector s){
+            for(CallingMethod c : CallingMethod.values()){
+                if(c.getSelector().equals(s))
+                    return c;
+            }
+
+            return null;
+        }
     }
 
     public CallingComponentAnalysis(CallGraph cg){
@@ -151,6 +160,8 @@ public class CallingComponentAnalysis {
                             }else
                                 throw new WrongTypeException("Intent flag must be Integer constant: " + flagVar + " in " + n);
                         }
+                    }else if(CallingMethod.matchMethod(calleeRef.getSelector()) != null){
+                        return res;
                     }else{
                         int i=0;
                         for(; i < useInst.getNumberOfUses(); i++){
