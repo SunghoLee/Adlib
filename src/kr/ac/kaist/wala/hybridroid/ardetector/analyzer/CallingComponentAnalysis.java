@@ -8,14 +8,12 @@ import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.debug.UnimplementedError;
 import kr.ac.kaist.wala.hybridroid.ardetector.types.Intent;
-import sun.jvm.hotspot.types.WrongTypeException;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 import static com.ibm.wala.util.debug.Assertions.UNREACHABLE;
 
@@ -109,7 +107,33 @@ public class CallingComponentAnalysis {
         }
     }
 
+    private Set<Pair> visited = new HashSet<>();
+
+    private boolean visited(CGNode n, int intentVar){
+        Pair<CGNode, Integer> p = Pair.make(n, intentVar);
+        if(visited.contains(p))
+            return true;
+        return !(visited.add(p));
+    }
+
+    private Map<Pair, Set<ComponentCallingContext>> cache = new HashMap<>();
+
+    private Set<ComponentCallingContext> findCache(CGNode n, int intentVar){
+        Pair<CGNode, Integer> p = Pair.make(n, intentVar);
+        if(cache.containsKey(p))
+            return cache.get(p);
+        return Collections.EMPTY_SET;
+    }
+
+    private void caching(CGNode n, int intentVar, Set<ComponentCallingContext> ccc){
+        Pair<CGNode, Integer> p = Pair.make(n, intentVar);
+
+    }
+
     private Set<ComponentCallingContext> getCallingContexts(CGNode n, int intentVar){
+        if(visited(n, intentVar))
+            return Collections.EMPTY_SET;
+
         Set<ComponentCallingContext> res = new HashSet<>();
 
         /*
@@ -142,12 +166,17 @@ public class CallingComponentAnalysis {
         return res;
     }
 
+    private Set<String> warnings = new HashSet<>();
+
+    public Set<String> getWarnings(){
+        return warnings;
+    }
+
     private Set<ComponentCallingContext> addFlags(CGNode n, int intentVar, Set<ComponentCallingContext> res){
         DefUse du = n.getDU();
         Iterator<SSAInstruction> iInst = du.getUses(intentVar);
         while(iInst.hasNext()){
             SSAInstruction useInst = iInst.next();
-            System.out.println("#I: " + useInst);
             if(useInst instanceof SSAAbstractInvokeInstruction){
                 for(CGNode callee : cg.getPossibleTargets(n, ((SSAAbstractInvokeInstruction)useInst).getCallSite())){
                     MethodReference calleeRef = callee.getMethod().getReference();
@@ -157,8 +186,10 @@ public class CallingComponentAnalysis {
                             SymbolTable symTab = n.getIR().getSymbolTable();
                             if(symTab.isIntegerConstant(flagVar)){
                                 addFlagToAllIntent(Intent.Flag.matchFlag(symTab.getIntValue(flagVar)).getName(), res);
-                            }else
-                                throw new WrongTypeException("Intent flag must be Integer constant: " + flagVar + " in " + n);
+                            }else {
+//                                throw new WrongTypeException("Intent flag must be Integer constant: " + flagVar + " in " + n);
+                                warnings.add("Intent flag must be Integer constant: " + flagVar + " in " + n);
+                            }
                         }
                     }else if(CallingMethod.matchMethod(calleeRef.getSelector()) != null){
                         return res;
@@ -267,7 +298,8 @@ public class CallingComponentAnalysis {
 
         @Override
         public void visitGet(SSAGetInstruction instruction) {
-            UNREACHABLE("Intent can not created by Get instruction.");
+            warnings.add("Intent can not created by Get instruction." + instruction);
+//            UNREACHABLE("Intent can not created by Get instruction.");
         }
 
         @Override
@@ -290,8 +322,10 @@ public class CallingComponentAnalysis {
                             UNREACHABLE("Return block must have a return value: " + inst);
                         int retVar = retInst.getUse(0);
                         cccSet.addAll(getCallingContexts(callee, retVar));
-                    }else
-                        UNREACHABLE("All return blocks must have return instruction: " + inst);
+                    }else {
+//                        UNREACHABLE("All return blocks must have return instruction: " + inst);
+//                        UNREACHABLE("All return blocks must have return instruction: " + inst);
+                    }
                 }
 
             }
@@ -398,8 +432,11 @@ public class CallingComponentAnalysis {
                             return new ComponentCallingContext(symTab.getStringValue(actionVar));
                     }
                 }
+            }else {
+                warnings.add("Now, do not consider about non-action based intent initialization: " + invokeInst);
+//                throw new UnimplementedError("Now, do not consider about non-action based intent initialization: " + invokeInst);
             }
-            throw new UnimplementedError("Now, do not consider about non-action based intent initialization: " + invokeInst);
+            return new ComponentCallingContext();
         }
     }
 }

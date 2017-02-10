@@ -20,6 +20,9 @@ public class Main {
         CallGraph cg = builder.makeCallGraph();
         CallingComponentAnalysis cca = new CallingComponentAnalysis(cg);
         cca.getCallingContexts();
+        for(String w : cca.getWarnings()){
+            System.out.println("W: " + w);
+        }
         VisualizeCGTest.visualizeCallGraph(cg, "cfg_out", false);
         VisualizeCGTest.printIR(cg, "ir");
         long end = System.currentTimeMillis();

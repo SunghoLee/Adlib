@@ -21,29 +21,29 @@ import java.util.*;
 /**
  * Created by leesh on 14/01/2017.
  */
-public class JavaThreadModelClass extends SyntheticClass{
+public class AndroidViewModelClass extends SyntheticClass{
 
-    public static final TypeReference JAVA_THREAD_MODEL_CLASS = TypeReference.findOrCreate(
-            ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/lang/Thread"));
+
+    public static final TypeReference ANDROID_VIEW_MODEL_CLASS = TypeReference.findOrCreate(
+            ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/view/View"));
 
     public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
-    public static final Selector START_SELECTOR = Selector.make("start()V");
-    public static final FieldReference TARGET_FIELD = FieldReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/lang/Thread", "target", "Ljava/lang/Runnable");
+    public static final Selector POST_SELECTOR = Selector.make("post(Ljava/lang/Runnable;)Z");
 
     private IClassHierarchy cha;
 
-    private static JavaThreadModelClass klass;
+    private static AndroidViewModelClass klass;
 
-    public static JavaThreadModelClass getInstance(IClassHierarchy cha) {
+    public static AndroidViewModelClass getInstance(IClassHierarchy cha) {
         if(klass == null){
-            klass = new JavaThreadModelClass(cha);
+            klass = new AndroidViewModelClass(cha);
         }
         return klass;
     }
 
-    private JavaThreadModelClass(IClassHierarchy cha) {
-        super(JAVA_THREAD_MODEL_CLASS, cha);
+    private AndroidViewModelClass(IClassHierarchy cha) {
+        super(ANDROID_VIEW_MODEL_CLASS, cha);
         this.cha = cha;
 
         initMethodsForThread();
@@ -52,7 +52,7 @@ public class JavaThreadModelClass extends SyntheticClass{
     }
 
     private void initMethodsForThread(){
-        this.addMethod(this.runOfRunnable(START_SELECTOR));
+        this.addMethod(this.runOfRunnable(POST_SELECTOR));
     }
 
     /**
@@ -66,7 +66,7 @@ public class JavaThreadModelClass extends SyntheticClass{
         run.setStatic(false);
         final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
 
-        int ssaNo = 1;
+        int ssaNo = 2;
 
         TypeReference timerTaskTR = TypeReference.findOrCreate(ClassLoaderReference.Application, RUNNABLE_TYPE_NAME);
 
@@ -80,20 +80,6 @@ public class JavaThreadModelClass extends SyntheticClass{
 
         final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
         run.addStatement(runCall);
-
-        final SSAValue targetV = new SSAValue(ssaNo++, timerTaskTR, runRef);
-        final int pc_get_target = run.getNextProgramCounter();
-        final SSAInstruction getTarget = instructionFactory.GetInstruction(pc_get_target, targetV, timerTaskV, TARGET_FIELD);
-        run.addStatement(getTarget);
-
-        final int pc_call_target = run.getNextProgramCounter();
-        final List<SSAValue> paramsCallTarget = new ArrayList<SSAValue>();
-        paramsCallTarget.add(targetV);
-        final SSAValue exceptionCallTarget = new SSAValue(ssaNo++, TypeReference.JavaLangException, runRef);
-        final CallSiteReference siteCallTarget = CallSiteReference.make(pc, timerTaskRunMR, IInvokeInstruction.Dispatch.VIRTUAL);
-
-        final SSAInstruction runCallTarget = instructionFactory.InvokeInstruction(pc_call_target, paramsCallTarget, exceptionCallTarget, siteCallTarget);
-        run.addStatement(runCallTarget);
 
         return new SummarizedMethodWithNames(runRef, run, this);
     }
