@@ -92,7 +92,6 @@ public class ConcreteTypeParamEntryPoint extends AndroidEntryPoint {
         if (site == null) {
             return null;
         }
-        System.err.println("About: " + this);
         paramValues = new int[getNumberOfParameters()];
         for (int j = 0; j < paramValues.length; j++) {
             paramValues[j] = makeArgument(m, j);
@@ -104,79 +103,4 @@ public class ConcreteTypeParamEntryPoint extends AndroidEntryPoint {
 
         return m.addInvocation(paramValues, site);
     }
-
-    /*
-    private SSANewInstruction addAllocation(AbstractRootMethod m, TypeReference T, boolean invokeCtor) {
-        if (T == null) {
-            throw new IllegalArgumentException("T is null");
-        }
-        int instance = m.addLocal();
-        SSANewInstruction result = null;
-
-        if (T.isReferenceType()) {
-            NewSiteReference ref = NewSiteReference.make(m.getStatements().length, T);
-            if (T.isArrayType()) {
-                int[] sizes = new int[ArrayClass.getArrayTypeDimensionality(T)];
-                Arrays.fill(sizes, m.getValueNumberForIntConstant(1));
-                result = insts.NewInstruction(statements.size(), instance, ref, sizes);
-            } else {
-                result = insts.NewInstruction(statements.size(), instance, ref);
-            }
-            statements.add(result);
-
-            IClass klass = cha.lookupClass(T);
-            System.err.println("\tK: " + klass);
-            if (klass == null) {
-                Warnings.add(AbstractRootMethod.AllocationFailure.create(T));
-                return null;
-            }
-
-            if (klass.isArrayClass()) {
-                int arrayRef = result.getDef();
-                TypeReference e = klass.getReference().getArrayElementType();
-                while (e != null && !e.isPrimitiveType()) {
-                    // allocate an instance for the array contents
-                    NewSiteReference n = NewSiteReference.make(statements.size(), e);
-                    int alloc = m.addLocal();
-                    SSANewInstruction ni = null;
-                    if (e.isArrayType()) {
-                        int[] sizes = new int[((ArrayClass)cha.lookupClass(T)).getDimensionality()];
-                        Arrays.fill(sizes, getValueNumberForIntConstant(1));
-                        ni = insts.NewInstruction(statements.size(), alloc, n, sizes);
-                    } else {
-                        ni = insts.NewInstruction(statements.size(), alloc, n);
-                    }
-                    statements.add(ni);
-
-                    // emit an astore
-                    SSAArrayStoreInstruction store = insts.ArrayStoreInstruction(statements.size(), arrayRef, getValueNumberForIntConstant(0), alloc, e);
-                    statements.add(store);
-
-                    e = e.isArrayType() ? e.getArrayElementType() : null;
-                    arrayRef = alloc;
-                }
-            }
-            if (invokeCtor) {
-                IMethod ctor = cha.resolveMethod(klass, MethodReference.initSelector);
-                if (ctor != null) {
-                    System.err.println("\tCTOR:" + ctor);
-                    m.addInvocation(new int[] { instance }, CallSiteReference.make(statements.size(), ctor.getReference(),
-                            IInvokeInstruction.Dispatch.SPECIAL));
-                }
-            }
-        }
-        cache.invalidate(this, Everywhere.EVERYWHERE);
-        return result;
-    }
-
-    protected int getValueNumberForIntConstant(int c) {
-        ConstantValue v = new ConstantValue(c);
-        Integer result = constant2ValueNumber.get(v);
-        if (result == null) {
-            result = nextLocal++;
-            constant2ValueNumber.put(v, result);
-        }
-        return result;
-    }
-    */
 }

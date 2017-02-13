@@ -18,14 +18,16 @@ public class Main {
         long start = System.currentTimeMillis();
         CallGraphBuilderForHybridSDK builder = new CallGraphBuilderForHybridSDK(prop, sdk);
         CallGraph cg = builder.makeCallGraph();
-        CallingComponentAnalysis cca = new CallingComponentAnalysis(cg);
+        long end = System.currentTimeMillis();
+        System.err.println("Finish to build a callgraph: " + ((end - start)/1000d) + "s");
+        CallingComponentAnalysis cca = new CallingComponentAnalysis(cg, builder.getPointerAnalysis());
         cca.getCallingContexts();
         for(String w : cca.getWarnings()){
             System.out.println("W: " + w);
         }
         VisualizeCGTest.visualizeCallGraph(cg, "cfg_out", false);
         VisualizeCGTest.printIR(cg, "ir");
-        long end = System.currentTimeMillis();
+        end = System.currentTimeMillis();
         System.out.println("#AnalysisTime: " + ((end - start)/1000d) + "s");
     }
 }

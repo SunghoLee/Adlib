@@ -1,8 +1,13 @@
 package kr.ac.kaist.wala.hybridroid.ardetector.analyzer;
 
 import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
@@ -22,6 +27,7 @@ import static com.ibm.wala.util.debug.Assertions.UNREACHABLE;
  */
 public class CallingComponentAnalysis {
     private final CallGraph cg;
+    private final PointerAnalysis<InstanceKey> pa;
     public final static TypeReference CONTEXT_WRAPPER = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/content/ContextWrapper");
     public final static TypeReference INTENT = TypeReference.findOrCreate(ClassLoaderReference.Application, "Landroid/content/Intent");
 
@@ -53,16 +59,35 @@ public class CallingComponentAnalysis {
         }
     }
 
-    public CallingComponentAnalysis(CallGraph cg){
-        this.cg = cg;
+    private void test(){
+        for(CGNode n : cg){
+            if(n.toString().contains("Node: < Application, Lcom/appodeal/ads/networks/m$b$1, run()V > Context: Everywhere")){
+                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n  ,6);
+                System.out.println("PK: " + pk);
+                for(InstanceKey ik : pa.getPointsToSet(pk))
+                    System.out.println("\tIK: " + ik);
+            }
+        }
     }
 
-    private Set<CGNode> findCallingComponentNode(CallGraph cg){
+    public CallingComponentAnalysis(CallGraph cg, PointerAnalysis<InstanceKey> pa){
+        this.cg = cg; this.pa = pa;
+        test();
+    }
+
+    private Set<CGNode> findCallingComponentNode(CallGraph cg, IClass klass){
         Set<CGNode> res = new HashSet<CGNode>();
 
+        if(klass == null)
+            return res;
+
         for(CallingMethod cm : CallingMethod.values()){
-            res.addAll(cg.getNodes(MethodReference.findOrCreate(CONTEXT_WRAPPER, cm.getSelector())));
+            res.addAll(cg.getNodes(MethodReference.findOrCreate(klass.getReference(), cm.getSelector())));
         }
+        for(IClass subK : cg.getClassHierarchy().getImmediateSubclasses(klass)){
+            res.addAll(findCallingComponentNode(cg, subK));
+        }
+
         return res;
     }
 
@@ -77,25 +102,37 @@ public class CallingComponentAnalysis {
     }
 
     class ComponentCallingContext {
-        private final String action;
-        private final String category;
+        private String action;
+        private String category;
         private final Set<String> flags = new HashSet<>();
+        private final Set<ConstantKey> targets;
 
         public ComponentCallingContext(){
             this.action = "Unknown";
             this.category = "Unknown";
+            targets = new HashSet<>();
         }
 
         public ComponentCallingContext(String action){
             this.action = action;
             this.category = "Unknown";
+            targets = new HashSet<>();
         }
 
         public ComponentCallingContext(String action, String category){
             this.action = action;
             this.category = category;
+            targets = new HashSet<>();
         }
 
+        public ComponentCallingContext(ConstantKey target){
+            this();
+            targets.add(target);
+        }
+
+        public void addTarget(ConstantKey target){
+            this.targets.add(target);
+        }
 
         public void addFlag(String s){
             flags.add(s);
@@ -103,7 +140,20 @@ public class CallingComponentAnalysis {
 
         @Override
         public String toString(){
-            return "Intent[ action: " + action + ", category: " + category + ", flags: " + flags + " ]";
+            String res = "Intent[ action: " + action + ", category: " + category + ", flags: " + flags + ", target: ";
+            if(targets.isEmpty()){
+                res += "Unknown ]";
+            }else{
+                boolean first = true;
+                for(ConstantKey ck : targets){
+                    if(!first)
+                        res += ", ";
+                    res += ck.getValue();
+                    first = false;
+                }
+                res += " ]";
+            }
+            return res;
         }
     }
 
@@ -202,7 +252,7 @@ public class CallingComponentAnalysis {
                         res = addFlags(callee, ++i, res);
                     }
                 }
-            }else if(useInst instanceof SSAReturnInstruction){
+            }else if(useInst instanceof SSAReturnInstruction || useInst instanceof SSAPhiInstruction){
                 //no-op
             }else{
                 Assertions.UNREACHABLE("Intent object can be used in invoke instruction or return instruction only: " + useInst);
@@ -218,16 +268,18 @@ public class CallingComponentAnalysis {
     }
 
     public Set<ComponentCallingContext> getCallingContexts(){
-        Set<CGNode> nodes = findCallingComponentNode(cg);
+        Set<CGNode> nodes = findCallingComponentNode(cg, cg.getClassHierarchy().lookupClass(CONTEXT_WRAPPER));
         Set<ComponentCallingContext> res = new HashSet<>();
 
         for(CGNode n : nodes){ // for each startActivity node
             for(CGNode pred: getPreds(cg, n)){ // for each caller node for startActivity
-                Iterator<CallSiteReference> iCallSite = cg.getPossibleSites(pred, n);
-                while(iCallSite.hasNext()){ // for each callsites for startActivity in the caller node
-                    CallSiteReference csRef = iCallSite.next();
-                    for(SSAAbstractInvokeInstruction callInst : pred.getIR().getCalls(csRef)){ // for each call instruction for startActivity in caller node
-                        res.addAll(getCallingContexts(pred, callInst.getUse(1))); // 1 is a second argument that denotes intent object
+                if(pred.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application)) {
+                    Iterator<CallSiteReference> iCallSite = cg.getPossibleSites(pred, n);
+                    while (iCallSite.hasNext()) { // for each callsites for startActivity in the caller node
+                        CallSiteReference csRef = iCallSite.next();
+                        for (SSAAbstractInvokeInstruction callInst : pred.getIR().getCalls(csRef)) { // for each call instruction for startActivity in caller node
+                            res.addAll(getCallingContexts(pred, callInst.getUse(1))); // 1 is a second argument that denotes intent object
+                        }
                     }
                 }
             }
@@ -327,7 +379,6 @@ public class CallingComponentAnalysis {
 //                        UNREACHABLE("All return blocks must have return instruction: " + inst);
                     }
                 }
-
             }
         }
 
@@ -363,7 +414,13 @@ public class CallingComponentAnalysis {
 
         @Override
         public void visitPhi(SSAPhiInstruction instruction) {
-            UNREACHABLE("Intent can not created by Phi instruction.");
+            for(int i = 0; i < instruction.getNumberOfUses(); i++){
+                int useVar = instruction.getUse(i);
+                if(useVar == -1)
+                    System.out.println("Could not track the intent object in phi instruction: " + instruction);
+                cccSet.addAll(getCallingContexts(n, useVar));
+            }
+//            UNREACHABLE("Intent can not created by Phi instruction.");
         }
 
         @Override
@@ -413,7 +470,16 @@ public class CallingComponentAnalysis {
                         case INIT_INTENT1:
                             break;
                         case INIT_INTENT2:
-                            break;
+                            int classVar = invokeInst.getUse(2);
+                            PointerKey pk =pa.getHeapModel().getPointerKeyForLocal(n, classVar);
+                            ComponentCallingContext ccc = new ComponentCallingContext();
+                            for(InstanceKey ik : pa.getPointsToSet(pk)){
+                                if(ik instanceof ConstantKey) {
+                                    ConstantKey ck = (ConstantKey) ik;
+                                    ccc.addTarget((ConstantKey) ik);
+                                }
+                            }
+                            return ccc;
                         case INIT_INTENT3:
                             break;
                         case INIT_INTENT4:

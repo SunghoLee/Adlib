@@ -35,20 +35,20 @@ public class HybridSDKModel {
         }
 
         for(IClass c : cha){
-//            if(c.getName().getClassName().toString().endsWith("MMSDK"))
-//            for(IMethod m : c.getAllMethods()){
-//                if(m.toString().contains("initialize"))
-//                    entries.add(new AndroidEntryPoint(AndroidEntryPoint.ExecutionOrder.AT_FIRST, m, cha));
-//            }
-            if(c.getName().getClassName().toString().endsWith("AdView"))
+            if(c.getName().getClassName().toString().endsWith("MonetizationManager"))
                 for(IMethod m : c.getDeclaredMethods()){
-                    if(m.toString().contains("<init>") || m.toString().contains("loadAd")) {
+                    if(m.toString().contains("createSession") || m.toString().contains("fetchAd") || m.toString().contains("showReadyAd")){
                         System.err.println("#Entry: " + m);
                         entries.add(new ConcreteTypeParamEntryPoint(AndroidEntryPoint.ExecutionOrder.AT_FIRST, m, cha));
                     }
-//                    if(m.toString().contains("show"))
-//                        entries.add(new AndroidEntryPoint(AndroidEntryPoint.ExecutionOrder.AT_FIRST, m, cha));
                 }
+//            if(c.getName().getClassName().toString().endsWith("MdotMInterstitial"))
+//                for(IMethod m : c.getDeclaredMethods()){
+//                    if(m.toString().contains("loadInterstitial") || m.toString().contains("showInterstitial")){
+//                        System.err.println("#Entry: " + m);
+//                        entries.add(new ConcreteTypeParamEntryPoint(AndroidEntryPoint.ExecutionOrder.AT_FIRST, m, cha));
+//                    }
+//                }
         }
 
         //JVM 1.8

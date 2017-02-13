@@ -71,6 +71,15 @@ public class AndroidContextWrapperModelClass extends SyntheticClass {
         }
     }
 
+    public static boolean isSubClassOfContextWrapper(IClass k){
+        if(k == null)
+            return false;
+        if(k.getName().equals(AndroidContextWrapperModelClass.ANDROID_CONTEXT_WRAPPER_MODEL_CLASS.getName()))
+            return true;
+
+        return isSubClassOfContextWrapper(k.getSuperclass());
+    }
+
     public static final TypeReference ANDROID_CONTEXT_WRAPPER_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/content/ContextWrapper"));
 

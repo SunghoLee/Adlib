@@ -15,6 +15,7 @@ import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFABuilder;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
+import com.ibm.wala.ipa.slicer.Slicer;
 import com.ibm.wala.ipa.summaries.LambdaMethodTargetSelector;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
@@ -25,6 +26,7 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.io.FileProvider;
 import kr.ac.kaist.hybridroid.utils.LocalFileReader;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.components.AndroidAlertDialogBuilderModelClass;
+import kr.ac.kaist.wala.hybridroid.ardetector.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.entries.RecursiveParamDefFakeRootMethod;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.AndroidViewModelClass;
@@ -48,6 +50,7 @@ public class CallGraphBuilderForHybridSDK {
     private final AnalysisOptions options;
     private final IClassHierarchy cha;
     private final CallGraphBuilder delegate;
+    private PointerAnalysis<InstanceKey> pa;
 
     public CallGraphBuilderForHybridSDK(String prop, String sdk) throws ClassHierarchyException {
         File propFile = new File(prop);
@@ -176,9 +179,15 @@ public class CallGraphBuilderForHybridSDK {
         options.setUseConstantSpecificKeys(true);
     }
 
+    public PointerAnalysis<InstanceKey> getPointerAnalysis(){
+        return pa;
+    }
+
     public CallGraph makeCallGraph() throws CallGraphBuilderCancelException {
         CallGraph cg = delegate.makeCallGraph(options, null);
         PointerAnalysis<InstanceKey> pa = delegate.getPointerAnalysis();
+        Slicer sc;
+        this.pa = pa;
 //        for(CGNode n: cg){
 //            if(n.toString().contains("Node: < Application, Lcom/millennialmedia/internal/utils/EnvironmentUtils, init(Landroid/app/Application;)V > Context: Everywhere")){
 //                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n, 4);
@@ -262,12 +271,14 @@ public class CallGraphBuilderForHybridSDK {
         final private IClassHierarchy cha;
         final private IClass contextWrapperModelClass;
         final private IClass alertDialogBuilderModelClass;
+        final private IClass handlerModelClass;
 
         public ContextModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha) {
             this.base = base;
             this.cha = cha;
             this.contextWrapperModelClass = AndroidContextWrapperModelClass.getInstance(cha);
             this.alertDialogBuilderModelClass = AndroidAlertDialogBuilderModelClass.getInstance(cha);
+            this.handlerModelClass = AndroidHandlerModelClass.getInstance(cha);
         }
 
         @Override
@@ -275,12 +286,14 @@ public class CallGraphBuilderForHybridSDK {
             IMethod target = base.getCalleeTarget(caller, site, receiver);
 
             if (site.isDispatch() && receiver != null && target != null) {
-                if (target.getDeclaringClass().getName().equals(AndroidContextWrapperModelClass.ANDROID_CONTEXT_WRAPPER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETSYSTEMSERVICE_SELECTOR)) {
+                if (AndroidContextWrapperModelClass.isSubClassOfContextWrapper(target.getDeclaringClass()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETSYSTEMSERVICE_SELECTOR)) {
                     return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(AndroidContextWrapperModelClass.ANDROID_CONTEXT_WRAPPER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETAPPLICATIONCONTEXT_SELECTOR)) {
+                } else if (AndroidContextWrapperModelClass.isSubClassOfContextWrapper(target.getDeclaringClass()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETAPPLICATIONCONTEXT_SELECTOR)) {
                     return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }else if (target.getDeclaringClass().getName().equals(AndroidAlertDialogBuilderModelClass.ANDROID_ALERT_DIALOG_BUILDER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidAlertDialogBuilderModelClass.SHOW_SELECTOR)) {
                     return alertDialogBuilderModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                }else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidHandlerModelClass.SEND_MESSAGE_SELECTOR)) {
+                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }
             }
             return target;

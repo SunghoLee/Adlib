@@ -58,7 +58,6 @@ public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
             statements.add(result);
 
             IClass klass = cha.lookupClass(T);
-            System.err.println("\tK: " + klass);
             if (klass == null) {
                 Warnings.add(new AllocationFailure(T));
                 return null;
@@ -92,7 +91,6 @@ public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
             if (invokeCtor) {
                 IMethod ctor = findLeastArgInitMethod(klass);
                 if (ctor != null) {
-                    System.err.println("\tCTOR:" + ctor);
                     addInvocation(makeArgs(ctor, instance), CallSiteReference.make(statements.size(), ctor.getReference(),
                             IInvokeInstruction.Dispatch.SPECIAL));
                 }
@@ -119,7 +117,6 @@ public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
 
     protected int makeArgument(IMethod m, int i) {
         TypeReference[] p = new TypeReference[]{m.getParameterType(i)};
-        System.err.println("\t\tParam: " + p[0]);
         if (p.length == 0) {
             return -1;
         } else if (p.length == 1) {
