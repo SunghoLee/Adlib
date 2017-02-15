@@ -15,29 +15,53 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SSANewInstruction;
 import com.ibm.wala.types.TypeReference;
 
+import java.util.Collections;
+
 /**
  * Created by leesh on 09/02/2017.
  */
 public class ConcreteTypeParamEntryPoint extends AndroidEntryPoint {
+    private final IClass klass;
+
     public ConcreteTypeParamEntryPoint(AndroidEntryPointLocator.AndroidPossibleEntryPoint p, IMethod method, IClassHierarchy cha, AndroidComponent inComponent) {
         super(p, method, cha, inComponent);
+        klass = null;
     }
 
     public ConcreteTypeParamEntryPoint(AndroidEntryPointLocator.AndroidPossibleEntryPoint p, IMethod method, IClassHierarchy cha) {
         super(p, method, cha);
+        klass = null;
     }
 
     public ConcreteTypeParamEntryPoint(ExecutionOrder o, IMethod method, IClassHierarchy cha, AndroidComponent inComponent) {
         super(o, method, cha, inComponent);
+        klass = null;
     }
 
     public ConcreteTypeParamEntryPoint(ExecutionOrder o, IMethod method, IClassHierarchy cha) {
         super(o, method, cha);
+        klass = null;
+    }
+
+    public ConcreteTypeParamEntryPoint(ExecutionOrder o, IClass klass, IMethod method, IClassHierarchy cha) {
+        super(o, method, cha);
+        this.klass = klass;
+    }
+
+    public IClass getReceiverClass(){
+        return (klass == null)? method.getDeclaringClass() : klass;
     }
 
     @Override
     protected int makeArgument(AbstractRootMethod m, int i) {
-        TypeReference[] p = getParameterTypes(i);
+        TypeReference[] p = null;
+
+        //SPECIAL: if this argument is a receiver
+        if(method.isStatic() == false && i == 0 && klass != null) {
+            p = Collections.singletonList(klass.getReference()).toArray(new TypeReference[0]);
+        }else
+            p = getParameterTypes(i);
+
         if (p.length == 0) {
             return -1;
         } else if (p.length == 1) {
