@@ -29,10 +29,7 @@ import kr.ac.kaist.wala.hybridroid.ardetector.model.components.AndroidAlertDialo
 import kr.ac.kaist.wala.hybridroid.ardetector.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.entries.RecursiveParamDefFakeRootMethod;
-import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.AndroidViewModelClass;
-import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.JavaThreadModelClass;
-import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.JavaThreadPoolExecutorModelClass;
-import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.JavaTimerModelClass;
+import kr.ac.kaist.wala.hybridroid.ardetector.model.thread.*;
 
 import java.io.*;
 import java.util.HashSet;
@@ -138,10 +135,10 @@ public class CallGraphBuilderForHybridSDK {
     protected CallGraphBuilder makeDelegateBuilder(IClassHierarchy cha, AnalysisOptions options) {
 //        nCFABuilder builder = new nCFABuilder(2, cha, options, new AnalysisCache(), null, null);
 //        for(IClass k : cha){
-//            if(k.toString().contains("Thread")){
-//                for(IField m : k.getDeclaredInstanceFields()){
-//                    if(m.toString().contains("target"))
-//                        System.out.println("#: " + m);
+//            if(k.toString().contains("AsyncTask")){
+//                System.out.println("#c: " + k);
+//                for(IMethod m : k.getDeclaredMethods()){
+//                        System.out.println("\t#m: " + m);
 //                }
 //            }
 //        }
@@ -310,6 +307,8 @@ public class CallGraphBuilderForHybridSDK {
         private IClass threadModelClass;
         private IClass threadPoolExecutorModelClass;
         private IClass viewModelClass;
+        final private IClass handlerModelClass;
+        final private IClass asyncTaskModelClass;
 
         static {
             SCHEDULE_SELECTOR_SET = new HashSet<>();
@@ -329,8 +328,9 @@ public class CallGraphBuilderForHybridSDK {
 
         public ThreadModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha) {
             this.base = base;
+            handlerModelClass = AndroidHandlerModelClass.getInstance(cha);
+            asyncTaskModelClass = AndroidAsyncTaskModelClass.getInstance(cha);
             initThreadModel(cha);
-
         }
 
         private void initThreadModel(IClassHierarchy cha) {
@@ -357,6 +357,10 @@ public class CallGraphBuilderForHybridSDK {
                     return threadPoolExecutorModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 } else if (target.getDeclaringClass().getName().equals(AndroidViewModelClass.ANDROID_VIEW_MODEL_CLASS.getName()) && AndroidViewModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
                     return viewModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                } else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_DELAYED_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
+                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                } else if (target.getDeclaringClass().getName().equals(AndroidAsyncTaskModelClass.ANDROID_ASYNC_TASK_MODEL_CLASS.getName()) && (AndroidAsyncTaskModelClass.EXECUTE_SELECTOR1.equals(site.getDeclaredTarget().getSelector()) || AndroidAsyncTaskModelClass.EXECUTE_SELECTOR2.equals(site.getDeclaredTarget().getSelector()))) {
+                    return asyncTaskModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }
             }
             return target;

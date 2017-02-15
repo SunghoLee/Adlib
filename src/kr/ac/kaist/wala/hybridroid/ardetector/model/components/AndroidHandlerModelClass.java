@@ -41,8 +41,11 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/os/Handler"));
     public static final TypeReference ANDROID_MESSAGE_TYPE = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/os/Message"));
+    public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
     public static final Selector SEND_MESSAGE_SELECTOR = Selector.make("sendMessage(Landroid/os/Message;)Z");
     public static final Selector HANDLER_MESSAGE_SELECTOR = Selector.make("handleMessage(Landroid/os/Message;;)V");
+    public static final Selector POST_DELAYED_SELECTOR = Selector.make("postDelayed(Ljava/lang/Runnable;J)Z");
+    public static final Selector RUN_SELECTOR = Selector.make("run()V");
 
     private IClassHierarchy cha;
 
@@ -65,7 +68,7 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
     }
 
     private void initMethodsForThread(){
-        this.addMethod(this.show(SEND_MESSAGE_SELECTOR));
+        this.addMethod(this.send(SEND_MESSAGE_SELECTOR)); this.addMethod(this.postDelayed(POST_DELAYED_SELECTOR));
     }
 
     /**
@@ -73,7 +76,38 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
      *
      *  run call Runnable's run method
      */
-    private SummarizedMethod show(Selector s) {
+    private SummarizedMethod postDelayed(Selector s) {
+        final MethodReference postRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary post = new VolatileMethodSummary(new MethodSummary(postRef));
+        post.setStatic(false);
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        TypeReference runnableTR = TypeReference.findOrCreate(ClassLoaderReference.Application, RUNNABLE_TYPE_NAME);
+
+        final SSAValue runnableV = new SSAValue(2, runnableTR, postRef);
+
+        int ssaNo = 3;
+
+        //TODO: call run
+        final int pc_call_post = post.getNextProgramCounter();
+        final MethodReference runMR = MethodReference.findOrCreate(runnableTR, RUN_SELECTOR);
+        final List<SSAValue> paramsRun = new ArrayList<SSAValue>();
+        paramsRun.add(runnableV);
+
+        final SSAValue exceptionPos = new SSAValue(ssaNo++, TypeReference.JavaLangException, postRef);
+        final CallSiteReference sitePos = CallSiteReference.make(pc_call_post, runMR, IInvokeInstruction.Dispatch.VIRTUAL);
+        final SSAInstruction runPosCall = instructionFactory.InvokeInstruction(pc_call_post, paramsRun, exceptionPos, sitePos);
+        post.addStatement(runPosCall);
+
+        return new SummarizedMethodWithNames(postRef, post, this);
+    }
+
+    /**
+     *  Generate run of Thread for AndroidThreadModelClass.
+     *
+     *  run call Runnable's run method
+     */
+    private SummarizedMethod send(Selector s) {
         final MethodReference sendRef = MethodReference.findOrCreate(this.getReference(), s);
         final VolatileMethodSummary send = new VolatileMethodSummary(new MethodSummary(sendRef));
         send.setStatic(false);

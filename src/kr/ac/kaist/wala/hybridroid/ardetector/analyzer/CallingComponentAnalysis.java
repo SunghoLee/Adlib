@@ -61,8 +61,28 @@ public class CallingComponentAnalysis {
 
     private void test(){
         for(CGNode n : cg){
-            if(n.toString().contains("Node: < Application, Lcom/appodeal/ads/networks/m$b$1, run()V > Context: Everywhere")){
-                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n  ,6);
+            if(n.toString().contains("Node: < Application, Lcom/smaato/soma/bannerutilities/AbstractBannerPackage$HtmlGetterJSInterface$1$1$1, process()Ljava/lang/Void; > Context: Everywhere")){
+                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n  ,1);
+                System.out.println("PK: " + pk);
+                for(InstanceKey ik : pa.getPointsToSet(pk))
+                    System.out.println("\tIK: " + ik);
+                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,40);
+                System.out.println("PK: " + pk);
+                for(InstanceKey ik : pa.getPointsToSet(pk))
+                    System.out.println("\tIK: " + ik);
+                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,41);
+                System.out.println("PK: " + pk);
+                for(InstanceKey ik : pa.getPointsToSet(pk))
+                    System.out.println("\tIK: " + ik);
+                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,42);
+                System.out.println("PK: " + pk);
+                for(InstanceKey ik : pa.getPointsToSet(pk))
+                    System.out.println("\tIK: " + ik);
+                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,43);
+                System.out.println("PK: " + pk);
+                for(InstanceKey ik : pa.getPointsToSet(pk))
+                    System.out.println("\tIK: " + ik);
+                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,45);
                 System.out.println("PK: " + pk);
                 for(InstanceKey ik : pa.getPointsToSet(pk))
                     System.out.println("\tIK: " + ik);
