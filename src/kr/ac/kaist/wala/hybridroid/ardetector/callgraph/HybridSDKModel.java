@@ -70,7 +70,7 @@ public class HybridSDKModel {
         for(IClass c: cha){
             if(c.getReference().getName().equals(klassName)){
                 for(int i=0; i<methods.length; i++){
-                    res.add(new ConcreteTypeParamEntryPoint(AndroidEntryPoint.ExecutionOrder.AT_FIRST, findNearestMethod(c, methods[i]), cha));
+                    res.add(new ConcreteTypeParamEntryPoint(AndroidEntryPoint.ExecutionOrder.AT_FIRST, c, findNearestMethod(c, methods[i]), cha));
                 }
             }
         }

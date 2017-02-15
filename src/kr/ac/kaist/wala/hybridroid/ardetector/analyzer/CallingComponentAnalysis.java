@@ -224,12 +224,18 @@ public class CallingComponentAnalysis {
                     }
                 }
             }
-        }else{//def by 1 or 2
+        }else{//def by 2 or 3
             DefUse du = n.getDU();
-            SSAInstruction defInst = du.getDef(intentVar);
-            IntentCreationTrackingVisitor visitor = new IntentCreationTrackingVisitor(n);
-            defInst.visit(visitor);
-            res.addAll(visitor.getResult());
+
+            //special case for null. this case is possible in Phi instruction, so it may not be a application bug.
+            if(n.getIR().getSymbolTable().isConstant(intentVar)){
+                //no-op: don't track anymore.
+            }else {
+                SSAInstruction defInst = du.getDef(intentVar);
+                IntentCreationTrackingVisitor visitor = new IntentCreationTrackingVisitor(n);
+                defInst.visit(visitor);
+                res.addAll(visitor.getResult());
+            }
         }
 
         addFlags(n, intentVar, res);
@@ -243,6 +249,10 @@ public class CallingComponentAnalysis {
     }
 
     private Set<ComponentCallingContext> addFlags(CGNode n, int intentVar, Set<ComponentCallingContext> res){
+        //NOTE: we don't find flags for an intent in Promordial method, because it is not developer's code.
+        if(n.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial))
+            return Collections.emptySet();
+
         DefUse du = n.getDU();
         Iterator<SSAInstruction> iInst = du.getUses(intentVar);
         while(iInst.hasNext()){
@@ -273,6 +283,13 @@ public class CallingComponentAnalysis {
                     }
                 }
             }else if(useInst instanceof SSAReturnInstruction || useInst instanceof SSAPhiInstruction){
+                //no-op
+            }else if(useInst instanceof SSAConditionalBranchInstruction){
+                //NOTE: this case is possible, if the conditional branch instruction is null comparison.
+                //TODO: we should check which it is really null comparison or not.
+                //no-op
+            }else if(useInst instanceof SSAGetInstruction){
+                //NOTE: this case is possible, if the instruction is for getting an extra data of the intent.
                 //no-op
             }else{
                 Assertions.UNREACHABLE("Intent object can be used in invoke instruction or return instruction only: " + useInst);

@@ -135,10 +135,13 @@ public class CallGraphBuilderForHybridSDK {
     protected CallGraphBuilder makeDelegateBuilder(IClassHierarchy cha, AnalysisOptions options) {
 //        nCFABuilder builder = new nCFABuilder(2, cha, options, new AnalysisCache(), null, null);
 //        for(IClass k : cha){
-//            if(k.toString().contains("AsyncTask")){
+//            if(k.toString().contains("Reference")){
 //                System.out.println("#c: " + k);
 //                for(IMethod m : k.getDeclaredMethods()){
 //                        System.out.println("\t#m: " + m);
+//                }
+//                for(IField f : k.getDeclaredInstanceFields()){
+//                    System.out.println("\t#F: " + f);
 //                }
 //            }
 //        }
@@ -269,6 +272,7 @@ public class CallGraphBuilderForHybridSDK {
         final private IClass contextWrapperModelClass;
         final private IClass alertDialogBuilderModelClass;
         final private IClass handlerModelClass;
+        final private IClass referenceModelClass;
 
         public ContextModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha) {
             this.base = base;
@@ -276,6 +280,7 @@ public class CallGraphBuilderForHybridSDK {
             this.contextWrapperModelClass = AndroidContextWrapperModelClass.getInstance(cha);
             this.alertDialogBuilderModelClass = AndroidAlertDialogBuilderModelClass.getInstance(cha);
             this.handlerModelClass = AndroidHandlerModelClass.getInstance(cha);
+            referenceModelClass = JavaReferenceModelClass.getInstance(cha);
         }
 
         @Override
@@ -291,7 +296,11 @@ public class CallGraphBuilderForHybridSDK {
                     return alertDialogBuilderModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidHandlerModelClass.SEND_MESSAGE_SELECTOR)) {
                     return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
+                }else if (target.getDeclaringClass().getName().equals(JavaReferenceModelClass.JAVA_REFERENCE_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(JavaReferenceModelClass.GET_SELECTOR)) {
+                    return referenceModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }
+
+                //JavaReferenceModelClass
             }
             return target;
         }
