@@ -18,6 +18,8 @@ import java.util.*;
  */
 public class HybridSDKModel {
 
+    private static Set<IMethod> bridgeEntries = new HashSet<>();
+
     public static Iterable<AndroidEntryPoint> getEntrypoints(Properties prop, IClassHierarchy cha) throws ClassHierarchyException {
         Set<AndroidEntryPoint> entries = new HashSet<>();
         Thread t;
@@ -25,19 +27,24 @@ public class HybridSDKModel {
         Set<BridgeClass> bridges = driver.getBridgeClassesViaAnn();
 
         for(BridgeClass bridge : bridges){
+            if(bridge.getReference().getName().toString().contains("MRAIDJavascriptCallsProxy"))
             for(BridgeClass.BridgeMethod m : bridge.getAccessibleMethods()){
                 IMethod entry = cha.resolveMethod(m.getMethodReference());
-                if(entry.getName().toString().equals("processJSON"))
+                if(entry.getName().toString().equals("open"))
 //                if(entry.getName().toString().equals("savePictureToPhotoLibrary"))
                 if(entry != null){
                     System.err.println("#Entry: " + entry);
+                    bridgeEntries.add(entry);
                     entries.add(new ConcreteTypeParamEntryPoint(AndroidEntryPoint.ExecutionOrder.MIDDLE_OF_LOOP, entry, cha));
                 }
             }
         }
 
-
-        entries.addAll(findNearestEntries(cha, TypeName.findOrCreate("Lcom/smaato/soma/BannerView"), Selector.make("asyncLoadNewBanner()V")));
+        entries.addAll(findNearestEntries(cha, TypeName.findOrCreate("Lcom/vervewireless/advert/InterstitialAdActivity"), Selector.make("onCreate(Landroid/os/Bundle;)V")));
+        entries.addAll(findNearestEntries(cha, TypeName.findOrCreate("Lcom/vervewireless/advert/VerveAdSDK"), Selector.make("initialize(Landroid/app/Application;Ljava/lang/String;)V")));
+        entries.addAll(findNearestEntries(cha, TypeName.findOrCreate("Lcom/vervewireless/advert/InterstitialAd"), Selector.make("setInterstitialAdListener(Lcom/vervewireless/advert/InterstitialAdListener;)V")));
+        entries.addAll(findNearestEntries(cha, TypeName.findOrCreate("Lcom/vervewireless/advert/InterstitialAd"), Selector.make("requestAd(Lcom/vervewireless/advert/AdRequest;)V")));
+        entries.addAll(findNearestEntries(cha, TypeName.findOrCreate("Lcom/vervewireless/advert/InterstitialAd"), Selector.make("display()V")));
 
         //JVM 1.8
         List<AndroidEntryPoint> entryList = new ArrayList<>();
@@ -79,8 +86,17 @@ public class HybridSDKModel {
     }
 
     private static IMethod findNearestMethod(IClass klass, Selector method){
+//        System.out.println("#C: " + klass);
+//        for(IMethod m : klass.getDeclaredMethods())
+//            System.out.println("\t#M: " + m);
+//        if(klass.toString().contains("InterstitialAdActivity"))
+//            System.exit(-1);
         IMethod m = klass.getMethod(method);
         System.err.println("#Entry: " + m);
         return m;
+    }
+
+    public static Set<IMethod> getBridgeEntries(){
+        return bridgeEntries;
     }
 }

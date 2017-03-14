@@ -8,7 +8,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.TypeReference;
-import kr.ac.kaist.hybridroid.types.HybriDroidTypes;
+import kr.ac.kaist.wala.hybridroid.types.HybriDroidTypes;
 import kr.ac.kaist.wala.hybridroid.ardetector.bridge.BridgeClass;
 
 import java.util.HashSet;

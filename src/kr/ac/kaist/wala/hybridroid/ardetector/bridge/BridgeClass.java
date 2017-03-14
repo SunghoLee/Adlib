@@ -5,8 +5,7 @@ import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
-import com.ibm.wala.types.annotations.Annotation;
-import kr.ac.kaist.hybridroid.types.HybriDroidTypes;
+import kr.ac.kaist.wala.hybridroid.types.HybriDroidTypes;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -27,10 +26,15 @@ public class BridgeClass {
     private void initBridgeMethods(IClass c){
         mSet = new HashSet<BridgeMethod>();
 
+        System.err.println("====== Bridge Info ======");
+        System.err.println("#Class: " + c);
         for(IMethod m : c.getAllMethods()){
-            if(HybriDroidTypes.hasJavascriptInterfaceAnnotation(m))
+            if(HybriDroidTypes.hasJavascriptInterfaceAnnotation(m)) {
+                System.err.println("\t#Method: " + m);
                 mSet.add(new BridgeMethod(m.getReference()));
+            }
         }
+        System.err.println("=========================");
     }
 
     public TypeReference getReference(){

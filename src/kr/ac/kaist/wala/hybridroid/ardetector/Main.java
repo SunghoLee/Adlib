@@ -3,9 +3,10 @@ package kr.ac.kaist.wala.hybridroid.ardetector;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
-import kr.ac.kaist.hybridroid.utils.VisualizeCGTest;
 import kr.ac.kaist.wala.hybridroid.ardetector.analyzer.CallingComponentAnalysis;
 import kr.ac.kaist.wala.hybridroid.ardetector.callgraph.CallGraphBuilderForHybridSDK;
+import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
+import kr.ac.kaist.wala.hybridroid.utils.VisualizeCGTest;
 
 /**
  * Created by leesh on 05/01/2017.
@@ -26,7 +27,7 @@ public class Main {
             System.out.println("W: " + w);
         }
         VisualizeCGTest.visualizeCallGraph(cg, "cfg_out", false);
-        VisualizeCGTest.printIR(cg, "ir");
+        IRPrinter.printIR(cg, "ir");
         end = System.currentTimeMillis();
         System.out.println("#AnalysisTime: " + ((end - start)/1000d) + "s");
     }

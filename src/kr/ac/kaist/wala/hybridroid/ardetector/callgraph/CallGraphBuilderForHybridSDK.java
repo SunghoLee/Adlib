@@ -24,7 +24,7 @@ import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.config.FileOfClasses;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.io.FileProvider;
-import kr.ac.kaist.hybridroid.utils.LocalFileReader;
+import kr.ac.kaist.wala.hybridroid.utils.LocalFileReader;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.components.AndroidAlertDialogBuilderModelClass;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.context.AndroidContextWrapperModelClass;
@@ -146,7 +146,7 @@ public class CallGraphBuilderForHybridSDK {
 //            }
 //        }
 //        System.exit(-1);
-        nCFABuilder builder = new nCFABuilder(0, cha, options, new AnalysisCache(new DexIRFactory()), null, null) {
+        nCFABuilder builder = new nCFABuilder(2, cha, options, new AnalysisCache(new DexIRFactory()), null, null) {
             @Override
             protected ExplicitCallGraph createEmptyCallGraph(IClassHierarchy cha, AnalysisOptions options) {
                 return new ExplicitCallGraph(cha, options, getAnalysisCache()) {

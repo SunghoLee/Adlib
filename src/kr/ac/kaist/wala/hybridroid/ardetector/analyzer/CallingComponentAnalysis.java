@@ -29,7 +29,6 @@ public class CallingComponentAnalysis {
     private final CallGraph cg;
     private final PointerAnalysis<InstanceKey> pa;
     public final static TypeReference CONTEXT_WRAPPER = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/content/ContextWrapper");
-    public final static TypeReference INTENT = TypeReference.findOrCreate(ClassLoaderReference.Application, "Landroid/content/Intent");
 
     public enum CallingMethod{
         START_ACTIVITY1("startActivity(Landroid/content/Intent;)V"),
@@ -60,34 +59,44 @@ public class CallingComponentAnalysis {
     }
 
     private void test(){
-        for(CGNode n : cg){
-            if(n.toString().contains("Node: < Application, Lcom/smaato/soma/bannerutilities/AbstractBannerPackage$HtmlGetterJSInterface$1$1$1, process()Ljava/lang/Void; > Context: Everywhere")){
-                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n  ,1);
-                System.out.println("PK: " + pk);
-                for(InstanceKey ik : pa.getPointsToSet(pk))
-                    System.out.println("\tIK: " + ik);
-                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,40);
-                System.out.println("PK: " + pk);
-                for(InstanceKey ik : pa.getPointsToSet(pk))
-                    System.out.println("\tIK: " + ik);
-                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,41);
-                System.out.println("PK: " + pk);
-                for(InstanceKey ik : pa.getPointsToSet(pk))
-                    System.out.println("\tIK: " + ik);
-                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,42);
-                System.out.println("PK: " + pk);
-                for(InstanceKey ik : pa.getPointsToSet(pk))
-                    System.out.println("\tIK: " + ik);
-                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,43);
-                System.out.println("PK: " + pk);
-                for(InstanceKey ik : pa.getPointsToSet(pk))
-                    System.out.println("\tIK: " + ik);
-                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,45);
-                System.out.println("PK: " + pk);
-                for(InstanceKey ik : pa.getPointsToSet(pk))
-                    System.out.println("\tIK: " + ik);
-            }
-        }
+//        for(CGNode n : cg){
+//            if(n.toString().contains("Node: < Application, Lcom/vervewireless/advert/internal/MRAIDBridge, i()Landroid/content/Context; > Context: CallStringContext: [ com.vervewireless.advert.internal.MRAIDBridge.l(Lcom/vervewireless/advert/internal/MRAIDBridge;)Landroid/content/Context;@1 com.vervewireless.advert.internal.MRAIDBridge$a.open(Ljava/lang/String;)V@26 ]")){
+//                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n  ,3);
+//                System.out.println("PK: " + pk);
+//                for(InstanceKey ik : pa.getPointsToSet(pk)) {
+//                    System.out.println("\tIK: " + ik);
+//                    for(IField f : ik.getConcreteType().getAllFields()) {
+//                        PointerKey fpk = pa.getHeapModel().getPointerKeyForInstanceField(ik, f);
+//                        System.out.println("\t\tFPK: " + fpk);
+//                        for(InstanceKey fik : pa.getPointsToSet(fpk)) {
+//                            System.out.println("\t\t\tFIK: " + fik);
+//                        }
+//                    }
+//                }
+//
+////                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,40);
+////                System.out.println("PK: " + pk);
+////                for(InstanceKey ik : pa.getPointsToSet(pk))
+////                    System.out.println("\tIK: " + ik);
+////                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,41);
+////                System.out.println("PK: " + pk);
+////                for(InstanceKey ik : pa.getPointsToSet(pk))
+////                    System.out.println("\tIK: " + ik);
+////                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,42);
+////                System.out.println("PK: " + pk);
+////                for(InstanceKey ik : pa.getPointsToSet(pk))
+////                    System.out.println("\tIK: " + ik);
+////                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,43);
+////                System.out.println("PK: " + pk);
+////                for(InstanceKey ik : pa.getPointsToSet(pk))
+////                    System.out.println("\tIK: " + ik);
+////                pk = pa.getHeapModel().getPointerKeyForLocal(n  ,45);
+////                System.out.println("PK: " + pk);
+////                for(InstanceKey ik : pa.getPointsToSet(pk))
+////                    System.out.println("\tIK: " + ik);
+//            }
+//        }
+//        System.exit(-1);
     }
 
     public CallingComponentAnalysis(CallGraph cg, PointerAnalysis<InstanceKey> pa){
@@ -265,7 +274,11 @@ public class CallingComponentAnalysis {
                             int flagVar = useInst.getUse(Intent.AddFlagsSelector.ADD_FLAGS.getFlagIndex());
                             SymbolTable symTab = n.getIR().getSymbolTable();
                             if(symTab.isIntegerConstant(flagVar)){
-                                addFlagToAllIntent(Intent.Flag.matchFlag(symTab.getIntValue(flagVar)).getName(), res);
+                                if(Intent.Flag.matchFlag(symTab.getIntValue(flagVar)) == null) {
+                                    warnings.add("Intent flag is unknown: v" + flagVar + "[#" + symTab.getIntValue(flagVar) + "] in " + n);
+                                    addFlagToAllIntent("UNKNOWN_FLAG", res);
+                                }else
+                                    addFlagToAllIntent(Intent.Flag.matchFlag(symTab.getIntValue(flagVar)).getName(), res);
                             }else {
 //                                throw new WrongTypeException("Intent flag must be Integer constant: " + flagVar + " in " + n);
                                 warnings.add("Intent flag must be Integer constant: " + flagVar + " in " + n);
