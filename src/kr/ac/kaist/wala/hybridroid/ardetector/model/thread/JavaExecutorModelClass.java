@@ -6,6 +6,7 @@ import com.ibm.wala.ipa.summaries.MethodSummary;
 import com.ibm.wala.ipa.summaries.SummarizedMethod;
 import com.ibm.wala.ipa.summaries.SummarizedMethodWithNames;
 import com.ibm.wala.ipa.summaries.VolatileMethodSummary;
+import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.shrikeCT.ClassConstants;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.types.*;
@@ -18,32 +19,30 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
- * A modeling class for Java built-in java/lang/ref/Reference.
- * Created by leesh on 14/01/2017.
+ * Created by leesh on 13/04/2017.
  */
-public class JavaReferenceModelClass extends SyntheticClass{
+public class JavaExecutorModelClass extends SyntheticClass {
 
-    public static final TypeReference JAVA_REFERENCE_MODEL_CLASS = TypeReference.findOrCreate(
-            ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/lang/ref/Reference"));
+    public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
 
-    public static final TypeName OBJECT_TYPE_NAME = TypeName.findOrCreate("Ljava/lang/Object");
-    public static final Selector GET_SELECTOR = Selector.make("get()Ljava/lang/Object;");
-
-    public static final FieldReference REFERENT_FIELD = FieldReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/lang/ref/Reference", "referent", "Ljava/lang/Object");
+    public static final TypeReference JAVA_EXECUTOR_MODEL_CLASS = TypeReference.findOrCreate(
+            ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/util/concurrent/Executor"));
+    public static final Selector RUN_SELECTOR = Selector.make("run()V");
+    public static final Selector EXECUTOR_SELECTOR = Selector.make("execute(Ljava/lang/Runnable;)V");
 
     private IClassHierarchy cha;
 
-    private static JavaReferenceModelClass klass;
+    private static JavaExecutorModelClass klass;
 
-    public static JavaReferenceModelClass getInstance(IClassHierarchy cha) {
+    public static JavaExecutorModelClass getInstance(IClassHierarchy cha) {
         if(klass == null){
-            klass = new JavaReferenceModelClass(cha);
+            klass = new JavaExecutorModelClass(cha);
         }
         return klass;
     }
 
-    private JavaReferenceModelClass(IClassHierarchy cha) {
-        super(JAVA_REFERENCE_MODEL_CLASS, cha);
+    private JavaExecutorModelClass(IClassHierarchy cha) {
+        super(JAVA_EXECUTOR_MODEL_CLASS, cha);
         this.cha = cha;
 
         initMethodsForThread();
@@ -52,7 +51,7 @@ public class JavaReferenceModelClass extends SyntheticClass{
     }
 
     private void initMethodsForThread(){
-        this.addMethod(this.get(GET_SELECTOR));
+        this.addMethod(this.executor(EXECUTOR_SELECTOR));
     }
 
     /**
@@ -60,24 +59,32 @@ public class JavaReferenceModelClass extends SyntheticClass{
      *
      *  run call Runnable's run method
      */
-    private SummarizedMethod get(Selector s) {
-        final MethodReference getRef = MethodReference.findOrCreate(this.getReference(), s);
-        final VolatileMethodSummary get = new VolatileMethodSummary(new MethodSummary(getRef));
-        get.setStatic(false);
+    private SummarizedMethod executor(Selector s) {
+        final MethodReference runRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary run = new VolatileMethodSummary(new MethodSummary(runRef));
+        run.setStatic(false);
         final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
 
-        int ssaNo = 1;
-        final SSAValue thisV = new SSAValue(ssaNo++, JAVA_REFERENCE_MODEL_CLASS, getRef);
-        final SSAValue referV = new SSAValue(ssaNo++, TypeReference.findOrCreate(ClassLoaderReference.Primordial, OBJECT_TYPE_NAME), getRef);
-        final int pc_get_ref = get.getNextProgramCounter();
-        final SSAInstruction getRefInst = instructionFactory.GetInstruction(pc_get_ref, referV, thisV, REFERENT_FIELD);
-        get.addStatement(getRefInst);
+        int ssaNo = 2;
 
-        final int pc_ret = get.getNextProgramCounter();
-        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, referV);
-        get.addStatement(retInst);
+        TypeReference timerTaskTR = TypeReference.findOrCreate(ClassLoaderReference.Application, RUNNABLE_TYPE_NAME);
 
-        return new SummarizedMethodWithNames(getRef, get, this);
+        final SSAValue timerTaskV = new SSAValue(ssaNo++, timerTaskTR, runRef);
+        final int pc = run.getNextProgramCounter();
+        final MethodReference timerTaskRunMR = MethodReference.findOrCreate(timerTaskTR, RUN_SELECTOR);
+        final List<SSAValue> params = new ArrayList<SSAValue>();
+        params.add(timerTaskV);
+        final SSAValue exception = new SSAValue(ssaNo++, TypeReference.JavaLangException, runRef);
+        final CallSiteReference site = CallSiteReference.make(pc, timerTaskRunMR, IInvokeInstruction.Dispatch.VIRTUAL);
+
+        final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
+        run.addStatement(runCall);
+
+        final int pc_ret = run.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        run.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(runRef, run, this);
     }
 
     private SummarizedMethod clinit() {
@@ -245,3 +252,6 @@ public class JavaReferenceModelClass extends SyntheticClass{
         return getReference().isReferenceType();
     }
 }
+
+
+//java.util.concurrent

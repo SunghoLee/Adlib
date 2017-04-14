@@ -19,6 +19,7 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Java built-in java/util/Timer.
  * Created by leesh on 14/01/2017.
  */
 public class JavaTimerModelClass extends SyntheticClass{
@@ -98,6 +99,10 @@ public class JavaTimerModelClass extends SyntheticClass{
 
         final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
         run.addStatement(runCall);
+
+        final int pc_ret = run.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        run.addStatement(retInst);
 
         return new SummarizedMethodWithNames(runRef, run, this);
     }

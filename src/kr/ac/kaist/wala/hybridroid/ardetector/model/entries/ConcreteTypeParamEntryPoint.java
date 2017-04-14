@@ -18,6 +18,7 @@ import com.ibm.wala.types.TypeReference;
 import java.util.Collections;
 
 /**
+ * Entry point model for precise type preservation arguments. RecursiveParamDefFakeRootMethod makes dummy arguments precisely, according the types fo each argument of this entry point.
  * Created by leesh on 09/02/2017.
  */
 public class ConcreteTypeParamEntryPoint extends AndroidEntryPoint {

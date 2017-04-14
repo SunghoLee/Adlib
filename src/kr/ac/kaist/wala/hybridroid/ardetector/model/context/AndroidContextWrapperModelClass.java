@@ -22,6 +22,7 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Android built-in android/content/ContextWrapper.
  * Created by leesh on 16/01/2017.
  */
 public class AndroidContextWrapperModelClass extends SyntheticClass {

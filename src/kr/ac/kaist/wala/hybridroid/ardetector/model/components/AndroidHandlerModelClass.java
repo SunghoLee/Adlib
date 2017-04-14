@@ -19,6 +19,7 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Android built-in android/os/Handler.
  * Created by leesh on 14/01/2017.
  */
 public class AndroidHandlerModelClass extends SyntheticClass{
@@ -45,6 +46,7 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
     public static final Selector SEND_MESSAGE_SELECTOR = Selector.make("sendMessage(Landroid/os/Message;)Z");
     public static final Selector HANDLER_MESSAGE_SELECTOR = Selector.make("handleMessage(Landroid/os/Message;;)V");
     public static final Selector POST_DELAYED_SELECTOR = Selector.make("postDelayed(Ljava/lang/Runnable;J)Z");
+    public static final Selector POST_SELECTOR = Selector.make("post(Ljava/lang/Runnable;)Z");
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
 
     private IClassHierarchy cha;
@@ -69,6 +71,42 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
 
     private void initMethodsForThread(){
         this.addMethod(this.send(SEND_MESSAGE_SELECTOR)); this.addMethod(this.postDelayed(POST_DELAYED_SELECTOR));
+        this.addMethod(this.post(POST_SELECTOR));
+    }
+
+    /**
+     *  Generate run of Thread for AndroidThreadModelClass.
+     *
+     *  run call Runnable's run method
+     */
+    private SummarizedMethod post(Selector s) {
+        final MethodReference postRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary post = new VolatileMethodSummary(new MethodSummary(postRef));
+        post.setStatic(false);
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        TypeReference runnableTR = TypeReference.findOrCreate(ClassLoaderReference.Application, RUNNABLE_TYPE_NAME);
+
+        final SSAValue runnableV = new SSAValue(2, runnableTR, postRef);
+
+        int ssaNo = 3;
+
+        //TODO: call run
+        final int pc_call_post = post.getNextProgramCounter();
+        final MethodReference runMR = MethodReference.findOrCreate(runnableTR, RUN_SELECTOR);
+        final List<SSAValue> paramsRun = new ArrayList<SSAValue>();
+        paramsRun.add(runnableV);
+
+        final SSAValue exceptionPos = new SSAValue(ssaNo++, TypeReference.JavaLangException, postRef);
+        final CallSiteReference sitePos = CallSiteReference.make(pc_call_post, runMR, IInvokeInstruction.Dispatch.VIRTUAL);
+        final SSAInstruction runPosCall = instructionFactory.InvokeInstruction(pc_call_post, paramsRun, exceptionPos, sitePos);
+        post.addStatement(runPosCall);
+
+        final int pc_ret = post.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        post.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(postRef, post, this);
     }
 
     /**
@@ -98,6 +136,10 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
         final CallSiteReference sitePos = CallSiteReference.make(pc_call_post, runMR, IInvokeInstruction.Dispatch.VIRTUAL);
         final SSAInstruction runPosCall = instructionFactory.InvokeInstruction(pc_call_post, paramsRun, exceptionPos, sitePos);
         post.addStatement(runPosCall);
+
+        final int pc_ret = post.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        post.addStatement(retInst);
 
         return new SummarizedMethodWithNames(postRef, post, this);
     }
@@ -129,6 +171,10 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
         final CallSiteReference sitePos = CallSiteReference.make(pc_call_handle, handleMsgMR, IInvokeInstruction.Dispatch.VIRTUAL);
         final SSAInstruction runPosCall = instructionFactory.InvokeInstruction(pc_call_handle, paramsHandle, exceptionPos, sitePos);
         send.addStatement(runPosCall);
+
+        final int pc_ret = send.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        send.addStatement(retInst);
 
         return new SummarizedMethodWithNames(sendRef, send, this);
     }

@@ -23,6 +23,7 @@ import java.util.*;
 import static com.ibm.wala.util.debug.Assertions.UNREACHABLE;
 
 /**
+ * Extract Intent information from a call graph.
  * Created by leesh on 01/02/2017.
  */
 public class CallingComponentAnalysis {

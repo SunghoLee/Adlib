@@ -19,6 +19,7 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Android built-in android/os/AsyncTask.
  * Created by leesh on 14/01/2017.
  */
 public class AndroidAsyncTaskModelClass extends SyntheticClass{
@@ -117,6 +118,10 @@ public class AndroidAsyncTaskModelClass extends SyntheticClass{
         final SSAInstruction postCall = instructionFactory.InvokeInstruction(postPC, postParams, postException, postSite);
         exec.addStatement(postCall);
 
+        final int pc_ret = exec.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        exec.addStatement(retInst);
+
         return new SummarizedMethodWithNames(execRef, exec, this);
     }
 
@@ -146,6 +151,10 @@ public class AndroidAsyncTaskModelClass extends SyntheticClass{
 
         final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
         exec.addStatement(runCall);
+
+        final int pc_ret = exec.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        exec.addStatement(retInst);
 
         return new SummarizedMethodWithNames(execRef, exec, this);
     }

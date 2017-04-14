@@ -17,6 +17,7 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
+ * Driver class for HybriDroid. It extracts bridge information from a class hierarchy using 'JavascriptInterace' annotation. Some type information is supported by HybriDroid.
  * Created by leesh on 05/01/2017.
  */
 public class HybriDroidDriver {
@@ -28,6 +29,10 @@ public class HybriDroidDriver {
         this.cha = cha;
     }
 
+    /**
+     * Find bridge information using 'addJavascriptInterface' call sites. The bridge information is gotten tracking an object used as the second argument of 'addJavascriptInterface'. If this object is not created locally, it fails to find the bridge.
+     * @return a set of bridge information
+     */
     public Set<BridgeClass> getBridgeClassesUsedInAJI(){
         Set<BridgeClass> res = new HashSet<BridgeClass>();
         IMethod addJsMethod = cha.resolveMethod(HybriDroidTypes.ADDJAVASCRIPTINTERFACE_APP_METHODREFERENCE);
@@ -65,6 +70,10 @@ public class HybriDroidDriver {
         return null;
     }
 
+    /**
+     * Find bridge information using 'JavascriptInterface'. If the target version is less than 17, this approach fails to find bridge information.
+     * @return a set of bridge information
+     */
     public Set<BridgeClass> getBridgeClassesViaAnn(){
         Set<BridgeClass> res = new HashSet<BridgeClass>();
         for(IClass c : cha){

@@ -21,6 +21,7 @@ import com.ibm.wala.util.warnings.Warnings;
 import java.util.Arrays;
 
 /**
+ * A entry model class for analysis entry. As contrast with the WALA FakeRootMethod, this makes each arguments of constructors or methods recursively, conserving exact types.
  * Created by leesh on 09/02/2017.
  */
 public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
@@ -28,7 +29,11 @@ public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
         super(cha, options, cache);
     }
 
-
+    /**
+     * Add new instruction to the entry model.
+     * @param T class type made in the entry
+     * @return new instruction added to the entry model
+     */
     public SSANewInstruction addEntryAllocation(TypeReference T) {
         return addEntryAllocation(T, true);
     }
@@ -179,6 +184,12 @@ public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
     }
 
 
+    /**
+     * Add invocation instruction to the entry model.
+     * @param params parameter values for the invocation
+     * @param site call site of the invocation instruction
+     * @return invocation instruction added to the entry model
+     */
     public SSAInvokeInstruction addInvocation(int[] params, CallSiteReference site) {
         if (site == null) {
             throw new IllegalArgumentException("site is null");

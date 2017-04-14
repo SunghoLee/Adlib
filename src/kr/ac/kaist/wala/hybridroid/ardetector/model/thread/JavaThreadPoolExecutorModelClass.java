@@ -79,6 +79,10 @@ public class JavaThreadPoolExecutorModelClass extends SyntheticClass{
         final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
         run.addStatement(runCall);
 
+        final int pc_ret = run.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        run.addStatement(retInst);
+
         return new SummarizedMethodWithNames(runRef, run, this);
     }
 

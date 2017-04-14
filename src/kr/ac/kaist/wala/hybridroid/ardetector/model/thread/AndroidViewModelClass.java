@@ -19,6 +19,7 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Android built-in android/view/View.
  * Created by leesh on 14/01/2017.
  */
 public class AndroidViewModelClass extends SyntheticClass{
@@ -80,6 +81,10 @@ public class AndroidViewModelClass extends SyntheticClass{
 
         final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
         run.addStatement(runCall);
+
+        final int pc_ret = run.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        run.addStatement(retInst);
 
         return new SummarizedMethodWithNames(runRef, run, this);
     }

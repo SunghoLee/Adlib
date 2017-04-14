@@ -20,6 +20,7 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Android built-in android/app/AlertDialog$Builder.
  * Created by leesh on 14/01/2017.
  */
 public class AndroidAlertDialogBuilderModelClass extends SyntheticClass{
@@ -136,6 +137,10 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
         final CallSiteReference siteNeg = CallSiteReference.make(pc_call_negative, onClickMR, IInvokeInstruction.Dispatch.VIRTUAL);
         final SSAInstruction runNegCall = instructionFactory.InvokeInstruction(pc_call_negative, paramsNegative, exceptionNeg, siteNeg);
         show.addStatement(runNegCall);
+
+        final int pc_ret = show.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        show.addStatement(retInst);
 
         return new SummarizedMethodWithNames(showRef, show, this);
     }

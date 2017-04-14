@@ -19,14 +19,15 @@ import com.ibm.wala.util.strings.Atom;
 import java.util.*;
 
 /**
+ * A modeling class for Java built-in java/lang/Thread.
  * Created by leesh on 14/01/2017.
  */
 public class JavaThreadModelClass extends SyntheticClass{
 
+    public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
+
     public static final TypeReference JAVA_THREAD_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/lang/Thread"));
-
-    public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
     public static final Selector START_SELECTOR = Selector.make("start()V");
     public static final FieldReference TARGET_FIELD = FieldReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/lang/Thread", "target", "Ljava/lang/Runnable");
@@ -94,6 +95,10 @@ public class JavaThreadModelClass extends SyntheticClass{
 
         final SSAInstruction runCallTarget = instructionFactory.InvokeInstruction(pc_call_target, paramsCallTarget, exceptionCallTarget, siteCallTarget);
         run.addStatement(runCallTarget);
+
+        final int pc_ret = run.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        run.addStatement(retInst);
 
         return new SummarizedMethodWithNames(runRef, run, this);
     }
