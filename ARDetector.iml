@@ -13,5 +13,8 @@
     <orderEntry type="module" module-name="com.ibm.wala.dalvik" />
     <orderEntry type="module" module-name="kr.ac.kaist.wala.hybridroid" />
     <orderEntry type="module" module-name="com.ibm.wala.shrike" />
+    <orderEntry type="module" module-name="kr.ac.kaist.wala.hybridroid.util" />
+    <orderEntry type="library" name="guava-13.0.1" level="project" />
+    <orderEntry type="library" name="json_simple-1.1 (2)" level="project" />
   </component>
 </module>
