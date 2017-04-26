@@ -8,11 +8,10 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
-import kr.ac.kaist.wala.hybridroid.ardetector.analyzer.*;
+import kr.ac.kaist.wala.hybridroid.ardetector.analyzer.APITarget;
+import kr.ac.kaist.wala.hybridroid.ardetector.analyzer.MaliciousPatternChecker;
 import kr.ac.kaist.wala.hybridroid.ardetector.callgraph.CallGraphBuilderForHybridSDK;
-import kr.ac.kaist.wala.hybridroid.ardetector.callgraph.HybridSDKModel;
 import kr.ac.kaist.wala.hybridroid.ardetector.model.ARModeling;
-import kr.ac.kaist.wala.hybridroid.ardetector.util.GraphPrinter;
 import kr.ac.kaist.wala.hybridroid.util.graph.visualize.Visualizer;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
 import org.json.simple.parser.ParseException;
@@ -25,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by leesh on 05/01/2017.
  */
 public class Main {
-    private static boolean DEBUG = false;
+    private static boolean DEBUG = true;
 
 //    private static APITarget[] targetAPIs = {
 //            new APITarget(TypeName.findOrCreate("Landroid/content/pm/PackageManager")),//Landroid/content/pm/PackageManager
@@ -59,16 +58,22 @@ public class Main {
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/LocationManager"), Selector.make("getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V"))),
 
+            new MaliciousPatternChecker.MaliciousPattern("GettingLocation3",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/LocationManager"), Selector.make("requestLocationUpdates(Landroid/location/LocationRequest;Landroid/location/LocationListener;Landroid/os/Looper;Landroid/app/PendingIntent;)V"))),
+
             new MaliciousPatternChecker.MaliciousPattern("MaliciousFileDownload",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("connect()V")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("getInputStream()Ljava/io/InputStream;")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([BII)I")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([BII)V"))),
 
-            new MaliciousPatternChecker.MaliciousPattern("HttpRequest",
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest1",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("connect()V")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("getOutputStream()Ljava/io/OutputStream;")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/Writer"), Selector.make("write(Ljava/lang/String;)V"))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest2",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl1",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/os/Vibrator"), Selector.make("vibrate([JI)V"))),
@@ -122,6 +127,9 @@ public class Main {
             new MaliciousPatternChecker.MaliciousPattern("GetAppInfo8",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledPackages(II)Ljava/util/List;")),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("loadUrl(Ljava/lang/String;)V"))),
+
+            new MaliciousPatternChecker.MaliciousPattern("FileDelete",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z")))
     };
 
     static{
@@ -145,28 +153,28 @@ public class Main {
         CallGraph cg = builder.makeCallGraph();
         long cgEnd = System.currentTimeMillis();
 
-        System.err.println("Finish to build a callgraph: " + ((cgEnd - cgStart)/1000d) + "s");
+        System.out.println("Finish to build a callgraph: " + ((cgEnd - cgStart)/1000d) + "s");
 
         long fgStart = System.currentTimeMillis();
 
-        ReachableAPIAnalysis apiAnalysis = new ReachableAPIAnalysis(cg, HybridSDKModel.getBridgeEntries());
+//        ReachableAPIAnalysis apiAnalysis = new ReachableAPIAnalysis(cg, HybridSDKModel.getBridgeEntries());
+//
+//        apiAnalysis.addAPITargets(targetAPIs);
+//        ReachableAPIFlowGraph apiGraph = apiAnalysis.analyze();
 
-        apiAnalysis.addAPITargets(targetAPIs);
-        ReachableAPIFlowGraph apiGraph = apiAnalysis.analyze();
+//        if(DEBUG)
+//            GraphPrinter.print(apiGraph);
 
-        if(DEBUG)
-            GraphPrinter.print(apiGraph);
+//        long fgEnd = System.currentTimeMillis();
+//
+//        System.err.println("Finish to construct a reachableAPIFlowGraph: " + ((fgEnd - fgStart)/1000d) + "s");
 
-        long fgEnd = System.currentTimeMillis();
-
-        System.err.println("Finish to construct a reachableAPIFlowGraph: " + ((fgEnd - fgStart)/1000d) + "s");
-
-        long pcStart = System.currentTimeMillis();
+//        long pcStart = System.currentTimeMillis();
 
         // Malicious Pattern Checking
-        MaliciousPatternChecker pc = new MaliciousPatternChecker(apiGraph, cg.getClassHierarchy());
+        MaliciousPatternChecker pc = new MaliciousPatternChecker(cg.getClassHierarchy());
         pc.addMaliciousPatterns(maliciousPatterns);
-        Set<MaliciousPatternChecker.MaliciousPatternWarning> mpwSet = pc.checkPatterns();
+        Set<MaliciousPatternChecker.MaliciousPatternWarning> mpwSet = pc.checkPatterns(cg);
 
         List<MaliciousPatternChecker.MaliciousPatternWarning> warns = Lists.newArrayList(mpwSet);
         Collections.sort(warns, new Comparator<MaliciousPatternChecker.MaliciousPatternWarning>() {
@@ -184,14 +192,15 @@ public class Main {
 
         long pcEnd = System.currentTimeMillis();
 
-        System.err.println("Finish to detect malicious patterns: " + ((pcEnd - fgStart)/1000d) + "s");
+        System.out.println("Finish to detect malicious patterns: " + ((pcEnd - fgStart)/1000d) + "s");
+        System.out.println("#Max Stack Size: " + pc.getMaxStackSize());
 
-        CallingComponentAnalysis cca = new CallingComponentAnalysis(cg, builder.getPointerAnalysis());
-        cca.getCallingContexts();
+//        CallingComponentAnalysis cca = new CallingComponentAnalysis(cg, builder.getPointerAnalysis());
+//        cca.getCallingContexts();
 
-        for(String w : cca.getWarnings()){
-            System.out.println("W: " + w);
-        }
+//        for(String w : cca.getWarnings()){
+//            System.out.println("W: " + w);
+//        }
 
         if(DEBUG) {
             Visualizer vis = Visualizer.getInstance();

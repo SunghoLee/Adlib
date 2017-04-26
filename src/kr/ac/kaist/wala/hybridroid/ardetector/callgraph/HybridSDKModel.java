@@ -32,8 +32,9 @@ public class HybridSDKModel {
 
     //Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS . vibrate(Ljava/lang/String;)V
     public static boolean TEST_MODE = false;
-    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS"), Selector.make("httpGet(Ljava/lang/String;)V"));
-//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS"), Selector.make("vibrate(Ljava/lang/String;)V"));
+//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("open(Ljava/lang/String;)V"));
+    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/smaato/soma/internal/connector/OrmmaBridge"), Selector.make("storePicture(Ljava/lang/String;)V"));
+    //Lcom/tapjoy/mraid/controller/Assets
     /**
      * Find entry points in a SDK. The entry points consists of init instructions, Activity lifecycles, and bridge methdos.
      * @param prop WalaProperties
@@ -62,8 +63,20 @@ public class HybridSDKModel {
                             }
                         }
                         else {
-                            bridgeEntries.add(entry);
-                            entries.add(new ConcreteTypeParamEntryPoint(new AndroidEntryPoint.ExecutionOrder(MIDDLE_OF_LOOP_ORDER++), entry, cha));
+                            if(entry.getDeclaringClass().isInterface() || entry.isAbstract()){
+                                for(IClass c : cha.computeSubClasses(entry.getDeclaringClass().getReference())){
+                                    if(!c.isInterface())
+                                        for(IMethod cm : c.getDeclaredMethods()){
+                                            if(cm.getSelector().equals(entry.getSelector()) && !cm.isAbstract()){
+                                                bridgeEntries.add(entry);
+                                                entries.add(new ConcreteTypeParamEntryPoint(new AndroidEntryPoint.ExecutionOrder(MIDDLE_OF_LOOP_ORDER++), entry, cha));
+                                            }
+                                        }
+                                }
+                            }else {
+                                bridgeEntries.add(entry);
+                                entries.add(new ConcreteTypeParamEntryPoint(new AndroidEntryPoint.ExecutionOrder(MIDDLE_OF_LOOP_ORDER++), entry, cha));
+                            }
                         }
                     }
                 }
@@ -107,7 +120,7 @@ public class HybridSDKModel {
 //        });
 
         for(AndroidEntryPoint aep : entryList){
-            System.err.println("#Entry: " + aep);
+            System.out.println("#Entry: " + aep);
         }
         //JVM 1.8
         return () -> entryList.iterator();

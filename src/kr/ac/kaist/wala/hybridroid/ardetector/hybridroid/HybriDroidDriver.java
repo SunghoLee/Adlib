@@ -35,7 +35,7 @@ public class HybriDroidDriver {
      */
     public Set<BridgeClass> getBridgeClassesUsedInAJI(){
         Set<BridgeClass> res = new HashSet<BridgeClass>();
-        IMethod addJsMethod = cha.resolveMethod(HybriDroidTypes.ADDJAVASCRIPTINTERFACE_APP_METHODREFERENCE);
+        IMethod addJsMethod = cha.resolveMethod((HybriDroidTypes.ADDJAVASCRIPTINTERFACE_APP_METHODREFERENCE != null)? HybriDroidTypes.ADDJAVASCRIPTINTERFACE_APP_METHODREFERENCE : HybriDroidTypes.ADDJAVASCRIPTINTERFACE_PRI_METHODREFERENCE);
         IRFactory<IMethod> factory = new DefaultIRFactory();
 
         for(IClass c : cha){

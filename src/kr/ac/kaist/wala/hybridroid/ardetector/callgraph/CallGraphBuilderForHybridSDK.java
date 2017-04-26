@@ -335,15 +335,15 @@ public class CallGraphBuilderForHybridSDK {
                     return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 } else if (AndroidContextWrapperModelClass.isSubClassOfContextWrapper(target.getDeclaringClass()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETAPPLICATIONCONTEXT_SELECTOR)) {
                     return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                }else if (target.getDeclaringClass().getName().equals(AndroidAlertDialogBuilderModelClass.ANDROID_ALERT_DIALOG_BUILDER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidAlertDialogBuilderModelClass.SHOW_SELECTOR)) {
-                    return alertDialogBuilderModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidHandlerModelClass.SEND_MESSAGE_SELECTOR)) {
                     return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }else if (target.getDeclaringClass().getName().equals(JavaReferenceModelClass.JAVA_REFERENCE_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(JavaReferenceModelClass.GET_SELECTOR)) {
                     return referenceModelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }
 
-                //JavaReferenceModelClass
+                //                }
+//                else if (target.getDeclaringClass().getName().equals(AndroidAlertDialogBuilderModelClass.ANDROID_ALERT_DIALOG_BUILDER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidAlertDialogBuilderModelClass.SHOW_SELECTOR)) {
+//                    return alertDialogBuilderModelClass.getMethod(site.getDeclaredTarget().getSelector());
             }
             return target;
         }
@@ -988,7 +988,7 @@ public class CallGraphBuilderForHybridSDK {
 
     private void test(IClassHierarchy cha){
 //        for(IClass k : cha){
-//            if(k.toString().contains("PackageManager")){
+//            if(k.toString().contains("Upsight")){
 //                System.out.println("#c: " + k);
 //                for(IMethod m : k.getDeclaredMethods()){
 //                        System.out.println("\t#m: " + m);
