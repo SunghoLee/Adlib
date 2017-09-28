@@ -7,9 +7,13 @@ import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
+import com.ibm.wala.ssa.SSACFG;
+import com.ibm.wala.ssa.SSAInvokeInstruction;
 import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
@@ -17,6 +21,7 @@ import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.callgraph.HybridSDKModel;
+import kr.ac.kaist.wala.adlib.dataflow.*;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 
 import java.util.*;
@@ -105,70 +110,171 @@ public class MaliciousPatternChecker {
         }
     }
 
-    public Set<MaliciousPatternWarning> checkPatterns(CallGraph cg){
+    public Set<MaliciousPatternWarning> checkPatterns(CallGraph cg, PointerAnalysis<InstanceKey> pa){
         this.cg = cg;
         this.icfg = ICFGSupergraph.make(cg, new AnalysisCache());
 
         Set<IMethod> entries = HybridSDKModel.getBridgeEntries();
+        DataFlowAnalysis dfa = new DataFlowAnalysis(icfg);
 
-        int entryNum = 1;
-        for(IMethod entry : entries){
-//            System.out.println("#ENTRY: " + entry);
-            Set<MaliciousPattern> mps = clonePatterns();
 
-            for(MaliciousPattern mp : mps){
-//                System.out.println("\t#MP: " + mp);
-                Set<NodeWithCallStack> curNodes = new HashSet<>();
-                Set<NodeWithCallStack> nextNodes = new HashSet<>();
+        for(IMethod entry : entries) {
+            Set<LocalDataPointer> seeds = new HashSet<>();
 
-                BasicBlockInContext<IExplodedBasicBlock> entryBlock = getBridgeEntryBlock(entry);
-                if(entryBlock == null)
-                    continue;
-
-                Stack entryStack = new Stack();
-                entryStack.push(entryBlock.getNode());
-
-                curNodes.add(new NodeWithCallStack(entryBlock, entryStack));
-
-                MaliciousPoint nextPoint = null;
-                try {
-                    nextPoint = mp.getNextWithoutRemove();
-                }catch(Exception e){
-                    System.out.println("Why? " + e.toString());
-                    continue;
+            if(entry.getNumberOfParameters() < 2){
+                for(CGNode n : cg.getNodes(entry.getReference())){
+                    seeds.add(new LocalDataPointer(n, IFlowFunction.ANY));
                 }
-
-                while(nextPoint != null){
-
-                    for(NodeWithCallStack n : curNodes)
-                        nextNodes.addAll(findReachableNodes(n, nextPoint));
-
-//                    System.out.println("#PT: " + mp);
-//                    System.out.println("\t\t#NEXT: " + nextNodes.size());
-
-                    if(nextNodes.isEmpty())
-                        break;
-
-                    mp.removeNext();
-                    nextPoint = mp.getNextWithoutRemove();
-
-                    curNodes.clear();
-                    curNodes.addAll(nextNodes);
-                    nextNodes.clear();
-                }
-
-                if(mp.isDone()){
-
-                    warns.add(new MaliciousPatternWarning(new APICallNode(entry.getDeclaringClass().getName(), entry.getSelector(), entryNum), mp.toString()));
-
+            }else{
+                for(int i = 2; i <= entry.getNumberOfParameters(); i++) {
+                    for(CGNode n : cg.getNodes(entry.getReference())){
+                        seeds.add(new LocalDataPointer(n, i));
+                    }
                 }
             }
 
-            entryNum++;
+            MaliciousPatternFlowSemanticsFunction semFun = new MaliciousPatternFlowSemanticsFunction(cg, cg.getClassHierarchy(), pa, clonePatterns(), seeds);
+            dfa.analyze(seeds, semFun, new IDataFlowFilter() {
+                @Override
+                public boolean apply(BasicBlockInContext nextBlock, IDataPointer dp) {
+                    return true;
+                }
+            });
         }
 
         return warns;
     }
+
+    private static int entryNum = 0;
+
+    class MaliciousPatternFlowSemanticsFunction extends DefaultDataFlowSemanticFunction{
+        private final Set<MaliciousPattern> mps;
+        private final Set<LocalDataPointer> seeds;
+
+        public MaliciousPatternFlowSemanticsFunction(CallGraph cg, IClassHierarchy cha, PointerAnalysis<InstanceKey> pa, Set<MaliciousPattern> mps, Set<LocalDataPointer> seeds) {
+            super(cg, cha, pa);
+            this.mps = mps;
+            this.seeds = seeds;
+            entryNum++;
+        }
+
+        @Override
+        public Set<DataFlowAnalysis.DataWithWork> visitInvoke(DataFlowAnalysis.NodeWithCS block, SSAInvokeInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+            Set<DataFlowAnalysis.DataWithWork> res = new HashSet<>();
+
+            res.add(data);
+
+            boolean matched = false;
+
+            for(MaliciousPattern mp : mps) {
+                MaliciousPoint point = mp.getNextWithoutRemove();
+
+                if(point == null)
+                    continue;
+
+                if (isMaliciousPoint(block.getBlock(), instruction.getCallSite(), point)){
+                    matched = true;
+
+                    PropagateFlowFunction f = point.getFlowFunction();
+
+                    IDataPointer dp = data.getData();
+
+                    if(dp instanceof LocalDataPointer){
+                        LocalDataPointer ldp = (LocalDataPointer) dp;
+
+                        if(ldp.getNode().equals(block.getBlock().getNode())){
+                            if(f.getFrom() == IFlowFunction.ANY || instruction.getUse(f.getFrom()-1) == ldp.getVar()){
+                                int v = f.getTo();
+                                if(v == IFlowFunction.TERMINATE){
+                                    IMethod m = seeds.iterator().next().getNode().getMethod();
+                                    warns.add(new MaliciousPatternWarning(new APICallNode(m.getDeclaringClass().getName(), m.getSelector(), entryNum), mp.toString()));
+                                }else if(v == IFlowFunction.RETURN_VARIABLE){
+                                    res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBlock().getNode(), instruction.getDef()), data.getWork()));
+                                }else{
+                                    res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBlock().getNode(), v), data.getWork()));
+                                }
+
+                                for(DataFlowAnalysis.DataWithWork dww : res){
+                                    System.out.println("\t\t" + dww.getData());
+                                }
+                                mp.getNext();
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            if(!matched)
+                res.addAll(super.visitInvoke(block, instruction, data));
+
+            return res;
+        }
+    }
+//    public Set<MaliciousPatternWarning> checkPatterns(CallGraph cg){
+//        this.cg = cg;
+//        this.icfg = ICFGSupergraph.make(cg, new AnalysisCache());
+//
+//        Set<IMethod> entries = HybridSDKModel.getBridgeEntries();
+//
+//        int entryNum = 1;
+//        for(IMethod entry : entries){
+////            System.out.println("#ENTRY: " + entry);
+//            Set<MaliciousPattern> mps = clonePatterns();
+//
+//            for(MaliciousPattern mp : mps){
+////                System.out.println("\t#MP: " + mp);
+//                Set<NodeWithCallStack> curNodes = new HashSet<>();
+//                Set<NodeWithCallStack> nextNodes = new HashSet<>();
+//
+//                BasicBlockInContext<IExplodedBasicBlock> entryBlock = getBridgeEntryBlock(entry);
+//                if(entryBlock == null)
+//                    continue;
+//
+//                Stack entryStack = new Stack();
+//                entryStack.push(entryBlock.getNode());
+//
+//                curNodes.add(new NodeWithCallStack(entryBlock, entryStack));
+//
+//                MaliciousPoint nextPoint = null;
+//                try {
+//                    nextPoint = mp.getNextWithoutRemove();
+//                }catch(Exception e){
+//                    System.out.println("Why? " + e.toString());
+//                    continue;
+//                }
+//
+//                while(nextPoint != null){
+//
+//                    for(NodeWithCallStack n : curNodes)
+//                        nextNodes.addAll(findReachableNodes(n, nextPoint));
+//
+////                    System.out.println("#PT: " + mp);
+////                    System.out.println("\t\t#NEXT: " + nextNodes.size());
+//
+//                    if(nextNodes.isEmpty())
+//                        break;
+//
+//                    mp.removeNext();
+//                    nextPoint = mp.getNextWithoutRemove();
+//
+//                    curNodes.clear();
+//                    curNodes.addAll(nextNodes);
+//                    nextNodes.clear();
+//                }
+//
+//                if(mp.isDone()){
+//
+//                    warns.add(new MaliciousPatternWarning(new APICallNode(entry.getDeclaringClass().getName(), entry.getSelector(), entryNum), mp.toString()));
+//
+//                }
+//            }
+//
+//            entryNum++;
+//        }
+//
+//        return warns;
+//    }
 
     private BasicBlockInContext<IExplodedBasicBlock> getBridgeEntryBlock(IMethod m){
         Iterator<CallSiteReference> icsr = cg.getFakeRootNode().getIR().iterateCallSites();
@@ -191,83 +297,88 @@ public class MaliciousPatternChecker {
     private boolean isMaliciousPoint(BasicBlockInContext<IExplodedBasicBlock> bb, CallSiteReference site, MaliciousPoint mp){
         CGNode n = bb.getNode();
 
-        if(cg.getPossibleTargets(n, site).isEmpty()){
+        if (cg.getPossibleTargets(n, site).isEmpty()) {
 
             APICallNode target = new APICallNode(site.getDeclaredTarget().getDeclaringClass().getName(), site.getDeclaredTarget().getSelector(), 0);
 
-            if(mp.isSame(target, cg.getClassHierarchy()))
+            if (mp.isSame(target, cg.getClassHierarchy()))
                 return true;
 
-        }else {
-
+        } else {
             for (CGNode succ : cg.getPossibleTargets(n, site)) {
                 TypeName tn = succ.getMethod().getDeclaringClass().getName();
                 Selector selector = succ.getMethod().getSelector();
                 APICallNode target = new APICallNode(tn, selector, 0);
 
-                if(mp.isSame(target, cg.getClassHierarchy()))
+                if (mp.isSame(target, cg.getClassHierarchy())) {
                     return true;
+                }
             }
         }
         return false;
     }
 
-    public Set<NodeWithCallStack> findReachableNodes(NodeWithCallStack start, MaliciousPoint mp){
-        Set<NodeWithCallStack> res = new HashSet<>();
-
-        Queue<NodeWithCallStack> queue = new LinkedBlockingQueue<>();
-        Set<BasicBlockInContext<IExplodedBasicBlock>> visited = new HashSet<>();
-
-        queue.add(start);
-
-        while(!queue.isEmpty()){
-            NodeWithCallStack n = queue.poll();
-            visited.add(n.getBlock());
-
-            Iterator<BasicBlockInContext<IExplodedBasicBlock>> iSucc = icfg.getSuccNodes(n.getBlock());
-
-            while(iSucc.hasNext()) {
-                BasicBlockInContext<IExplodedBasicBlock> succ = iSucc.next();
-
-                if(!visited.contains(succ)) {
-
-                    if (icfg.isCall(n.getBlock())) {
-                        if(isMaliciousPoint(n.getBlock(), ((SSAAbstractInvokeInstruction)n.getBlock().getLastInstruction()).getCallSite(), mp)){
-                            res.add(new NodeWithCallStack(n.getBlock(), n.getCallStack()));
-
-                        }else if (icfg.isEntry(succ) && !isPrimitive(succ)) {
-
-                            Stack cst = (Stack) n.callStack.clone();
-                            cst.push(succ.getNode());
-                            queue.add(new NodeWithCallStack(succ, cst));
-
-                        } else if (!icfg.isEntry(succ) && !visited.contains(succ)) {
-
-                            queue.add(new NodeWithCallStack(succ, n.callStack));
-
-                        }
-
-                    } else if (icfg.isExit(n.getBlock())) {
-                        if(callStackPairMatching(n.getCallStack(), succ.getNode())){
-                            Stack cst = (Stack) n.callStack.clone();
-                            cst.pop();
-
-                            queue.add(new NodeWithCallStack(succ, cst));
-                        }
-                    }else{
-                        queue.add(new NodeWithCallStack(succ, n.getCallStack()));
-                    }
-                }
-            }
-//            System.out.println("VISITNUM: " + visited.size());
-//            System.out.println("QUEUENUM: " + queue.size());
-//            System.out.println("QUEUE: " + queue);
-//            System.out.println("totalNUM: " + icfg.getNumberOfNodes());
-        }
-
-//        System.out.println("\t\t#VISTED SIZE: " + visited.size());
-        return res;
-    }
+//    public Set<NodeWithCallStack> findReachableNodes(NodeWithCallStack start, MaliciousPoint mp){
+//        Set<NodeWithCallStack> res = new HashSet<>();
+//
+//        Queue<NodeWithCallStack> queue = new LinkedBlockingQueue<>();
+//        Set<BasicBlockInContext<IExplodedBasicBlock>> visited = new HashSet<>();
+//
+//        queue.add(start);
+//
+//        while(!queue.isEmpty()){
+//            NodeWithCallStack n = queue.poll();
+//            visited.add(n.getBlock());
+//
+//            Iterator<BasicBlockInContext<IExplodedBasicBlock>> iSucc = icfg.getSuccNodes(n.getBlock());
+//
+//            while(iSucc.hasNext()) {
+//                BasicBlockInContext<IExplodedBasicBlock> succ = iSucc.next();
+//
+//                if(!visited.contains(succ)) {
+//
+//                    if (icfg.isCall(n.getBlock())) {
+//                        if(isMaliciousPoint(n.getBlock(), ((SSAAbstractInvokeInstruction)n.getBlock().getLastInstruction()).getCallSite(), mp)){
+//                            res.add(new NodeWithCallStack(n.getBlock(), n.getCallStack()));
+//                            System.out.println("== " + mp);
+//                            System.out.println("### Stack ###");
+//                            Stack<CGNode> cst = n.getCallStack();
+//                            for(CGNode cstn : cst)
+//                                System.out.println(cstn);
+//                            System.out.println("#############");
+//                        }else if (icfg.isEntry(succ) && !isPrimitive(succ)) {
+//
+//                            Stack cst = (Stack) n.callStack.clone();
+//                            cst.push(succ.getNode());
+//                            queue.add(new NodeWithCallStack(succ, cst));
+//
+//                        } else if (!icfg.isEntry(succ) && !visited.contains(succ)) {
+//
+//                            queue.add(new NodeWithCallStack(succ, n.callStack));
+//
+//                        }
+//
+//                    } else if (icfg.isExit(n.getBlock())) {
+//                        if(callStackPairMatching(n.getCallStack(), succ.getNode())){
+//                            Stack cst = (Stack) n.callStack.clone();
+//                            cst.pop();
+//
+//                            queue.add(new NodeWithCallStack(succ, cst));
+//                        }
+//                    }else{
+//                        queue.add(new NodeWithCallStack(succ, n.getCallStack()));
+//                    }
+//                }
+//            }
+////            System.out.println("VISITNUM: " + visited.size());
+////            System.out.println("QUEUENUM: " + queue.size());
+////            System.out.println("QUEUE: " + queue);
+////            System.out.println("totalNUM: " + icfg.getNumberOfNodes());
+//        }
+//
+////        System.out.println("\t\t#VISTED SIZE: " + visited.size());
+//        return res;
+//    }
 
     private boolean callStackPairMatching(Stack<CGNode> stack, CGNode n){
         if(stack.size() == 1)
@@ -351,10 +462,11 @@ public class MaliciousPatternChecker {
     public static class MaliciousPoint {
         private final TypeName tn;
         private final Selector s;
-
-        public MaliciousPoint(TypeName tn, Selector s){
+        private final PropagateFlowFunction f;
+        public MaliciousPoint(TypeName tn, Selector s, PropagateFlowFunction f){
             this.tn = tn;
             this.s = s;
+            this.f = f;
         }
 
         public TypeName getTypeName(){
@@ -364,6 +476,8 @@ public class MaliciousPatternChecker {
         public Selector getSelector(){
             return this.s;
         }
+
+        public PropagateFlowFunction getFlowFunction(){ return this.f; }
 
         @Override
         public String toString(){
@@ -531,5 +645,119 @@ public class MaliciousPatternChecker {
             }
             return false;
         }
+    }
+}
+
+
+class PathRecorder {
+    private Map<Integer, Path> pathMap;
+    private ICFGSupergraph superGraph;
+
+    public PathRecorder(ICFGSupergraph superGraph){
+        pathMap = new HashMap<>();
+        this.superGraph = superGraph;
+    }
+
+    public void addNewPath(SSACFG.BasicBlock from, SSACFG.BasicBlock to, boolean mustFlag){
+        if(mustFlag || isNeededToRecord(to)){
+            pathMap.get(from.getNumber()).addPath(makePathNode(to));
+        }
+
+
+    }
+
+    private boolean isNeededToRecord(SSACFG.BasicBlock bb){
+        if(bb.isEntryBlock() || bb.isExitBlock() || (bb.getLastInstruction() != null && bb.getLastInstruction() instanceof SSAAbstractInvokeInstruction))
+            return true;
+        return false;
+    }
+
+    private PathNode makePathNode(SSACFG.BasicBlock bb){
+        return new PathNode(bb.getMethod(), bb);
+    }
+}
+
+class Path {
+    private List<PathNode> pathNodeList;
+
+    public Path(){
+        pathNodeList = new ArrayList<>();
+    }
+
+    private Path(List<PathNode> pl){
+        pathNodeList = pl;
+    }
+
+    public void addPath(PathNode pn){
+        pathNodeList.add(pn);
+    }
+
+    @Override
+    public int hashCode(){
+        return pathNodeList.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(o instanceof Path){
+            Path p = (Path) o;
+
+            if(p.pathNodeList.size() == pathNodeList.size()){
+                for(int i=0; i<pathNodeList.size(); i++)
+                    if(!p.pathNodeList.get(i).equals(pathNodeList.get(i)))
+                        return false;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public String toString(){
+        String res = "";
+
+        for(int i=0; i<pathNodeList.size(); i++) {
+            res += pathNodeList.get(i).toString();
+            if (i != pathNodeList.size() - 1)
+                res += "\n";
+        }
+
+        return res;
+    }
+
+    public Path clone(){
+        List<PathNode> pl = new ArrayList<>();
+        pl.addAll(pathNodeList);
+        return new Path(pl);
+    }
+}
+
+class PathNode {
+    private IMethod node;
+    private SSACFG.BasicBlock block;
+
+    public PathNode(IMethod node, SSACFG.BasicBlock block){
+        this.node = node;
+        this.block = block;
+    }
+
+    @Override
+    public int hashCode(){
+        return node.hashCode() + block.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(o instanceof PathNode){
+            PathNode pn = (PathNode) o;
+            if(pn.node.equals(node) && pn.block.getNumber() == block.getNumber())
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public String toString(){
+        return "[ " + node + "] (" + block.getLastInstructionIndex() + ") " + block.getLastInstruction();
     }
 }

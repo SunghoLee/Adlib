@@ -32,8 +32,8 @@ public class HybridSDKModel {
 
     //Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS . vibrate(Ljava/lang/String;)V
     public static boolean TEST_MODE = false;
-//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("open(Ljava/lang/String;)V"));
-    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/smaato/soma/internal/connector/OrmmaBridge"), Selector.make("storePicture(Ljava/lang/String;)V"));
+    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("close()V"));
+//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/smaato/soma/internal/connector/OrmmaBridge"), Selector.make("storePicture(Ljava/lang/String;)V"));
     //Lcom/tapjoy/mraid/controller/Assets
     /**
      * Find entry points in a SDK. The entry points consists of init instructions, Activity lifecycles, and bridge methdos.
@@ -48,6 +48,14 @@ public class HybridSDKModel {
         Thread t;
         HybriDroidDriver driver = new HybriDroidDriver(prop, cha);
         Set<BridgeClass> bridges = driver.getBridgeClassesViaAnn();
+
+//        MethodReference testMR = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, TypeName.findOrCreate("Lcom/nativex/monetization/mraid/JSIAdToDeviceHandler")), Selector.make("open(Ljava/lang/String;)V"));
+//
+//        IMethod entry = cha.resolveMethod(testMR);
+//
+//        bridgeEntries.add(entry);
+//        entries.add(new ConcreteTypeParamEntryPoint(new AndroidEntryPoint.ExecutionOrder(MIDDLE_OF_LOOP_ORDER++), entry, cha));
+
 
         // attach bridge methods invocation to entry model
         for(BridgeClass bridge : bridges){

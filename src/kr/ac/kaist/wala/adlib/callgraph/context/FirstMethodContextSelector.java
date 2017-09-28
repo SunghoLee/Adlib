@@ -14,7 +14,7 @@ import kr.ac.kaist.wala.adlib.model.ARModeling;
  */
 public class FirstMethodContextSelector implements ContextSelector{
 
-    public final ContextKey FIRST_METHOD = new ContextKey(){
+    public static final ContextKey FIRST_METHOD = new ContextKey(){
         @Override
         public String toString() {
             return "FIRST_METHOD_KEY";
@@ -34,7 +34,9 @@ public class FirstMethodContextSelector implements ContextSelector{
             }else
                 return FirstMethod.DUMMY_FIRST_METHOD;
         }else{
-            if(target.getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial) && !ARModeling.isModelingMethod(caller.getClassHierarchy(), target))
+            if(target.getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial) && !ARModeling.isModelingMethod(caller.getClassHierarchy(), target) &&
+                    !target.getDeclaringClass().getName().toString().equals("Landroid/os/Handler") &&
+                    !target.getDeclaringClass().getName().toString().equals("Landroid/os/Message"))
                 return FirstMethod.DUMMY_FIRST_METHOD;
 
             return ((FirstMethodContextPair)caller.getContext()).getFirstMethod();
