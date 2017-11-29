@@ -21,8 +21,8 @@ sourceSets {
 
 
 dependencies {
-	compile project(':com.ibm.wala.cast')
-	compile project(':com.ibm.wala.core')
-	compile project(':com.ibm.wala.core.tests')
-	compile project(':com.ibm.wala.util')
+	compile project(':MWALA/com.ibm.wala.cast')
+	compile project(':MWALA/com.ibm.wala.core')
+	compile project(':MWALA/com.ibm.wala.core.tests')
+	compile project(':MWALA/com.ibm.wala.util')
 }

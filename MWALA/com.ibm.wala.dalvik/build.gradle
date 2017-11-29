@@ -24,10 +24,10 @@ sourceSets {
 
 
 dependencies {
-	compile project(':com.ibm.wala.util')
-	compile project(':com.ibm.wala.shrike')
-	compile project(':com.ibm.wala.core')
-	compile project(':com.ibm.wala.cast')
+	compile project(':MWALA/com.ibm.wala.util')
+	compile project(':MWALA/com.ibm.wala.shrike')
+	compile project(':MWALA/com.ibm.wala.core')
+	compile project(':MWALA/com.ibm.wala.cast')
 	//compile files('libs/dexlib-1.3.4-dev.jar')
 	// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
 	// https://mvnrepository.com/artifact/org.smali/dexlib2
