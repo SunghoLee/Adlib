@@ -39,7 +39,7 @@ public class StaticFieldDataPointer implements IDataPointer{
     public boolean equals(Object o){
         if(o instanceof StaticFieldDataPointer){
             StaticFieldDataPointer sfdp = (StaticFieldDataPointer) o;
-            if(sfdp.equals(this.f))
+            if(sfdp.f.equals(this.f))
                 return true;
         }
         return false;

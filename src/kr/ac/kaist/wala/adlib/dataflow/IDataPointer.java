@@ -11,4 +11,5 @@ import com.ibm.wala.ssa.SSAInstruction;
 public interface IDataPointer {
     public PointerKey getPointerKey(PointerAnalysis<InstanceKey> pa);
     public IDataPointer visit(SSAInstruction inst, IFlowFunction f);
+    //public boolean isNodeMatched(CGNode n);
 }

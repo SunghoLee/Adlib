@@ -45,6 +45,8 @@ public class ARModeling {
                 return true;
 //            if (m.getDeclaringClass().getName().equals(TypeName.findOrCreate("Landroid/app/Activity")) && m.getSelector().equals(Selector.make("runOnUiThread((Ljava/lang/Runnable;)V")))
 //                return true;
+
+            //< Primordial, Landroid/os/Handler, obtainMessage(ILjava/lang/Object;)Landroid/os/Message; > Context: FirstMethodContextPair: [First: < Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >] : Everywhere
         }
 
         return false;

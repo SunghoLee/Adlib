@@ -31,13 +31,13 @@ public class DataFlowAnalysis {
         return false;
     }
 
-    public boolean analyze(Set<LocalDataPointer> seeds, IDataFlowSemanticFunction semFun, IDataFlowFilter filter){
-        CGNode seedNode = seeds.iterator().next().getNode();
+    public boolean analyze(Set<DataWithWork> seeds, IDataFlowSemanticFunction semFun, IDataFlowFilter filter){
+        CGNode seedNode = ((LocalDataPointer)seeds.iterator().next().getData()).getNode();
         WorkList worklist = new WorkList();
 
-        for(LocalDataPointer seed : seeds) {
+        for(DataWithWork seed : seeds) {
             NodeWithCS seedBlock = makeNodeWithCS(getEntryForProcedure(seedNode), new CallStack());
-            heapModel.weekUpdate(seedBlock, new DataWithWork(seed, NoMoreWork.getInstance()));
+            heapModel.weekUpdate(seedBlock, seed);
             worklist.addWork(seedBlock);
         }
 
@@ -75,6 +75,11 @@ public class DataFlowAnalysis {
     private Set<DataWithWork> applySemanticFunction(NodeWithCS block, DataWithWork data, SSAInstruction inst, IDataFlowSemanticFunction semFun){
         if(inst == null)
             return Collections.singleton(data);
+
+//        System.out.println("N: " + block.getBlock().getNode() + "\n\tI: " + inst + "\n\tD: " + data.getData());
+//        if(block.getBlock().getNode().toString().contains("Node: < Application, Lkr/ac/kaist/wala/hybridroid/branchsample/MHandler, getLocation()V >") && !data.getData().toString().contains("-3")){
+//            System.out.println("I: " + inst + " !!!!! " + data.getData());
+//        }
 
         if(inst instanceof SSAGotoInstruction){
             return semFun.visitGoto(block, (SSAGotoInstruction)inst, data);
@@ -412,57 +417,6 @@ public class DataFlowAnalysis {
         public boolean isEmpty(){
             return works.isEmpty();
         }
-    }
-}
-
-class TaintVariable {
-    private int n;
-    private int v;
-    private Work w;
-
-    public TaintVariable(int n, int v, Work w){
-        this.n = n;
-        this.v = v;
-        this.w = w;
-    }
-
-    public int getNode() { return n; }
-    public int getValue() { return v; }
-    public Work getWork() { return w; }
-    public boolean isTaintedItSelf() { return w.isLeft(); }
-}
-
-interface Work {
-    public Work execute(Object o);
-    public boolean isLeft();
-    public Work nextWork();
-}
-
-class NoMoreWork implements Work{
-    private static NoMoreWork instance;
-
-    public static NoMoreWork getInstance(){
-        if(instance == null)
-            instance = new NoMoreWork();
-
-        return instance;
-    }
-
-    private NoMoreWork(){}
-
-    @Override
-    public Work execute(Object o) {
-        return this;
-    }
-
-    @Override
-    public boolean isLeft() {
-        return false;
-    }
-
-    @Override
-    public Work nextWork() {
-        return this;
     }
 }
 

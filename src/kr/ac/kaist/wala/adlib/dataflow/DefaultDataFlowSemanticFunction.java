@@ -4,24 +4,27 @@ import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.*;
+import com.ibm.wala.ipa.callgraph.propagation.cfa.ExceptionReturnValueKey;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.util.debug.Assertions;
+import kr.ac.kaist.wala.adlib.dataflow.flowmodel.BuiltinFlowHandler;
+import kr.ac.kaist.wala.adlib.dataflow.flowmodel.MethodFlowModel;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 /**
  * Created by leesh on 25/09/2017.
  */
 public class DefaultDataFlowSemanticFunction implements IDataFlowSemanticFunction {
-    private IClassHierarchy cha;
-    private PointerAnalysis<InstanceKey> pa;
-    private CallGraph cg;
+    private final IClassHierarchy cha;
+    private final PointerAnalysis<InstanceKey> pa;
+    private final CallGraph cg;
+    private final BuiltinFlowHandler builtinHandler = BuiltinFlowHandler.getInstance();
 
     public DefaultDataFlowSemanticFunction(CallGraph cg, IClassHierarchy cha, PointerAnalysis<InstanceKey> pa){
         this.cha = cha;
@@ -248,11 +251,28 @@ public class DefaultDataFlowSemanticFunction implements IDataFlowSemanticFunctio
         return res;
     }
 
+    private Iterator<PointerKey> getPredNodes(InstanceKey ik){
+        Set<PointerKey> pks = new HashSet<>();
+
+        pa.getPointerKeys().forEach((pk -> {
+            if(pa.getPointsToSet(pk).contains(ik)){
+                pks.add(pk);
+            }
+        }));
+
+        return pks.iterator();
+    }
+
+    int callNum = 1;
+
     private Set<DataFlowAnalysis.DataWithWork> getAliasDataPoint(PointerKey pk, Work w){
         Set<DataFlowAnalysis.DataWithWork> res = new HashSet<>();
 
+        System.out.println("\tCalled: " + callNum++);
+
         for(InstanceKey ik : pa.getPointsToSet(pk)){
-            Iterator iPredPointerKey = pa.getHeapGraph().getPredNodes(ik);
+//            Iterator iPredPointerKey = hg.getPredNodes(ik);
+            Iterator iPredPointerKey = getPredNodes(ik);
             while(iPredPointerKey.hasNext()){
                 PointerKey predPointerKey = (PointerKey) iPredPointerKey.next();
 
@@ -265,7 +285,8 @@ public class DefaultDataFlowSemanticFunction implements IDataFlowSemanticFunctio
                 }else if(predPointerKey instanceof InstanceFieldKey){
                     InstanceFieldKey ifpk = (InstanceFieldKey) predPointerKey;
                     IField field = ifpk.getField();
-                    Iterator iFieldPredPointerKey = pa.getHeapGraph().getPredNodes(ifpk.getInstanceKey());
+//                    Iterator iFieldPredPointerKey = pa.getHeapGraph().getPredNodes(ifpk.getInstanceKey());
+                    Iterator iFieldPredPointerKey = getPredNodes(ifpk.getInstanceKey());
 
                     while(iFieldPredPointerKey.hasNext()){
                         PointerKey fieldPredPointerKey = (PointerKey)iFieldPredPointerKey.next();
@@ -276,7 +297,10 @@ public class DefaultDataFlowSemanticFunction implements IDataFlowSemanticFunctio
                     IField field = sfk.getField();
 
                     res.add(new DataFlowAnalysis.DataWithWork(new StaticFieldDataPointer(field), w));
-                }else{
+                }else if(predPointerKey instanceof ExceptionReturnValueKey){
+                    ExceptionReturnValueKey ervk = (ExceptionReturnValueKey) predPointerKey;
+                    // no-op
+                }else {
                     Assertions.UNREACHABLE("We did not handle with the pointer key: " + predPointerKey.getClass().getName());
                 }
             }
@@ -298,15 +322,32 @@ public class DefaultDataFlowSemanticFunction implements IDataFlowSemanticFunctio
                 int index = 0;
                 for(;index < instruction.getNumberOfUses(); index++) {
                     if(instruction.getUse(index) == ldp.getVar()) {
-                        Iterator<CGNode> iSucc = cg.getSuccNodes(block.getBlock().getNode());
+                        final int succData = index;
 
-                        while(iSucc.hasNext()) {
-                            CGNode succ = iSucc.next();
-                            if(isPrimitive(succ)){ //over-approximation for primordial methods
-                                res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(succ, index+1), data.getWork()));
-                            }else
-                                res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(succ, index+1), data.getWork()));
-                        }
+                        cg.getPossibleTargets(block.getBlock().getNode(), instruction.getCallSite()).forEach(new Consumer<CGNode>() {
+                            @Override
+                            public void accept(CGNode succ) {
+                                if(isPrimitive(succ)){ //over-approximation for primordial methods
+                                    int[] rets = builtinHandler.matchFlow(succ, succData);
+                                    IntStream is = Arrays.stream(rets);
+                                    is.forEach(
+                                            (value -> {
+                                                switch(value) {
+                                                    case MethodFlowModel.RETV:
+                                                        res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBlock().getNode(), instruction.getDef()), data.getWork()));
+                                                        break;
+                                                    case MethodFlowModel.NONE:
+                                                        break;
+                                                    default:
+                                                        res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBlock().getNode(), instruction.getUse(value)), data.getWork()));
+                                                        break;
+                                                }
+                                            })
+                                    );
+                                }else
+                                    res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(succ, succData + 1), data.getWork()));
+                            }
+                        });
                     }
                 }
 
@@ -350,7 +391,19 @@ public class DefaultDataFlowSemanticFunction implements IDataFlowSemanticFunctio
 
     @Override
     public Set<DataFlowAnalysis.DataWithWork> visitCheckCast(DataFlowAnalysis.NodeWithCS block, SSACheckCastInstruction instruction, DataFlowAnalysis.DataWithWork data) {
-        return Collections.singleton(data);
+        IDataPointer dp = data.getData();
+        Set<DataFlowAnalysis.DataWithWork> res = new HashSet<>();
+
+        res.add(data);
+
+        if(dp instanceof LocalDataPointer){
+            LocalDataPointer ldp = (LocalDataPointer) dp;
+            if(ldp.getNode().equals(block.getBlock().getNode()) && instruction.getUse(0) == ldp.getVar()){
+                res.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(ldp.getNode(), instruction.getDef()), data.getWork()));
+            }
+        }
+
+        return res;
     }
 
     @Override

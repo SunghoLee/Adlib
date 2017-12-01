@@ -158,20 +158,20 @@ public class Main {
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("loadUrl(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("FileDelete1",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("FileDelete2",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/io/File;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/io/File;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("FileDelete3",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/io/File;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(3, IFlowFunction.RETURN_VARIABLE)),
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/io/File;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("FileDelete4",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)))
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/File"), Selector.make("delete()Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE)))
     };
 
     static{
