@@ -40,7 +40,6 @@ import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.entries.RecursiveParamDefFakeRootMethod;
 import kr.ac.kaist.wala.adlib.model.thread.*;
-import kr.ac.kaist.wala.adlib.test.StaticFieldChecker;
 import kr.ac.kaist.wala.hybridroid.models.AndroidHybridAppModel;
 import kr.ac.kaist.wala.hybridroid.utils.LocalFileReader;
 
@@ -78,8 +77,6 @@ public class CallGraphBuilderForHybridSDK {
         this.initInst = initInsts;
         this.scope = makeAnalysisScope(sdk);
         this.cha = buildClassHierarchy(this.scope);
-        StaticFieldChecker.check(this.cha);
-        System.exit(-1);
         this.entries = findEntrypoints(this.cha);
         this.options = makeAnalysisOptions(this.scope, this.entries);
         this.delegate = makeDelegateBuilder(this.cha, this.options);
