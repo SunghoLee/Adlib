@@ -20,10 +20,19 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.callgraph.HybridSDKModel;
 import kr.ac.kaist.wala.adlib.dataflow.*;
+import kr.ac.kaist.wala.adlib.dataflow.Node;
+import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
+import kr.ac.kaist.wala.adlib.dataflow.pointer.LocalDataPointer;
+import kr.ac.kaist.wala.adlib.dataflow.flows.DefaultDataFlowSemanticFunction;
+import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.works.NoMoreWork;
+import kr.ac.kaist.wala.adlib.dataflow.works.Work;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
+
 
 /**
  * Created by leesh on 14/04/2017.
@@ -62,7 +71,7 @@ public class MaliciousPatternChecker {
         this.icfg = ICFGSupergraph.make(cg, new AnalysisCache());
 
         Set<IMethod> entries = HybridSDKModel.getBridgeEntries();
-        DataFlowAnalysis dfa = new DataFlowAnalysis(icfg);
+        DataFlowAnalysis dfa = new DataFlowAnalysis(icfg, DataFlowAnalysis.CONTEXT.FLOW_INSENSITIVE);
 
 
         for(IMethod entry : entries) {
@@ -79,7 +88,7 @@ public class MaliciousPatternChecker {
             }
 
             MaliciousPatternFlowSemanticsFunction semFun = new MaliciousPatternFlowSemanticsFunction(cg, cg.getClassHierarchy(), pa, clonePatterns(mps), seeds);
-            dfa.analyze(Collections.unmodifiableSet(seeds), semFun, (nextBlock, dp) -> true);
+            dfa.analyze(Collections.unmodifiableSet(seeds), semFun);
         }
 
         return warns;
@@ -87,7 +96,7 @@ public class MaliciousPatternChecker {
 
     private static int entryNum = 0;
 
-    class MaliciousPatternFlowSemanticsFunction extends DefaultDataFlowSemanticFunction{
+    class MaliciousPatternFlowSemanticsFunction extends DefaultDataFlowSemanticFunction {
         private final Set<MaliciousPattern> mps;
         private final Set<MPData> seeds;
 
@@ -113,117 +122,117 @@ public class MaliciousPatternChecker {
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitGoto(DataFlowAnalysis.NodeWithCS block, SSAGotoInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitGoto(Node block, SSAGotoInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitGoto(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitArrayLoad(DataFlowAnalysis.NodeWithCS block, SSAArrayLoadInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitArrayLoad(Node block, SSAArrayLoadInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitArrayLoad(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitArrayStore(DataFlowAnalysis.NodeWithCS block, SSAArrayStoreInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitArrayStore(Node block, SSAArrayStoreInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitArrayStore(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitBinaryOp(DataFlowAnalysis.NodeWithCS block, SSABinaryOpInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitBinaryOp(Node block, SSABinaryOpInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitBinaryOp(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitUnaryOp(DataFlowAnalysis.NodeWithCS block, SSAUnaryOpInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitUnaryOp(Node block, SSAUnaryOpInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitUnaryOp(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitConversion(DataFlowAnalysis.NodeWithCS block, SSAConversionInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitConversion(Node block, SSAConversionInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitConversion(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitComparison(DataFlowAnalysis.NodeWithCS block, SSAComparisonInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitComparison(Node block, SSAComparisonInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitComparison(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitConditionalBranch(DataFlowAnalysis.NodeWithCS block, SSAConditionalBranchInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitConditionalBranch(Node block, SSAConditionalBranchInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitConditionalBranch(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitSwitch(DataFlowAnalysis.NodeWithCS block, SSASwitchInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitSwitch(Node block, SSASwitchInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitSwitch(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitReturn(DataFlowAnalysis.NodeWithCS block, SSAReturnInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitReturn(Node block, SSAReturnInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitReturn(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitGet(DataFlowAnalysis.NodeWithCS block, SSAGetInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitGet(Node block, SSAGetInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitGet(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitPut(DataFlowAnalysis.NodeWithCS block, SSAPutInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitPut(Node block, SSAPutInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitPut(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitNew(DataFlowAnalysis.NodeWithCS block, SSANewInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitNew(Node block, SSANewInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitNew(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitArrayLength(DataFlowAnalysis.NodeWithCS block, SSAArrayLengthInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitArrayLength(Node block, SSAArrayLengthInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitArrayLength(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitThrow(DataFlowAnalysis.NodeWithCS block, SSAThrowInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitThrow(Node block, SSAThrowInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitThrow(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitMonitor(DataFlowAnalysis.NodeWithCS block, SSAMonitorInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitMonitor(Node block, SSAMonitorInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitMonitor(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitCheckCast(DataFlowAnalysis.NodeWithCS block, SSACheckCastInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitCheckCast(Node block, SSACheckCastInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitCheckCast(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitInstanceof(DataFlowAnalysis.NodeWithCS block, SSAInstanceofInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitInstanceof(Node block, SSAInstanceofInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitInstanceof(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitPhi(DataFlowAnalysis.NodeWithCS block, SSAPhiInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitPhi(Node block, SSAPhiInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitPhi(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitPi(DataFlowAnalysis.NodeWithCS block, SSAPiInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitPi(Node block, SSAPiInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitPi(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitGetCaughtException(DataFlowAnalysis.NodeWithCS block, SSAGetCaughtExceptionInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitGetCaughtException(Node block, SSAGetCaughtExceptionInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitGetCaughtException(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitLoadMetadata(DataFlowAnalysis.NodeWithCS block, SSALoadMetadataInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitLoadMetadata(Node block, SSALoadMetadataInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             return wrapToMPData(super.visitLoadMetadata(block, instruction, data), data);
         }
 
         @Override
-        public Set<DataFlowAnalysis.DataWithWork> visitInvoke(DataFlowAnalysis.NodeWithCS block, SSAInvokeInstruction instruction, DataFlowAnalysis.DataWithWork data) {
+        public Set<DataFlowAnalysis.DataWithWork> visitInvoke(Node block, SSAInvokeInstruction instruction, DataFlowAnalysis.DataWithWork data) {
             Set<DataFlowAnalysis.DataWithWork> res = new HashSet<>();
 
             res.add(data);
@@ -239,7 +248,7 @@ public class MaliciousPatternChecker {
                 if(point == null)
                     continue;
 
-                if (isMaliciousPoint(block.getBlock(), instruction.getCallSite(), point)){
+                if (isMaliciousPoint(block.getBB(), instruction.getCallSite(), point)){
                     matched = true;
                     PropagateFlowFunction f = point.getFlowFunction();
 
@@ -247,16 +256,16 @@ public class MaliciousPatternChecker {
 
                     if(dp instanceof LocalDataPointer){
                         LocalDataPointer ldp = (LocalDataPointer) dp;
-                        if(ldp.getNode().equals(block.getBlock().getNode())){
+                        if(ldp.getNode().equals(block.getBB().getNode())){
                             if(f.getFrom() == IFlowFunction.ANY || instruction.getUse(f.getFrom()-1) == ldp.getVar()){
                                 int v = f.getTo();
                                 if(v == IFlowFunction.TERMINATE){
                                     IMethod m = ((LocalDataPointer)seeds.iterator().next().getData()).getNode().getMethod();
                                     warns.add(new MaliciousPatternWarning(new APICallNode(m.getDeclaringClass().getName(), m.getSelector(), entryNum), mp.toString()));
                                 }else if(v == IFlowFunction.RETURN_VARIABLE){
-                                    matchedRes.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBlock().getNode(), instruction.getDef()), data.getWork()));
+                                    matchedRes.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBB().getNode(), instruction.getDef()), data.getWork()));
                                 }else{
-                                    matchedRes.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBlock().getNode(), instruction.getUse(v-1)), data.getWork()));
+                                    matchedRes.add(new DataFlowAnalysis.DataWithWork(new LocalDataPointer(block.getBB().getNode(), instruction.getUse(v-1)), data.getWork()));
                                 }
 
                                 mp.getNext();

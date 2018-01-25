@@ -225,7 +225,7 @@ public class BypassMethodTargetSelector implements MethodTargetSelector {
   
   /**
    * Generate a {@link MethodSummary} which is the "standard" representation of a method 
-   * that does nothing.  Subclasses may override this method to implement alternative semantics
+   * that does nothing.  Subclasses may override this method to implement alternative flows
    * concerning what "do nothing" means.
    */
   public MethodSummary generateNoOp(MethodReference m, boolean isStatic) {

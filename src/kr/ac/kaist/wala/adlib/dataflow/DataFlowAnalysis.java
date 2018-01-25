@@ -1,16 +1,28 @@
 package kr.ac.kaist.wala.adlib.dataflow;
 
+import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
 import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.Selector;
+import com.ibm.wala.types.TypeName;
 import com.ibm.wala.util.debug.Assertions;
+import kr.ac.kaist.wala.adlib.dataflow.context.CallStackContext;
+import kr.ac.kaist.wala.adlib.dataflow.context.Context;
+import kr.ac.kaist.wala.adlib.dataflow.context.EverywhereContext;
+import kr.ac.kaist.wala.adlib.dataflow.flows.IDataFlowSemanticFunction;
+import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
+import kr.ac.kaist.wala.adlib.dataflow.pointer.LocalDataPointer;
+import kr.ac.kaist.wala.adlib.dataflow.works.Work;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by leesh on 14/09/2017.
@@ -18,9 +30,21 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class DataFlowAnalysis {
     private ICFGSupergraph supergraph;
     private DataFlowHeapModel heapModel;
+    private static boolean DEBUG = true;
+    private TypeName rootTN = TypeName.findOrCreate("Lcom/ibm/wala/FakeRootClass");
+    private Selector fakerootSelector = Selector.make("fakeRootMethod()V");
 
-    public DataFlowAnalysis(ICFGSupergraph supergraph){
+    public enum CONTEXT{
+        FLOW_INSENSITIVE,
+        CALLSTACK,
+        CALLSTRING,
+    }
+
+    private CONTEXT ctxt;
+
+    public DataFlowAnalysis(ICFGSupergraph supergraph, CONTEXT ctxt){
         this.supergraph = supergraph;
+        this.ctxt = ctxt;
         heapModel = new DataFlowHeapModel();
     }
 
@@ -31,37 +55,59 @@ public class DataFlowAnalysis {
         return false;
     }
 
-    public boolean analyze(Set<DataWithWork> seeds, IDataFlowSemanticFunction semFun, IDataFlowFilter filter){
+    public boolean analyze(Set<DataWithWork> seeds, IDataFlowSemanticFunction semFun){
         CGNode seedNode = ((LocalDataPointer)seeds.iterator().next().getData()).getNode();
         WorkList worklist = new WorkList();
+        heapModel.clear();
 
         for(DataWithWork seed : seeds) {
-            NodeWithCS seedBlock = makeNodeWithCS(getEntryForProcedure(seedNode), new CallStack());
+            Node seedBlock = null;
+
+            switch(ctxt) {
+                case FLOW_INSENSITIVE:
+                    seedBlock = new Node(getEntryForProcedure(seedNode), EverywhereContext.getInstance());
+                    break;
+                case CALLSTACK:
+                    seedBlock = new Node(getEntryForProcedure(seedNode), new CallStackContext(supergraph));
+                    break;
+                case CALLSTRING:
+//                    seedBlock = makeNodeWithCS(getEntryForProcedure(seedNode), new CallStack());
+                    break;
+            }
             heapModel.weekUpdate(seedBlock, seed);
             worklist.addWork(seedBlock);
         }
 
         while(!worklist.isEmpty()){
-            NodeWithCS nextWork = worklist.getNextWork();
+            Node nextWork = worklist.getNextWork();
             Set<DataWithWork> nextDataSet = heapModel.getData(nextWork);
 
             Set<DataWithWork> res = new HashSet<>();
             for(DataWithWork dww : nextDataSet){
-                res.addAll(applySemanticFunction(nextWork, dww, nextWork.bb.getLastInstruction(), semFun));
+                res.addAll(applySemanticFunction(nextWork, dww, nextWork.getInstruction(), semFun));
             }
 
-//            boolean debug = false;
-//            if(nextWork.getBlock().getLastInstruction() != null && nextWork.getBlock().getLastInstruction().toString().contains("invokevirtual < Application, Landroid/os/Message, sendToTarget()V > 15 @41 exception:16"))
-//                debug = true;
+            for(Node nwcs : getNextBlocks(nextWork)){
+                IMethod m = nwcs.getBB().getMethod();
 
-            for(NodeWithCS nwcs : getNextBlocks(nextWork)){
-//                if(debug)
-//                    System.out.println("NEXT : " + nwcs.getBlock().getLastInstruction());
+                if(m.getDeclaringClass().getName().equals(rootTN) && m.getSelector().equals(fakerootSelector))
+                    continue;
+
                 boolean changed = false;
 
                 for(DataWithWork dww : res) {
-//                    if(filter.apply(nwcs.getBlock(), dww.getData()))
-                        changed |= heapModel.weekUpdate(nwcs, dww);
+                     boolean localChanged = heapModel.weekUpdate(nwcs, dww);
+                    if(localChanged) {
+//                        System.out.println("\t\tnextblock: " + nwcs.getBlock() + "\t" + nwcs.getBlock().getLastInstruction());
+                        IDataPointer dp = dww.getData();
+                        if(dp instanceof LocalDataPointer) {
+                            LocalDataPointer ldp = (LocalDataPointer) dp;
+                            if(ldp.getNode().getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application))
+                                System.out.println("\t\t\tUpdated: " + dww.getData() + "\n\t\t\t\tWork: " + dww.getWork());
+                        }else
+                            System.out.println("\t\t\tUpdated: " + dww.getData());}
+
+                    changed |= localChanged;
                 }
 
                 if(changed)
@@ -72,14 +118,32 @@ public class DataFlowAnalysis {
         return false;
     }
 
-    private Set<DataWithWork> applySemanticFunction(NodeWithCS block, DataWithWork data, SSAInstruction inst, IDataFlowSemanticFunction semFun){
+    int i = 0;
+    private Set<DataWithWork> applySemanticFunction(Node block, DataWithWork data, SSAInstruction inst, IDataFlowSemanticFunction semFun){
+        if(DEBUG)
+            System.out.println("\tSKIP");
+
         if(inst == null)
             return Collections.singleton(data);
 
-//        System.out.println("N: " + block.getBlock().getNode() + "\n\tI: " + inst + "\n\tD: " + data.getData());
-//        if(block.getBlock().getNode().toString().contains("Node: < Application, Lkr/ac/kaist/wala/hybridroid/branchsample/MHandler, getLocation()V >") && !data.getData().toString().contains("-3")){
-//            System.out.println("I: " + inst + " !!!!! " + data.getData());
-//        }
+        // todo: optimize data flows
+        if(data.getData() instanceof LocalDataPointer){
+            LocalDataPointer ldp = (LocalDataPointer) data.getData();
+            if(!ldp.getNode().equals(block.getBB().getNode()))
+                return Collections.emptySet();
+//                return Collections.singleton(data);
+        }
+
+        if(DEBUG) {
+            System.out.println("#B: " + block);
+            System.out.println("\t#I: " + inst);
+            System.out.println("\t#D: " + data + "\n");
+//            try {
+//                System.in.read();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+        }
 
         if(inst instanceof SSAGotoInstruction){
             return semFun.visitGoto(block, (SSAGotoInstruction)inst, data);
@@ -133,50 +197,31 @@ public class DataFlowAnalysis {
         return null;
     }
 
-    private Set<DataWithWork> getDataForPoint(NodeWithCS n){
+    private Set<DataWithWork> getDataForPoint(Node n){
         return heapModel.getData(n);
-    }
-
-    private NodeWithCS makeNodeWithCS(BasicBlockInContext bb, CallStack cs){
-        return new NodeWithCS(bb, cs);
     }
 
     private BasicBlockInContext getEntryForProcedure(CGNode n){
         return supergraph.getEntriesForProcedure(n)[0];
     }
 
-    private Set<NodeWithCS> getNextBlocks(NodeWithCS node){
-        BasicBlockInContext bb = node.getBlock();
-        Set<NodeWithCS> res = new HashSet<>();
+    private Set<Node> getNextBlocks(Node node){
+        BasicBlockInContext bb = node.getBB();
+        Set<Node> res = new HashSet<>();
+        Context ctxt = node.getContext();
 
         if(supergraph.isCall(bb)){
-            boolean handled = false;
-
-            for(BasicBlockInContext entry : getNextCalleeBlocks(bb)){
-                if(!isPrimitive(entry)) {
-                    handled = true;
-                    res.add(new NodeWithCS(entry, node.getCallStack().clone().push(new CallSite(node.bb.getNode(), supergraph.getLocalBlockNumber(bb)))));
-                }
-            }
+            Stream<BasicBlockInContext> entryStream = getNextCalleeBlocks(bb).stream().filter((succ) -> (!isPrimitive(succ))? true  :false );
+            res.addAll(ctxt.getNext(node, entryStream.collect(Collectors.toSet()), Context.TYPE.CALL));
 
             //if there is no callee
-            if(!handled){
-                for(BasicBlockInContext next : getNextNormalBlocks(bb)){
-                    res.add(new NodeWithCS(next, node.getCallStack().clone()));
-                }
-            }
+//            if(res.isEmpty()){
+                res.addAll(ctxt.getNext(node, getNextNormalBlocks(bb), Context.TYPE.NORMAL));
+//            }
         }else if(supergraph.isExit(bb)){
-            CallSite cs = node.cs.pop();
-            if(cs != null) {
-                for(BasicBlockInContext next : getNextNormalBlocks(cs.getCallBlock())){
-                    res.add(new NodeWithCS(next, node.getCallStack().clone()));
-                }
-            }else
-                return Collections.emptySet();
+            res.addAll(ctxt.getNext(node, getNextReturnBlocks(bb), Context.TYPE.EXIT));
         }else {
-            for(BasicBlockInContext next : getNextNormalBlocks(bb)){
-                res.add(new NodeWithCS(next, node.getCallStack().clone()));
-            }
+            res.addAll(ctxt.getNext(node, getNextNormalBlocks(bb), Context.TYPE.NORMAL));
         }
 
         return res;
@@ -193,6 +238,20 @@ public class DataFlowAnalysis {
                     res.add(succ);
             }
         }
+        return res;
+    }
+
+    private Set<BasicBlockInContext> getNextReturnBlocks(BasicBlockInContext bb){
+        if(!bb.isExitBlock())
+            return Collections.emptySet();
+
+        Set<BasicBlockInContext> res = new HashSet<>();
+
+        Iterator<BasicBlockInContext> iSucc = supergraph.getSuccNodes(bb);
+        while(iSucc.hasNext()){
+            res.add(iSucc.next());
+        }
+
         return res;
     }
 
@@ -215,135 +274,6 @@ public class DataFlowAnalysis {
         }
 
         return res;
-    }
-
-
-    class CallSite {
-        private CGNode n;
-        private int nodeNum;
-
-        public CallSite(CGNode n, int nodeNum){
-            this.n = n;
-            this.nodeNum = nodeNum;
-        }
-
-        public CGNode getNode(){
-            return n;
-        }
-
-        public int getNodeNum(){
-            return nodeNum;
-        }
-
-        public BasicBlockInContext getCallBlock(){
-            return supergraph.getLocalBlock(n, nodeNum);
-        }
-
-        @Override
-        public int hashCode(){
-            return n.hashCode() + nodeNum;
-        }
-
-        @Override
-        public boolean equals(Object o){
-            if(o instanceof CallSite) {
-                CallSite cs = (CallSite) o;
-                if(cs.n.equals(n) && cs.nodeNum == nodeNum)
-                    return true;
-            }
-            return false;
-        }
-    }
-
-    class CallStack {
-        private Stack<CallSite> callSites = new Stack<>();
-
-        public CallSite peek(){
-            if(callSites.size() != 0)
-                return callSites.peek();
-            return null;
-        }
-
-        public CallSite pop(){
-            if(callSites.size() != 0)
-                return callSites.pop();
-            return null;
-        }
-
-        public CallStack push(CallSite cs){
-            callSites.add(cs);
-            return this;
-        }
-
-        private CallStack addAll(Stack<CallSite> cs){
-            callSites.addAll(cs);
-            return this;
-        }
-
-        public CallStack clone(){
-            return (new CallStack()).addAll(callSites);
-        }
-
-        @Override
-        public int hashCode(){
-            return callSites.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o){
-            if(o instanceof CallStack){
-                CallStack cs = (CallStack) o;
-                if(cs.callSites.size() == callSites.size()){
-                    for(int i = 0; i < callSites.size(); i++){
-                        if(!cs.callSites.get(i).equals(callSites.get(i)))
-                            return false;
-                    }
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    public static class NodeWithCS{
-        private BasicBlockInContext bb;
-        private CallStack cs;
-
-        public NodeWithCS(BasicBlockInContext bb, CallStack cs){
-            this.bb = bb;
-            this.cs = cs;
-        }
-
-        public boolean isEntry(){
-            return bb.isEntryBlock();
-        }
-
-        public boolean isExit(){
-            return bb.isExitBlock();
-        }
-
-        public BasicBlockInContext getBlock(){
-            return this.bb;
-        }
-
-        public CallStack getCallStack(){
-            return this.cs;
-        }
-
-        @Override
-        public int hashCode(){
-            return bb.hashCode() + cs.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o){
-            if(o instanceof NodeWithCS){
-                NodeWithCS nwcs = (NodeWithCS) o;
-                if(nwcs.bb.getNumber() == bb.getNumber() && nwcs.cs.equals(cs))
-                    return true;
-            }
-            return false;
-        }
     }
 
     public static class DataWithWork {
@@ -372,22 +302,26 @@ public class DataFlowAnalysis {
         public boolean equals(Object o){
             if(o instanceof DataWithWork){
                 DataWithWork dww = (DataWithWork) o;
-
                 if(dww.p.equals(p) && dww.w.equals(w))
                     return true;
             }
             return false;
         }
+
+        @Override
+        public String toString(){
+            return p.toString();
+        }
     }
 
     class DataFlowHeapModel {
-        private HashMap<NodeWithCS, Set<DataWithWork>> pointDataMap;
+        private HashMap<Node, Set<DataWithWork>> pointDataMap;
 
         public DataFlowHeapModel(){
             pointDataMap = new HashMap<>();
         }
 
-        public boolean weekUpdate(NodeWithCS point, DataWithWork data){
+        public boolean weekUpdate(Node point, DataWithWork data){
             if(!pointDataMap.containsKey(point)){
                 pointDataMap.put(point, new HashSet<>());
             }
@@ -395,22 +329,27 @@ public class DataFlowAnalysis {
             return pointDataMap.get(point).add(data);
         }
 
-        public Set<DataWithWork> getData(NodeWithCS point){
+        public Set<DataWithWork> getData(Node point){
             if(!pointDataMap.containsKey(point))
                 pointDataMap.put(point, new HashSet<>());
 
             return pointDataMap.get(point);
         }
+
+        public void clear(){
+            pointDataMap.clear();
+        }
     }
 
-    class WorkList {
-        private Queue<NodeWithCS> works = new LinkedBlockingQueue<>();
 
-        public NodeWithCS getNextWork(){
+    class WorkList {
+        private Queue<Node> works = new LinkedBlockingQueue<>();
+
+        public Node getNextWork(){
             return works.poll();
         }
 
-        public void addWork(NodeWithCS nwcs){
+        public void addWork(Node nwcs){
             works.add(nwcs);
         }
 
@@ -418,18 +357,6 @@ public class DataFlowAnalysis {
             return works.isEmpty();
         }
     }
+
+
 }
-
-abstract class AbstractWork implements Work{
-    private Work superWork;
-
-    protected AbstractWork(Work w){
-        this.superWork = w;
-    }
-
-    @Override
-    public Work nextWork() {
-        return superWork;
-    }
-}
-

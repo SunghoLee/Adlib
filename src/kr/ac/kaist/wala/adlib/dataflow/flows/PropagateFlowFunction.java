@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.dataflow;
+package kr.ac.kaist.wala.adlib.dataflow.flows;
 
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.util.collections.Pair;

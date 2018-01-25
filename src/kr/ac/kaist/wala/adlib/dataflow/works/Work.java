@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.dataflow;
+package kr.ac.kaist.wala.adlib.dataflow.works;
 
 /**
  * Created by leesh on 29/11/2017.

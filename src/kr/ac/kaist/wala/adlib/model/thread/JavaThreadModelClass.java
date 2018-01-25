@@ -15,6 +15,7 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
@@ -22,7 +23,7 @@ import java.util.*;
  * A modeling class for Java built-in java/lang/Thread.
  * Created by leesh on 14/01/2017.
  */
-public class JavaThreadModelClass extends SyntheticClass{
+public class JavaThreadModelClass extends AbstractModelClass {
 
     public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
 

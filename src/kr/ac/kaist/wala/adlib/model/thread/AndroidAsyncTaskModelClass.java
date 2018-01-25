@@ -15,6 +15,7 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
@@ -22,7 +23,7 @@ import java.util.*;
  * A modeling class for Android built-in android/os/AsyncTask.
  * Created by leesh on 14/01/2017.
  */
-public class AndroidAsyncTaskModelClass extends SyntheticClass{
+public class AndroidAsyncTaskModelClass extends AbstractModelClass {
 
     public static final TypeReference ANDROID_ASYNC_TASK_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/os/AsyncTask"));

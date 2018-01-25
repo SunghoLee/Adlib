@@ -95,7 +95,7 @@ import com.ibm.wala.util.warnings.Warning;
 
 /**
  * Common code to translate CAst to IR. Must be specialized by each language to
- * handle semantics appropriately.
+ * handle flows appropriately.
  */
 public abstract class AstTranslator extends CAstVisitor<AstTranslator.WalkContext> implements ArrayOpHandler, TranslatorToIR {
 

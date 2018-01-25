@@ -10,11 +10,11 @@ import com.ibm.wala.shrikeBT.IInvokeInstruction;
 import com.ibm.wala.shrikeCT.ClassConstants;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.types.*;
-import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
@@ -22,22 +22,8 @@ import java.util.*;
  * A modeling class for Android built-in android/os/Handler.
  * Created by leesh on 14/01/2017.
  */
-public class AndroidHandlerModelClass extends SyntheticClass{
+public class AndroidHandlerModelClass extends AbstractModelClass {
 
-
-    /*
-    NNode: < Primordial, Landroid/app/AlertDialog$Builder, setNegativeButton(Ljava/lang/CharSequence;Landroid/content/DialogInterface$OnClickListener;)Landroid/app/AlertDialog$Builder; > Context: Everywhere
-== IR ==
-< Primordial, Landroid/app/AlertDialog$Builder, setNegativeButton(Ljava/lang/CharSequence;Landroid/content/DialogInterface$OnClickListener;)Landroid/app/AlertDialog$Builder; >
-1   v5 = getfield < Primordial, Landroid/app/AlertDialog$Builder, P, <Primordial,Lcom/android/internal/app/AlertController$AlertParams> > v1
-3   putfield v5.< Primordial, Lcom/android/internal/app/AlertController$AlertParams, mNegativeButtonText, <Primordial,Ljava/lang/CharSequence> > = v2
-5   v6 = getfield < Primordial, Landroid/app/AlertDialog$Builder, P, <Primordial,Lcom/android/internal/app/AlertController$AlertParams> > v1
-7   putfield v6.< Primordial, Lcom/android/internal/app/AlertController$AlertParams, mNegativeButtonListener, <Primordial,Landroid/content/DialogInterface$OnClickListener> > = v3
-9   return v1
-
-
-onClick(DialogInterface paramDialogInterface, int paramInt);
-     */
     public static final TypeReference ANDROID_HANDLER_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/os/Handler"));
     public static final TypeReference ANDROID_MESSAGE_TYPE = TypeReference.findOrCreate(
@@ -48,6 +34,10 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
     public static final Selector POST_DELAYED_SELECTOR = Selector.make("postDelayed(Ljava/lang/Runnable;J)Z");
     public static final Selector POST_SELECTOR = Selector.make("post(Ljava/lang/Runnable;)Z");
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
+    public static final Selector OBTAIN_MESSAGE_SELECTOR1 = Selector.make("obtainMessage(I)Landroid/os/Message;");
+    public static final Selector OBTAIN_MESSAGE_SELECTOR2 = Selector.make("obtainMessage(III)Landroid/os/Message;");
+    public static final Selector OBTAIN_MESSAGE_SELECTOR3 = Selector.make("obtainMessage(ILjava/lang/Object;)Landroid/os/Message;");
+    public static final Selector OBTAIN_MESSAGE_SELECTOR4 = Selector.make("obtainMessage(IIILjava/lang/Object;)Landroid/os/Message;");
 
     private IClassHierarchy cha;
 
@@ -60,18 +50,204 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
         return klass;
     }
 
+    public IMethod match(TypeReference t, Selector s){
+        if(t.getName().equals(ANDROID_HANDLER_MODEL_CLASS.getName()) && methods.containsKey(s))
+            return methods.get(s);
+
+        return null;
+    }
+
     private AndroidHandlerModelClass(IClassHierarchy cha) {
         super(ANDROID_HANDLER_MODEL_CLASS, cha);
         this.cha = cha;
 
-        initMethodsForThread();
+        initMethodsForHandler();
 
         this.addMethod(this.clinit());
     }
 
-    private void initMethodsForThread(){
+    private void initMethodsForHandler(){
         this.addMethod(this.send(SEND_MESSAGE_SELECTOR)); this.addMethod(this.postDelayed(POST_DELAYED_SELECTOR));
-        this.addMethod(this.post(POST_SELECTOR));
+        this.addMethod(this.post(POST_SELECTOR)); this.addMethod(this.obtain1(OBTAIN_MESSAGE_SELECTOR1));
+        this.addMethod(this.obtain2(OBTAIN_MESSAGE_SELECTOR2)); this.addMethod(this.obtain3(OBTAIN_MESSAGE_SELECTOR3));
+        this.addMethod(this.obtain4(OBTAIN_MESSAGE_SELECTOR4));
+    }
+
+    /**
+     *  Generate run of Thread for AndroidThreadModelClass.
+     *  for obtainMessage(IIILjava/lang/Object;)Landroid/os/Message;
+     */
+    private SummarizedMethod obtain4(Selector s) {
+        final MethodReference obtainRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary obtain = new VolatileMethodSummary(new MethodSummary(obtainRef));
+        obtain.setStatic(false);
+
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        final SSAValue thisV = new SSAValue(1, ANDROID_HANDLER_MODEL_CLASS, obtainRef);
+        final SSAValue whatV = new SSAValue(2, TypeReference.Int, obtainRef);
+        final SSAValue arg1V = new SSAValue(3, TypeReference.Int, obtainRef);
+        final SSAValue arg2V = new SSAValue(4, TypeReference.Int, obtainRef);
+        final SSAValue objV = new SSAValue(5, TypeReference.JavaLangObject, obtainRef);
+
+        final int callObtainPC = obtain.getNextProgramCounter();
+
+        int ssaNo = 6;
+
+        final CallSiteReference messageCSR = CallSiteReference.make(callObtainPC, MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;")), IInvokeInstruction.Dispatch.STATIC);
+        final SSAValue messageV = new SSAValue(ssaNo++, ANDROID_MESSAGE_TYPE, obtainRef);
+
+        final SSAValue exceptionPos = new SSAValue(ssaNo++, TypeReference.JavaLangException, obtainRef);
+        final MethodReference obtainMR = MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;"));
+        final List<SSAValue> paramsObtain = new ArrayList<SSAValue>();
+        paramsObtain.add(thisV);
+        final SSAInstruction callObtain = instructionFactory.InvokeInstruction(callObtainPC, messageV, paramsObtain, exceptionPos, messageCSR);
+        obtain.addStatement(callObtain);
+
+        final SSAInstruction putWhatInst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, whatV, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("what"), TypeReference.Int));
+        obtain.addStatement(putWhatInst);
+
+        final SSAInstruction putArg1Inst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, arg1V, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("arg1"), TypeReference.Int));
+        obtain.addStatement(putArg1Inst);
+
+        final SSAInstruction putArg2Inst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, arg2V, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("arg2"), TypeReference.Int));
+        obtain.addStatement(putArg2Inst);
+
+        final SSAInstruction putObjInst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, objV, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("obj"), TypeReference.JavaLangObject));
+        obtain.addStatement(putObjInst);
+
+        final int pc_ret = obtain.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, messageV);
+        obtain.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(obtainRef, obtain, this);
+    }
+
+    /**
+     *  Generate run of Thread for AndroidThreadModelClass.
+     *  for obtainMessage(ILjava/lang/Object;)Landroid/os/Message;
+     */
+    private SummarizedMethod obtain3(Selector s) {
+        final MethodReference obtainRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary obtain = new VolatileMethodSummary(new MethodSummary(obtainRef));
+        obtain.setStatic(false);
+
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        final SSAValue thisV = new SSAValue(1, ANDROID_HANDLER_MODEL_CLASS, obtainRef);
+        final SSAValue whatV = new SSAValue(2, TypeReference.Int, obtainRef);
+        final SSAValue objV = new SSAValue(3, TypeReference.JavaLangObject, obtainRef);
+
+        final int callObtainPC = obtain.getNextProgramCounter();
+
+        int ssaNo = 4;
+
+        final CallSiteReference messageCSR = CallSiteReference.make(callObtainPC, MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;")), IInvokeInstruction.Dispatch.STATIC);
+        final SSAValue messageV = new SSAValue(ssaNo++, ANDROID_MESSAGE_TYPE, obtainRef);
+
+        final SSAValue exceptionPos = new SSAValue(ssaNo++, TypeReference.JavaLangException, obtainRef);
+        final MethodReference obtainMR = MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;"));
+        final List<SSAValue> paramsObtain = new ArrayList<SSAValue>();
+        paramsObtain.add(thisV);
+        final SSAInstruction callObtain = instructionFactory.InvokeInstruction(callObtainPC, messageV, paramsObtain, exceptionPos, messageCSR);
+        obtain.addStatement(callObtain);
+
+        final SSAInstruction putWhatInst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, whatV, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("what"), TypeReference.Int));
+        obtain.addStatement(putWhatInst);
+
+        final SSAInstruction putObjInst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, objV, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("obj"), TypeReference.JavaLangObject));
+        obtain.addStatement(putObjInst);
+
+        final int pc_ret = obtain.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, messageV);
+        obtain.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(obtainRef, obtain, this);
+    }
+
+    /**
+     *  Generate run of Thread for AndroidThreadModelClass.
+     *  for obtainMessage(III)Landroid/os/Message;
+     */
+    private SummarizedMethod obtain2(Selector s) {
+        final MethodReference obtainRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary obtain = new VolatileMethodSummary(new MethodSummary(obtainRef));
+        obtain.setStatic(false);
+
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        final SSAValue thisV = new SSAValue(1, ANDROID_HANDLER_MODEL_CLASS, obtainRef);
+        final SSAValue whatV = new SSAValue(2, TypeReference.Int, obtainRef);
+        final SSAValue arg1V = new SSAValue(3, TypeReference.Int, obtainRef);
+        final SSAValue arg2V = new SSAValue(4, TypeReference.Int, obtainRef);
+
+        final int callObtainPC = obtain.getNextProgramCounter();
+
+        int ssaNo = 5;
+
+        final CallSiteReference messageCSR = CallSiteReference.make(callObtainPC, MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;")), IInvokeInstruction.Dispatch.STATIC);
+        final SSAValue messageV = new SSAValue(ssaNo++, ANDROID_MESSAGE_TYPE, obtainRef);
+
+        final SSAValue exceptionPos = new SSAValue(ssaNo++, TypeReference.JavaLangException, obtainRef);
+        final MethodReference obtainMR = MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;"));
+        final List<SSAValue> paramsObtain = new ArrayList<SSAValue>();
+        paramsObtain.add(thisV);
+        final SSAInstruction callObtain = instructionFactory.InvokeInstruction(callObtainPC, messageV, paramsObtain, exceptionPos, messageCSR);
+        obtain.addStatement(callObtain);
+
+        final SSAInstruction putWhatInst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, whatV, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("what"), TypeReference.Int));
+        obtain.addStatement(putWhatInst);
+
+        final SSAInstruction putArg1Inst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, arg1V, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("arg1"), TypeReference.Int));
+        obtain.addStatement(putArg1Inst);
+
+        final SSAInstruction putArg2Inst = instructionFactory.PutInstruction(obtain.getNextProgramCounter(), messageV, arg2V, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("arg2"), TypeReference.Int));
+        obtain.addStatement(putArg2Inst);
+
+        final int pc_ret = obtain.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, messageV);
+        obtain.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(obtainRef, obtain, this);
+    }
+
+    /**
+     *  Generate run of Thread for AndroidThreadModelClass.
+     *  for obtainMessage(I)Landroid/os/Message;
+     */
+    private SummarizedMethod obtain1(Selector s) {
+        final MethodReference obtainRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary obtain = new VolatileMethodSummary(new MethodSummary(obtainRef));
+        obtain.setStatic(false);
+
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        final SSAValue thisV = new SSAValue(1, ANDROID_HANDLER_MODEL_CLASS, obtainRef);
+        final SSAValue fintV = new SSAValue(2, TypeReference.Int, obtainRef);
+
+        final int callObtainPC = obtain.getNextProgramCounter();
+
+        int ssaNo = 3;
+
+        final CallSiteReference messageCSR = CallSiteReference.make(callObtainPC, MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;")), IInvokeInstruction.Dispatch.STATIC);
+        final SSAValue messageV = new SSAValue(ssaNo++, ANDROID_MESSAGE_TYPE, obtainRef);
+
+        final SSAValue exceptionPos = new SSAValue(ssaNo++, TypeReference.JavaLangException, obtainRef);
+        final MethodReference obtainMR = MethodReference.findOrCreate(ANDROID_MESSAGE_TYPE, Selector.make("obtain(Landroid/os/Handler;)Landroid/os/Message;"));
+        final List<SSAValue> paramsObtain = new ArrayList<SSAValue>();
+        paramsObtain.add(thisV);
+        final SSAInstruction callObtain = instructionFactory.InvokeInstruction(callObtainPC, messageV, paramsObtain, exceptionPos, messageCSR);
+        obtain.addStatement(callObtain);
+
+        final int putWhatPC = obtain.getNextProgramCounter();
+        final SSAInstruction putWhatInst = instructionFactory.PutInstruction(putWhatPC, messageV, fintV, FieldReference.findOrCreate(ANDROID_MESSAGE_TYPE, Atom.findOrCreateAsciiAtom("what"), TypeReference.Int));
+        obtain.addStatement(putWhatInst);
+
+        final int pc_ret = obtain.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, messageV);
+        obtain.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(obtainRef, obtain, this);
     }
 
     /**
@@ -186,8 +362,6 @@ onClick(DialogInterface paramDialogInterface, int paramInt);
 
         return new SummarizedMethodWithNames(clinitRef, clinit, this);
     }
-
-    private Map<Selector, IMethod> methods = HashMapFactory.make(); // does not contain macroModel
 
     @Override
     public IMethod getMethod(Selector selector) {

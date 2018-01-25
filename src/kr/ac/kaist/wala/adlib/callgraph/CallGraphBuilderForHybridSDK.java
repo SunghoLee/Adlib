@@ -32,13 +32,15 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.functions.Function;
 import com.ibm.wala.util.strings.Atom;
 import com.sun.istack.internal.Nullable;
-import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.InitInstsParser;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelClass;
+import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.entries.RecursiveParamDefFakeRootMethod;
 import kr.ac.kaist.wala.adlib.model.thread.*;
+import kr.ac.kaist.wala.adlib.test.StaticFieldChecker;
 import kr.ac.kaist.wala.hybridroid.models.AndroidHybridAppModel;
 import kr.ac.kaist.wala.hybridroid.utils.LocalFileReader;
 
@@ -76,6 +78,8 @@ public class CallGraphBuilderForHybridSDK {
         this.initInst = initInsts;
         this.scope = makeAnalysisScope(sdk);
         this.cha = buildClassHierarchy(this.scope);
+        StaticFieldChecker.check(this.cha);
+        System.exit(-1);
         this.entries = findEntrypoints(this.cha);
         this.options = makeAnalysisOptions(this.scope, this.entries);
         this.delegate = makeDelegateBuilder(this.cha, this.options);
@@ -355,13 +359,13 @@ public class CallGraphBuilderForHybridSDK {
         private static Set<Selector> SCHEDULE_SELECTOR_SET;
         private static Set<Selector> RUN_SELECTOR_SET;
         private static Set<Selector> EXECUTE_SELECTOR_SET;
-        private IClass timerModelClass;
-        private IClass threadModelClass;
-        private IClass threadPoolExecutorModelClass;
-        private IClass viewModelClass;
-        final private IClass handlerModelClass;
-        final private IClass asyncTaskModelClass;
-        private final IClass executorModelClass;
+        private AbstractModelClass timerModelClass;
+        private AbstractModelClass threadModelClass;
+        private AbstractModelClass threadPoolExecutorModelClass;
+        private AbstractModelClass viewModelClass;
+        final private AbstractModelClass handlerModelClass;
+        final private AbstractModelClass asyncTaskModelClass;
+        private final AbstractModelClass executorModelClass;
 
         static {
             SCHEDULE_SELECTOR_SET = new HashSet<>();
@@ -403,23 +407,56 @@ public class CallGraphBuilderForHybridSDK {
             IMethod target = base.getCalleeTarget(caller, site, receiver);
 
             if (site.isDispatch() && receiver != null && target != null) {
-                if (target.getDeclaringClass().getName().equals(JavaTimerModelClass.JAVA_TIMER_MODEL_CLASS.getName()) && SCHEDULE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
-                    return timerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(JavaThreadModelClass.JAVA_THREAD_MODEL_CLASS.getName()) && RUN_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
-                    return threadModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(JavaThreadPoolExecutorModelClass.JAVA_THREAD_POOL_EXECUTOR_MODEL_CLASS.getName()) && EXECUTE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
-                    return threadPoolExecutorModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(AndroidViewModelClass.ANDROID_VIEW_MODEL_CLASS.getName()) && AndroidViewModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-                    return viewModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_DELAYED_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(AndroidAsyncTaskModelClass.ANDROID_ASYNC_TASK_MODEL_CLASS.getName()) && (AndroidAsyncTaskModelClass.EXECUTE_SELECTOR1.equals(site.getDeclaredTarget().getSelector()) || AndroidAsyncTaskModelClass.EXECUTE_SELECTOR2.equals(site.getDeclaredTarget().getSelector()))) {
-                    return asyncTaskModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (target.getDeclaringClass().getName().equals(JavaExecutorModelClass.JAVA_EXECUTOR_MODEL_CLASS.getName()) && JavaExecutorModelClass.EXECUTOR_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-                    return executorModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                }
+                TypeReference targetType = target.getDeclaringClass().getReference();
+                Selector targetSelector = site.getDeclaredTarget().getSelector();
+
+                IMethod model = timerModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+                model = threadModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+                model = threadPoolExecutorModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+                model = viewModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+                model = asyncTaskModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+                model = executorModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+                model = handlerModelClass.match(targetType, targetSelector);
+                if(model != null)
+                    return model;
+
+//                if (target.getDeclaringClass().getName().equals(JavaTimerModelClass.JAVA_TIMER_MODEL_CLASS.getName()) && SCHEDULE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
+//                    return timerModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                } else if (target.getDeclaringClass().getName().equals(JavaThreadModelClass.JAVA_THREAD_MODEL_CLASS.getName()) && RUN_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
+//                    return threadModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                } else if (target.getDeclaringClass().getName().equals(JavaThreadPoolExecutorModelClass.JAVA_THREAD_POOL_EXECUTOR_MODEL_CLASS.getName()) && EXECUTE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
+//                    return threadPoolExecutorModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                } else if (target.getDeclaringClass().getName().equals(AndroidViewModelClass.ANDROID_VIEW_MODEL_CLASS.getName()) && AndroidViewModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
+//                    return viewModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                } else if (target.getDeclaringClass().getName().equals(AndroidAsyncTaskModelClass.ANDROID_ASYNC_TASK_MODEL_CLASS.getName()) && (AndroidAsyncTaskModelClass.EXECUTE_SELECTOR1.equals(site.getDeclaredTarget().getSelector()) || AndroidAsyncTaskModelClass.EXECUTE_SELECTOR2.equals(site.getDeclaredTarget().getSelector()))) {
+//                    return asyncTaskModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                } else if (target.getDeclaringClass().getName().equals(JavaExecutorModelClass.JAVA_EXECUTOR_MODEL_CLASS.getName()) && JavaExecutorModelClass.EXECUTOR_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
+//                    return executorModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                }
+
+//                else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_DELAYED_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
+//                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                } else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
+//                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
+//                }
             }
 
             return target;

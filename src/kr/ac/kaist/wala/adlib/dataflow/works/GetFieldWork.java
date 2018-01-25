@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.dataflow;
+package kr.ac.kaist.wala.adlib.dataflow.works;
 
 import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.ssa.SSAGetInstruction;
@@ -18,7 +18,7 @@ public class GetFieldWork extends AbstractWork {
         if(!instanceMap.containsKey(f))
             instanceMap.put(f, new GetFieldWork(f, w));
 
-        return instanceMap.get(f);
+        return new GetFieldWork(f, w);
     }
 
     public static GetFieldWork getInstance(IField f){
@@ -35,7 +35,8 @@ public class GetFieldWork extends AbstractWork {
 
         if(o instanceof SSAGetInstruction){
             SSAGetInstruction getInst = (SSAGetInstruction) o;
-            if(getInst.getDeclaredField().equals(f.getReference())){
+
+            if(getInst.getDeclaredField().getName().equals(f.getReference().getName())){
                 return super.nextWork();
             }
         }
@@ -62,5 +63,10 @@ public class GetFieldWork extends AbstractWork {
         }
 
         return false;
+    }
+
+    @Override
+    public String toString(){
+        return "[W: GetField@" + f + "]";
     }
 }

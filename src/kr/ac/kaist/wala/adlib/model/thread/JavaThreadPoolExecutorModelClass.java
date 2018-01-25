@@ -15,13 +15,14 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
 /**
  * Created by leesh on 14/01/2017.
  */
-public class JavaThreadPoolExecutorModelClass extends SyntheticClass{
+public class JavaThreadPoolExecutorModelClass extends AbstractModelClass {
 
 
     public static final TypeReference JAVA_THREAD_POOL_EXECUTOR_MODEL_CLASS = TypeReference.findOrCreate(

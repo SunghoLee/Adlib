@@ -21,7 +21,7 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
 
 /**
- * A {@link SyntheticMethod} representing the semantics encoded in a {@link MethodSummary}
+ * A {@link SyntheticMethod} representing the flows encoded in a {@link MethodSummary}
  */
 public class SummarizedMethod extends SyntheticMethod {
   static final boolean DEBUG = false;

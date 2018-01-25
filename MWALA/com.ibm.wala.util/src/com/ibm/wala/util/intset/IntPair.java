@@ -11,7 +11,7 @@
 package com.ibm.wala.util.intset;
 
 /**
- * A pair of ints. Note that an IntPair has value semantics.
+ * A pair of ints. Note that an IntPair has value flows.
  */
 public class IntPair {
   final int x;

@@ -23,7 +23,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.types.MethodReference;
 
 /**
- * generates instructions to simulate the semantics of JS constructor invocations
+ * generates instructions to simulate the flows of JS constructor invocations
  *
  */
 public class JavaScriptConstructTargetSelector implements MethodTargetSelector {

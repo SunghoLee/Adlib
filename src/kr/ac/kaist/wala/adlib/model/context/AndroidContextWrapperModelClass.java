@@ -18,6 +18,7 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
@@ -25,7 +26,7 @@ import java.util.*;
  * A modeling class for Android built-in android/content/ContextWrapper.
  * Created by leesh on 16/01/2017.
  */
-public class AndroidContextWrapperModelClass extends SyntheticClass {
+public class AndroidContextWrapperModelClass extends AbstractModelClass {
     public enum SystemService{
         LOCATION_SERVICE_MANAGER("location"),
         WINDOW_SERVICE_MANAGER("window"),

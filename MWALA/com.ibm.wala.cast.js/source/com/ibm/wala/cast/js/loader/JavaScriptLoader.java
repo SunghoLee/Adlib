@@ -983,7 +983,7 @@ public class JavaScriptLoader extends CAstAbstractModuleLoader {
 
   /**
    * JavaScript files with code to model various aspects of the language
-   * semantics. See com.ibm.wala.cast.js/dat/prologue.js.
+   * flows. See com.ibm.wala.cast.js/dat/prologue.js.
    */
   public static final Set<String> bootstrapFileNames;
 

@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.dataflow;
+package kr.ac.kaist.wala.adlib.dataflow.works;
 
 /**
  * Created by leesh on 29/11/2017.
@@ -28,5 +28,10 @@ public class NoMoreWork implements Work{
     @Override
     public Work nextWork() {
         return this;
+    }
+
+    @Override
+    public String toString(){
+        return "[W: NoMore]";
     }
 }

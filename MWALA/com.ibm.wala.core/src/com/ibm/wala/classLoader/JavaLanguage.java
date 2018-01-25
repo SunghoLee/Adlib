@@ -77,7 +77,7 @@ import com.ibm.wala.util.strings.Atom;
 import com.ibm.wala.util.warnings.Warnings;
 
 /**
- * The implementation of {@link Language} which defines Java semantics.
+ * The implementation of {@link Language} which defines Java flows.
  *
  */
 public class JavaLanguage extends LanguageImpl implements BytecodeLanguage, Constants {

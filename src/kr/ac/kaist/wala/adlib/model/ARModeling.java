@@ -2,7 +2,9 @@ package kr.ac.kaist.wala.adlib.model;
 
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
+import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
+import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
@@ -48,6 +50,13 @@ public class ARModeling {
 
             //< Primordial, Landroid/os/Handler, obtainMessage(ILjava/lang/Object;)Landroid/os/Message; > Context: FirstMethodContextPair: [First: < Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >] : Everywhere
         }
+
+        return false;
+    }
+
+    static public boolean isPrimordial(IClassHierarchy cha, BasicBlockInContext<IExplodedBasicBlock> n) {
+        if (n.getNode().getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial))
+            return !ARModeling.isModelingMethod(cha, n.getNode().getMethod());
 
         return false;
     }

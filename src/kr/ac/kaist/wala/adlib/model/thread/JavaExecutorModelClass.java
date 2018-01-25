@@ -15,13 +15,14 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
 /**
  * Created by leesh on 13/04/2017.
  */
-public class JavaExecutorModelClass extends SyntheticClass {
+public class JavaExecutorModelClass extends AbstractModelClass {
 
     public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
 

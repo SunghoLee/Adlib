@@ -20,7 +20,7 @@ import com.ibm.wala.ipa.callgraph.Entrypoint;
 public class JSAnalysisOptions extends AnalysisOptions {
 
   /**
-   * should the analysis model the semantics of Function.prototype.call / apply?
+   * should the analysis model the flows of Function.prototype.call / apply?
    * Defaults to true.
    */
   private boolean handleCallApply = true;
@@ -32,7 +32,7 @@ public class JSAnalysisOptions extends AnalysisOptions {
   }
   
   /**
-   * should the analysis model the semantics of Function.prototype.call / apply?
+   * should the analysis model the flows of Function.prototype.call / apply?
    */
   public boolean handleCallApply() {
     return handleCallApply;

@@ -14,6 +14,7 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
+import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
 
 import java.util.*;
 
@@ -21,7 +22,7 @@ import java.util.*;
  * A modeling class for Java built-in java/lang/ref/Reference.
  * Created by leesh on 14/01/2017.
  */
-public class JavaReferenceModelClass extends SyntheticClass{
+public class JavaReferenceModelClass extends AbstractModelClass {
 
     public static final TypeReference JAVA_REFERENCE_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/lang/ref/Reference"));

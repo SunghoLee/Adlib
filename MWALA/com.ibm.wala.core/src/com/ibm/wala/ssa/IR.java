@@ -644,7 +644,7 @@ public abstract class IR {
   /**
    * This is space-inefficient. Use with care.
    * 
-   * Be very careful; note the strange identity semantics of SSAInstruction, using ==. You can't mix SSAInstructions and IRs freely.
+   * Be very careful; note the strange identity flows of SSAInstruction, using ==. You can't mix SSAInstructions and IRs freely.
    */
   public ISSABasicBlock getBasicBlockForInstruction(SSAInstruction s) {
     if (instruction2Block == null) {

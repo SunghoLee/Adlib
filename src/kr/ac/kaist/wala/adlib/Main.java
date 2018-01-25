@@ -19,8 +19,8 @@ import kr.ac.kaist.wala.adlib.analyzer.APITarget;
 import kr.ac.kaist.wala.adlib.analyzer.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.callgraph.BranchSlicerForConstant;
 import kr.ac.kaist.wala.adlib.callgraph.CallGraphBuilderForHybridSDK;
-import kr.ac.kaist.wala.adlib.dataflow.IFlowFunction;
-import kr.ac.kaist.wala.adlib.dataflow.PropagateFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 import kr.ac.kaist.wala.hybridroid.util.debug.PointerAnalysisCommandlineDebugger;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
@@ -191,6 +191,7 @@ public class Main {
 
         long start = System.currentTimeMillis();
         long cgStart = System.currentTimeMillis();
+
         CallGraphBuilderForHybridSDK builder = new CallGraphBuilderForHybridSDK(prop, sdk, InitInstsParser.parse(initInstFile));
         CallGraph cg = builder.makeCallGraph();
         PointerAnalysis<InstanceKey> pa = builder.getPointerAnalysis();

@@ -215,7 +215,7 @@ public class Slicer {
 
   /**
    * Return an object which encapsulates the tabulation logic for the slice problem. Subclasses can override this method to
-   * implement special semantics.
+   * implement special flows.
    */
   protected SliceProblem makeSliceProblem(Collection<Statement> roots, ISDG sdgView, boolean backward) {
     return new SliceProblem(roots, sdgView, backward);
