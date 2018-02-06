@@ -21,6 +21,7 @@ import kr.ac.kaist.wala.adlib.model.ARModeling;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -358,5 +359,44 @@ public class DataFlowAnalysis {
         }
     }
 
+    class ScopeFilter implements Predicate<DataWithWork>{
+        private IMethod m;
 
+        public ScopeFilter(IMethod m){
+            this.m = m;
+        }
+
+        @Override
+        public Predicate<DataWithWork> and(Predicate<? super DataWithWork> other) {
+            return dww -> test(dww) && other.test(dww);
+        }
+
+        @Override
+        public Predicate<DataWithWork> negate() {
+            return dww -> !test(dww);
+        }
+
+        @Override
+        public Predicate<DataWithWork> or(Predicate<? super DataWithWork> other) {
+            return dww -> test(dww) || other.test(dww);
+        }
+
+        @Override
+        public boolean test(DataWithWork dataWithWork) {
+            IDataPointer dp = dataWithWork.getData();
+
+            // if a data fact is a local variable
+            if(dp instanceof LocalDataPointer){
+                LocalDataPointer ldp = (LocalDataPointer) dp;
+                IMethod m = ldp.getNode().getMethod();
+                if(this.m.equals(m))
+                    return true;
+                else
+                    return false;
+            }
+
+            // if a data fact is a static field
+            return true;
+        }
+    }
 }
