@@ -9,7 +9,6 @@ import com.ibm.wala.dalvik.ipa.callgraph.impl.AndroidEntryPoint;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.*;
 import com.ibm.wala.ipa.callgraph.propagation.*;
-import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFABuilder;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
@@ -31,7 +30,6 @@ import com.ibm.wala.util.config.FileOfClasses;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.functions.Function;
 import com.ibm.wala.util.strings.Atom;
-import com.sun.istack.internal.Nullable;
 import kr.ac.kaist.wala.adlib.InitInstsParser;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
 import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
@@ -464,7 +462,7 @@ public class CallGraphBuilderForHybridSDK {
      * CallGraphBuilder for Java reflection. Currently, this tries to resolve reflection only when the class name and method name is string constants.
      * This class constructs a call graph based-on nCFABuilder.
      */
-    static class ReflectionResolvingCallGraph extends nCFABuilder{
+    static class ReflectionResolvingCallGraph extends PathSeperationCallGraphBuilder {
         public static TypeName CLASS_TYPE = TypeName.findOrCreate("Ljava/lang/Class");
         public static Selector GET_METHOD_SELECTOR = Selector.make("getMethod(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
         public static TypeName METHOD_TYPE = TypeName.findOrCreate("Ljava/lang/reflect/Method");
@@ -586,7 +584,6 @@ public class CallGraphBuilderForHybridSDK {
             return null;
         }
 
-        @Nullable
         private List<PointerKey> findParams(CGNode n, int iindex, int v){
             List<PointerKey> params = new ArrayList<>();
 
@@ -775,7 +772,6 @@ public class CallGraphBuilderForHybridSDK {
             return ANY_PARAM_TYPE;
         }
 
-        @Nullable
         private String findMethodName(CGNode caller, CallSiteReference site){
             List<TypeReference> params = new ArrayList<>();
             IR ir = caller.getIR();
@@ -795,7 +791,6 @@ public class CallGraphBuilderForHybridSDK {
             return null;
         }
 
-        @Nullable
         private TypeReference[] findParamTypes(CGNode caller, CallSiteReference site){
             List<TypeReference> params = new ArrayList<>();
             IR ir = caller.getIR();

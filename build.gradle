@@ -3,7 +3,6 @@ apply plugin: 'application'
 
 mainClassName = 'kr/ac/kaist/wala/adlib/Main'
 
-
 repositories{
 mavenCentral()
 maven{
@@ -53,6 +52,8 @@ dependencies {
 	compile project(':MWALA/com.ibm.wala.cast.java')
 	compile project(':MWALA/com.ibm.wala.core')
 	compile project(':MWALA/com.ibm.wala.core.tests')
-	compile files('libs/apktool_2.3.0.jar')
+	compile files('libs/apktool_2.3.0.jar', 'libs/sa-jdi.jar')
 	compile group: 'org.eclipse.core', name: 'org.eclipse.core.runtime', version: '3.10.0.v20140318-2214'
+	// https://mvnrepository.com/artifact/org.apache.clerezza.ext/org.json.simple
+	compile group: 'org.apache.clerezza.ext', name: 'org.json.simple', version: '0.4'
 }

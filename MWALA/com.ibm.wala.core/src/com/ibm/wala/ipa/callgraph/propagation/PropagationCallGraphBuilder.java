@@ -24,13 +24,13 @@ import com.ibm.wala.util.CancelException;
 import com.ibm.wala.util.CancelRuntimeException;
 import com.ibm.wala.util.MonitorUtil.IProgressMonitor;
 import com.ibm.wala.util.collections.HashSetFactory;
-import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
-import com.ibm.wala.util.intset.*;
+import com.ibm.wala.util.intset.IntSet;
+import com.ibm.wala.util.intset.IntSetAction;
+import com.ibm.wala.util.intset.IntSetUtil;
+import com.ibm.wala.util.intset.MutableIntSet;
 import com.ibm.wala.util.warnings.Warning;
 import com.ibm.wala.util.warnings.Warnings;
-import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethod;
-import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
 
 import java.util.Iterator;
 import java.util.List;
@@ -642,60 +642,6 @@ public abstract class PropagationCallGraphBuilder implements CallGraphBuilder {
 
   }
 
-  /// Lee: begin
-  public class PathSeparationFilter extends FilterOperator {
-    private IMethod path;
-
-    public PathSeparationFilter(IMethod path){
-      this.path = path;
-    }
-
-    @Override
-    public byte evaluate(PointsToSetVariable lhs, PointsToSetVariable rhs) {
-      MutableIntSet is = (new MutableSparseIntSetFactory()).make();
-
-      if (rhs.getValue() != null) {
-        for (InstanceKey ik : system.getInstances(rhs.getValue())) {
-          Iterator<Pair<CGNode, NewSiteReference>> iP = ik.getCreationSites(callGraph);
-
-          while (iP.hasNext()) {
-            Pair<CGNode, NewSiteReference> p = iP.next();
-            CGNode n = p.fst;
-
-            if (callGraph.getFakeRootNode().equals(n)) {
-              is.add(system.getInstanceIndex(ik));
-              continue;
-            }
-
-            IMethod creationPath = ((FirstMethod) n.getContext().get(FirstMethodContextSelector.FIRST_METHOD)).getMethod();
-
-            if (creationPath == null || path.equals(creationPath)) {
-              is.add(system.getInstanceIndex(ik));
-            }
-          }
-        }
-      }
-      boolean changed = lhs.addAll(is);
-      return changed ? CHANGED : NOT_CHANGED;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if(obj instanceof PathSeparationFilter){
-        PathSeparationFilter psf = (PathSeparationFilter) obj;
-        if(psf.path.equals(path))
-          return true;
-      }
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return super.hashCode() + this.path.hashCode();
-    }
-  }
-
-  /// Lee: end
   public IClassHierarchy getClassHierarchy() {
     return cha;
   }

@@ -1,1 +1,30 @@
-include 'MWALA/kr.ac.kaist.wala.hybridroid', 'MWALA/com.ibm.wala.cast', 'MWALA/com.ibm.wala.cast.test', 'MWALA/com.ibm.wala.cast.java', 'MWALA/com.ibm.wala.core', 'MWALA/kr.ac.kaist.wala.hybridroid.frontend', 'MWALA/com.ibm.wala.cast.java.test', 'MWALA/com.ibm.wala.core.testdata', 'MWALA/kr.ac.kaist.wala.hybridroid.test', 'MWALA/com.ibm.wala.cast.java.test.data', 'MWALA/com.ibm.wala.core.tests', 'MWALA/kr.ac.kaist.wala.hybridroid.test.data', 'MWALA/com.ibm.wala.cast.js', 'MWALA/com.ibm.wala.dalvik', 'MWALA/kr.ac.kaist.wala.hybridroid.types', 'MWALA/com.ibm.wala.cast.js.html.nu_validator', 'MWALA/com.ibm.wala.shrike', 'MWALA/kr.ac.kaist.wala.hybridroid.util', 'MWALA/com.ibm.wala.cast.js.rhino', 'MWALA/com.ibm.wala.tests-feature', 'MWALA/com.ibm.wala.cast.js.rhino.test', 'MWALA/com.ibm.wala.tests.ide-feature', 'MWALA/com.ibm.wala.cast.js.test', 'MWALA/com.ibm.wala.util', 'MWALA/com.ibm.wala-feature', 'MWALA/com.ibm.wala.cast.js.test.data'
+rootProject.name = 'Adlib'
+
+include(
+	'MWALA/kr.ac.kaist.wala.hybridroid',
+	'MWALA/com.ibm.wala.cast',
+	'MWALA/com.ibm.wala.cast.test',
+	'MWALA/com.ibm.wala.cast.java',
+	'MWALA/com.ibm.wala.core',
+	'MWALA/kr.ac.kaist.wala.hybridroid.frontend',
+	'MWALA/com.ibm.wala.cast.java.test',
+	'MWALA/com.ibm.wala.core.testdata',
+	'MWALA/kr.ac.kaist.wala.hybridroid.test',
+	'MWALA/com.ibm.wala.cast.java.test.data',
+	'MWALA/com.ibm.wala.core.tests',
+	'MWALA/kr.ac.kaist.wala.hybridroid.test.data',
+	'MWALA/com.ibm.wala.cast.js',
+	'MWALA/com.ibm.wala.dalvik',
+	'MWALA/kr.ac.kaist.wala.hybridroid.types',
+	'MWALA/com.ibm.wala.cast.js.html.nu_validator',
+	'MWALA/com.ibm.wala.shrike',
+	'MWALA/kr.ac.kaist.wala.hybridroid.util',
+	'MWALA/com.ibm.wala.cast.js.rhino',
+	'MWALA/com.ibm.wala.tests-feature',
+	'MWALA/com.ibm.wala.cast.js.rhino.test',
+	'MWALA/com.ibm.wala.tests.ide-feature',
+	'MWALA/com.ibm.wala.cast.js.test',
+	'MWALA/com.ibm.wala.util',
+	'MWALA/com.ibm.wala-feature',
+	'MWALA/com.ibm.wala.cast.js.test.data'
+)

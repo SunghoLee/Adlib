@@ -6,7 +6,6 @@ import com.ibm.wala.util.graph.NumberedGraph;
 import com.ibm.wala.util.intset.IntSet;
 import com.ibm.wala.util.intset.IntSetUtil;
 import com.ibm.wala.util.intset.MutableIntSet;
-import com.sun.istack.internal.NotNull;
 
 import java.io.Serializable;
 import java.util.*;
@@ -51,7 +50,7 @@ public class ReachableAPIFlowGraph implements NumberedGraph<APICallNode>, Serial
         return N.getNodeNumber();
     }
 
-    @Override @NotNull
+    @Override
     public APICallNode getNode(int number) {
         return nodeList.get(number);
     }
