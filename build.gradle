@@ -54,6 +54,6 @@ dependencies {
 	compile project(':MWALA/com.ibm.wala.core.tests')
 	compile files('libs/apktool_2.3.0.jar', 'libs/sa-jdi.jar')
 	compile group: 'org.eclipse.core', name: 'org.eclipse.core.runtime', version: '3.10.0.v20140318-2214'
-	// https://mvnrepository.com/artifact/org.apache.clerezza.ext/org.json.simple
-	compile group: 'org.apache.clerezza.ext', name: 'org.json.simple', version: '0.4'
+	// https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple
+	compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
 }
