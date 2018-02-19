@@ -24,13 +24,13 @@ sourceSets {
 
 
 dependencies {
-	compile project(':MWALA/com.ibm.wala.util')
-	compile project(':MWALA/com.ibm.wala.cast')
-	compile project(':MWALA/com.ibm.wala.cast.js')
-	compile project(':MWALA/com.ibm.wala.cast.js.rhino.test')
-	compile project(':MWALA/com.ibm.wala.cast.test')
-	compile project(':MWALA/com.ibm.wala.cast.js.test')
-	compile project(':MWALA/com.ibm.wala.core.tests')
+	compile project(':MWALA:com.ibm.wala.util')
+	compile project(':MWALA:com.ibm.wala.cast')
+	compile project(':MWALA:com.ibm.wala.cast.js')
+	compile project(':MWALA:com.ibm.wala.cast.js.rhino.test')
+	compile project(':MWALA:com.ibm.wala.cast.test')
+	compile project(':MWALA:com.ibm.wala.cast.js.test')
+	compile project(':MWALA:com.ibm.wala.core.tests')
 	// https://mvnrepository.com/artifact/nu.validator.htmlparser/htmlparser
 	compile group: 'nu.validator.htmlparser', name: 'htmlparser', version: '1.4'
 }

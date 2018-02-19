@@ -24,10 +24,10 @@ sourceSets {
 
 
 dependencies {
-	compile project(':MWALA/com.ibm.wala.util')
-	compile project(':MWALA/com.ibm.wala.shrike')
-	compile project(':MWALA/com.ibm.wala.core')
-	compile project(':MWALA/com.ibm.wala.core.tests')
+	compile project(':MWALA:com.ibm.wala.util')
+	compile project(':MWALA:com.ibm.wala.shrike')
+	compile project(':MWALA:com.ibm.wala.core')
+	compile project(':MWALA:com.ibm.wala.core.tests')
 	// https://mvnrepository.com/artifact/commons-io/commons-io
 	compile group: 'commons-io', name: 'commons-io', version: '2.4'
 }

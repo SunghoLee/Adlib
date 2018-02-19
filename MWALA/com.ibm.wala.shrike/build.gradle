@@ -21,5 +21,5 @@ sourceSets {
 
 
 dependencies {
-	compile project(':MWALA/com.ibm.wala.util')
+	compile project(':MWALA:com.ibm.wala.util')
 }

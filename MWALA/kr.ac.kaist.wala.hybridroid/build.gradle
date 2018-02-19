@@ -20,19 +20,19 @@ sourceSets {
 }
 
 dependencies {
-	compile project(':MWALA/kr.ac.kaist.wala.hybridroid.util')
-	compile project(':MWALA/com.ibm.wala.cast.js.rhino')
-	compile project(':MWALA/com.ibm.wala.util')
-	compile project(':MWALA/com.ibm.wala.cast.js.html.nu_validator')
-	compile project(':MWALA/com.ibm.wala.cast')
-	compile project(':MWALA/com.ibm.wala.dalvik')
-	compile project(':MWALA/com.ibm.wala.cast.js.rhino.test')
-	compile project(':MWALA/com.ibm.wala.shrike')
-	compile project(':MWALA/com.ibm.wala.cast.js')
-	compile project(':MWALA/com.ibm.wala.cast.js.test')
-	compile project(':MWALA/com.ibm.wala.cast.java')
-	compile project(':MWALA/com.ibm.wala.core')
-	compile project(':MWALA/com.ibm.wala.core.tests')
+	compile project(':MWALA:kr.ac.kaist.wala.hybridroid.util')
+	compile project(':MWALA:com.ibm.wala.cast.js.rhino')
+	compile project(':MWALA:com.ibm.wala.util')
+	compile project(':MWALA:com.ibm.wala.cast.js.html.nu_validator')
+	compile project(':MWALA:com.ibm.wala.cast')
+	compile project(':MWALA:com.ibm.wala.dalvik')
+	compile project(':MWALA:com.ibm.wala.cast.js.rhino.test')
+	compile project(':MWALA:com.ibm.wala.shrike')
+	compile project(':MWALA:com.ibm.wala.cast.js')
+	compile project(':MWALA:com.ibm.wala.cast.js.test')
+	compile project(':MWALA:com.ibm.wala.cast.java')
+	compile project(':MWALA:com.ibm.wala.core')
+	compile project(':MWALA:com.ibm.wala.core.tests')
 	compile files('libs/apktool_2.0.2.jar')
 	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'

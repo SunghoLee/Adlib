@@ -24,11 +24,11 @@ sourceSets {
 
 
 dependencies {
-	compile project(':MWALA/com.ibm.wala.util')
-	compile project(':MWALA/com.ibm.wala.core')
-	compile project(':MWALA/com.ibm.wala.shrike')
-	compile project(':MWALA/com.ibm.wala.core.tests')
-	compile project(':MWALA/com.ibm.wala.cast')
+	compile project(':MWALA:com.ibm.wala.util')
+	compile project(':MWALA:com.ibm.wala.core')
+	compile project(':MWALA:com.ibm.wala.shrike')
+	compile project(':MWALA:com.ibm.wala.core.tests')
+	compile project(':MWALA:com.ibm.wala.cast')
 	// https://mvnrepository.com/artifact/net.htmlparser.jericho/jericho-html
 	compile group: 'net.htmlparser.jericho', name: 'jericho-html', version: '3.2'
 }
