@@ -189,6 +189,9 @@ public class Main {
         String sdk = args[1];
         String initInstFile = args[2];
 
+        System.out.println("#Prop: " + prop);
+        System.out.println("#SDK: " + sdk);
+        System.out.println("#Init: " + initInstFile);
         long start = System.currentTimeMillis();
         long cgStart = System.currentTimeMillis();
 

@@ -1,5 +1,6 @@
 package kr.ac.kaist.wala.adlib.analyzer;
 
+import com.ibm.wala.analysis.pointers.HeapGraph;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
@@ -19,13 +20,13 @@ import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.callgraph.HybridSDKModel;
-import kr.ac.kaist.wala.adlib.dataflow.*;
+import kr.ac.kaist.wala.adlib.dataflow.DataFlowAnalysis;
 import kr.ac.kaist.wala.adlib.dataflow.Node;
-import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
-import kr.ac.kaist.wala.adlib.dataflow.pointer.LocalDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.flows.DefaultDataFlowSemanticFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
+import kr.ac.kaist.wala.adlib.dataflow.pointer.LocalDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.works.NoMoreWork;
 import kr.ac.kaist.wala.adlib.dataflow.works.Work;
 
@@ -72,7 +73,6 @@ public class MaliciousPatternChecker {
 
         Set<IMethod> entries = HybridSDKModel.getBridgeEntries();
         DataFlowAnalysis dfa = new DataFlowAnalysis(icfg, DataFlowAnalysis.CONTEXT.FLOW_INSENSITIVE);
-
 
         for(IMethod entry : entries) {
             Set<MPData> seeds = new HashSet<>();

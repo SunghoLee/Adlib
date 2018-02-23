@@ -26,6 +26,7 @@ public class InitInstsParser {
             content += buffer + "\n";
         }
 
+        try{
         JSONParser parser = new JSONParser();
         JSONArray arr = (JSONArray)parser.parse(content);
         List<InitInst> insts = new ArrayList<>();
@@ -39,7 +40,11 @@ public class InitInstsParser {
             insts.add(new InitInst(TypeReference.findOrCreate(ClassLoaderReference.Application, klass), Selector.make(method)));
         }
 
-        return insts.toArray(new InitInst[0]);
+        return insts.toArray(new InitInst[0]);}catch(Exception e){
+            System.out.println("#? " + e.toString());
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static class InitInst {
