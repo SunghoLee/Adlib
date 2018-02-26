@@ -2,6 +2,8 @@ package kr.ac.kaist.wala.adlib;
 
 import com.google.common.collect.Lists;
 import com.ibm.wala.dalvik.classLoader.DexIRFactory;
+import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
+import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
@@ -21,6 +23,8 @@ import kr.ac.kaist.wala.adlib.callgraph.BranchSlicerForConstant;
 import kr.ac.kaist.wala.adlib.callgraph.CallGraphBuilderForHybridSDK;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.IFDSAnalyzer;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.InfeasiblePathException;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 import kr.ac.kaist.wala.hybridroid.util.debug.PointerAnalysisCommandlineDebugger;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
@@ -222,6 +226,14 @@ public class Main {
         BranchSlicerForConstant slicer = new BranchSlicerForConstant(cg, pa);
         cg = slicer.prune();
 
+        ICFGSupergraph supergraph = ICFGSupergraph.make(cg,new AnalysisCache());
+        IFDSAnalyzer ifds = new IFDSAnalyzer(supergraph, pa);
+        try {
+            ifds.analyze(supergraph.getEntriesForProcedure(cg.getFakeRootNode())[0], null);
+        } catch (InfeasiblePathException e) {
+            e.printStackTrace();
+        }
+        /*
         // Malicious Pattern Checking
         MaliciousPatternChecker pc = new MaliciousPatternChecker(cg.getClassHierarchy());
         pc.addMaliciousPatterns(maliciousPatterns);
@@ -252,13 +264,15 @@ public class Main {
 //        for(String w : cca.getWarnings()){
 //            System.out.println("W: " + w);
 //        }
-
+*/
         if(DEBUG) {
-            String name = "ir_ori";
+            String name = "ir_test";
             final CallGraph fcg = cg;
-            IRPrinter.printIR(fcg, name+"2", new IRPrinter.Filter(){
+            IRPrinter.printIR(fcg, name, new IRPrinter.Filter(){
                 @Override
                 public boolean filter(CGNode n) {
+                    if(n.getMethod().toString().contains("fakeRootMethod"))
+                        return true;
                     if(n.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial)){
                         if(!ARModeling.isModelingMethod(fcg.getClassHierarchy(), n.getMethod()))
                             return false;
