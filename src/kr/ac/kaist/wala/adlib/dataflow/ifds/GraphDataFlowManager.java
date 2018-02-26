@@ -5,6 +5,7 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SSAInstruction;
+import com.ibm.wala.ssa.SSAReturnInstruction;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.HashSet;
@@ -129,9 +130,17 @@ public class GraphDataFlowManager {
     protected Set<BasicBlockInContext> getNormalSuccessors(BasicBlockInContext bb){
         Set<BasicBlockInContext> res = new HashSet<>();
 
+        boolean isRet = false;
+
+        if(bb.getLastInstruction() != null && bb.getLastInstruction() instanceof SSAReturnInstruction)
+            isRet = true;
         Iterator<BasicBlockInContext> iSucc = supergraph.getSuccNodes(bb);
         while(iSucc.hasNext()){
             BasicBlockInContext succ = iSucc.next();
+
+            // exclude exception paths
+            if(!isRet && succ.isExitBlock())
+                continue;
             if(normalPathFilter.accept(bb, succ))
                 res.add(succ);
         }
