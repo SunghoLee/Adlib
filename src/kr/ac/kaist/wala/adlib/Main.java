@@ -25,6 +25,8 @@ import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.IFDSAnalyzer;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.InfeasiblePathException;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.LocalDataFact;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 import kr.ac.kaist.wala.hybridroid.util.debug.PointerAnalysisCommandlineDebugger;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
@@ -229,7 +231,12 @@ public class Main {
         ICFGSupergraph supergraph = ICFGSupergraph.make(cg,new AnalysisCache());
         IFDSAnalyzer ifds = new IFDSAnalyzer(supergraph, pa);
         try {
-            ifds.analyze(supergraph.getEntriesForProcedure(cg.getFakeRootNode())[0], null);
+            for(CGNode n : cg) {
+                if(n.getMethod().getReference().toString().contains("< Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >")) {
+                    System.out.println("# SEED_MATCH: " + n);
+                    ifds.analyze(supergraph.getEntriesForProcedure(n)[0], new LocalDataFact(n, 2, NoneField.getInstance()));
+                }
+            }
         } catch (InfeasiblePathException e) {
             e.printStackTrace();
         }

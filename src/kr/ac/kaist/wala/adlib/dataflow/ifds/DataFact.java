@@ -1,13 +1,14 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
-/**
- * Created by leesh on 22/02/2018.
- */
-public class DataFact {
-    public final static DataFact DEFAULT_FACT = new DataFact();
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 
-    @Override
-    public String toString(){
-        return "0";
-    }
+/**
+ * Created by leesh on 27/02/2018.
+ */
+public interface DataFact {
+    public final static DataFact DEFAULT_FACT = new DefaultDataFact();
+
+    public Field getField();
+
+    public boolean accept(IDataFactFilter filter);
 }

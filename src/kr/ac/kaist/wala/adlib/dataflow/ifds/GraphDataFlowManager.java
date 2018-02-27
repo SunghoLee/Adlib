@@ -2,10 +2,15 @@ package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
-import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
-import com.ibm.wala.ssa.SSAInstruction;
-import com.ibm.wala.ssa.SSAReturnInstruction;
+import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
+import com.ibm.wala.ssa.*;
+import com.ibm.wala.util.intset.OrdinalSet;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.HashSet;
@@ -24,8 +29,9 @@ public class GraphDataFlowManager {
     private final InfeasibleDataFilter callDataFilter;
     private final InfeasibleDataFilter callToRetDataFilter;
     private final SummaryEdgeManager seManager;
+    private final PointerAnalysis<InstanceKey> pa;
 
-    public GraphDataFlowManager(ICFGSupergraph supergraph, SummaryEdgeManager seManager){
+    public GraphDataFlowManager(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa, SummaryEdgeManager seManager){
         this.supergraph = supergraph;
         this.normalPathFilter = new DefaultPathFilter();
         this.callPathFilter = new DefaultPathFilter();
@@ -34,6 +40,7 @@ public class GraphDataFlowManager {
         this.callDataFilter = new DefaultDataFilter();
         this.callToRetDataFilter = new DefaultDataFilter();
         this.seManager = seManager;
+        this.pa = pa;
     }
 
     public Set<Pair<BasicBlockInContext, DataFact>> getNormalNexts(BasicBlockInContext node, DataFact fact){
@@ -43,11 +50,17 @@ public class GraphDataFlowManager {
 
         if(inst == null || fact.equals(DataFact.DEFAULT_FACT)) {
             // if it is an empty block
-            for(BasicBlockInContext succ : getNormalSuccessors(node)){
-                res.add(Pair.make(succ, fact));
+            try {
+                for(BasicBlockInContext succ : getNormalSuccessors(node)){
+                    res.add(Pair.make(succ, fact));
+                }
+            } catch (InfeasiblePathException e) {
+                e.printStackTrace();
             }
         }else{
             // TODO: need to handle each instruction's semantics
+            // TODO: do we need to consider the dense propagation or only sparse one?
+
         }
         return res;
     }
@@ -60,9 +73,10 @@ public class GraphDataFlowManager {
         if(invokeInst == null)
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
-        DataFact calleeDataFact = getCalleeDataFact(invokeInst, fact);
-        for(BasicBlockInContext callee : getCalleeSuccessors(node))
+        for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
+            DataFact calleeDataFact = getCalleeDataFact(callee.getNode(), invokeInst, fact);
             res.add(Pair.make(callee, calleeDataFact));
+        }
 
         return res;
     }
@@ -96,6 +110,9 @@ public class GraphDataFlowManager {
     public Set<Pair<BasicBlockInContext, DataFact>> getCallerDataToEntry(BasicBlockInContext entry, DataFact fact) throws InfeasiblePathException {
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
 
+        if((fact instanceof LocalDataFact) == false)
+            return res;
+
         Iterator<BasicBlockInContext> iPred = supergraph.getPredNodes(entry);
 
         while(iPred.hasNext()){
@@ -103,44 +120,192 @@ public class GraphDataFlowManager {
             if(pred.getLastInstruction() == null)
                 throw new InfeasiblePathException("Call node must have an instruction: " + pred);
 
-            SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) pred.getLastInstruction();
-            int index = getArgumentIndex(fact);
-            DataFact callerFact = makeNewDataFact(pred.getNode(), invokeInst.getUse(index));
+            if(fact instanceof GlobalDataFact){
+                res.add(Pair.make(pred, fact));
+            }else if(fact instanceof LocalDataFact){
+                SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) pred.getLastInstruction();
+                int index = getArgumentIndex((LocalDataFact)fact);
+                LocalDataFact callerFact = makeNewLocalDataFact(pred.getNode(), invokeInst.getUse(index), fact.getField());
 
+            }
         }
 
         return res;
     }
 
-    private int getArgumentIndex(DataFact fact){
-        // TODO: Implement this!
-        return 0;
+    private int getArgumentIndex(LocalDataFact fact){
+        return fact.getVar() -1;
     }
 
-    private DataFact makeNewDataFact(CGNode node, int numV){
-        // TODO: Implement this!
-        return new DataFact();
+    private LocalDataFact makeNewLocalDataFact(CGNode node, int numV, Field f){
+        return new LocalDataFact(node, numV, f);
     }
 
-    protected DataFact getCalleeDataFact(SSAAbstractInvokeInstruction invokeInst, DataFact fact){
-        // TODO: need to caculcate a callee data fact regarding to the caller data fact used in the invoke instruction
+    protected DataFact getCalleeDataFact(CGNode callee, SSAAbstractInvokeInstruction invokeInst, DataFact fact){
+        // TODO: need to calculate a callee data fact regarding to the caller data fact used in the invoke instruction
+        if(fact instanceof GlobalDataFact){
+            return fact;
+        }else if(fact instanceof LocalDataFact){
+            LocalDataFact ldf = (LocalDataFact) fact;
+            int v = ldf.getVar();
+            int i=0;
+            for(; i<invokeInst.getNumberOfUses(); i++){
+                if(invokeInst.getUse(i) == v)
+                    break;
+            }
+
+            return new LocalDataFact(callee, i+1, fact.getField());
+        }
         return fact;
     }
 
-    protected Set<BasicBlockInContext> getNormalSuccessors(BasicBlockInContext bb){
+    protected Set<BasicBlockInContext> getNormalSuccessors(BasicBlockInContext bb) throws InfeasiblePathException {
         Set<BasicBlockInContext> res = new HashSet<>();
+        // this method only handles normal nodes. So reject call and exit nodes.
+        if(bb.isExitBlock() || supergraph.isCall(bb))
+            return res;
 
         boolean isRet = false;
+        boolean isSwitch = false;
+        int[] possibleLabels = null;
+        boolean isIf = false;
+        Boolean ifTrueCase = null;
+        if(bb.getLastInstruction() != null) {
+            if(bb.getLastInstruction() instanceof SSAReturnInstruction)
+                isRet = true;
+            else if(bb.getLastInstruction() instanceof SSASwitchInstruction) {
+                isSwitch = true;
+                SSASwitchInstruction switchInst = (SSASwitchInstruction) bb.getLastInstruction();
+                int[] caseLabels = switchInst.getCasesAndLabels();
+                int condV = switchInst.getUse(0);
+                PointerKey condPK = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV);
+                OrdinalSet<InstanceKey> ikSet = pa.getPointsToSet(condPK);
+                possibleLabels = new int[ikSet.size()];
+                int index = 0;
+                for(InstanceKey ik : ikSet){
+                    // we only handle switch statements when all possible condition values are constant.
+                    if(ik instanceof ConstantKey){
+                        isSwitch = true;
+                        int caseValue = (Integer)((ConstantKey) ik).getValue();
+                        int beforeCasesSize = index;
+                        for(int i=0; i<caseLabels.length-1; i+=2){
+                            if(caseValue == caseLabels[i]) {
+                                possibleLabels[index++] = caseLabels[i+1];
+                            }
+                        }
+                        if(beforeCasesSize == index)
+                            possibleLabels[index++] = switchInst.getDefault();
+                    }else{
+                        isSwitch = false;
+                        break;
+                    }
+                }
+            }else if(bb.getLastInstruction() instanceof SSAConditionalBranchInstruction) {
+                SSAConditionalBranchInstruction ifInst = (SSAConditionalBranchInstruction) bb.getLastInstruction();
+                if(ifInst.isIntegerComparison()){
+                    int condV1 = ifInst.getUse(0);
+                    int condV2 = ifInst.getUse(1);
 
-        if(bb.getLastInstruction() != null && bb.getLastInstruction() instanceof SSAReturnInstruction)
-            isRet = true;
+                    PointerKey condPK1 = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV1);
+                    PointerKey condPK2 = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV2);
+
+                    for(InstanceKey condIK1 : pa.getPointsToSet(condPK1)){
+                        boolean partialRes = true;
+                        for(InstanceKey condIK2 : pa.getPointsToSet(condPK2)){
+                            if(condIK1 instanceof ConstantKey && condIK2 instanceof ConstantKey){
+                                int condValue1 = (Integer)((ConstantKey) condIK1).getValue();
+                                int condValue2 = (Integer)((ConstantKey) condIK2).getValue();
+
+                                boolean localCond = false;
+                                IConditionalBranchInstruction.Operator op = (IConditionalBranchInstruction.Operator)ifInst.getOperator();
+                                switch(op){
+                                    case EQ:
+                                        if(condValue1 == condValue2)
+                                            localCond = true;
+                                        else
+                                            localCond = false;
+                                        break;
+                                    case NE:
+                                        if(condValue1 != condValue2)
+                                            localCond = true;
+                                        else
+                                            localCond = false;
+                                        break;
+                                    case LT:
+                                        if(condValue1 < condValue2)
+                                            localCond = true;
+                                        else
+                                            localCond = false;
+                                        break;
+                                    case GE:
+                                        if(condValue1 >= condValue2)
+                                            localCond = true;
+                                        else
+                                            localCond = false;
+                                        break;
+                                    case GT:
+                                        if(condValue1 > condValue2)
+                                            localCond = true;
+                                        else
+                                            localCond = false;
+                                        break;
+                                    case LE:
+                                        if(condValue1 <= condValue2)
+                                            localCond = true;
+                                        else
+                                            localCond = false;
+                                        break;
+                                    default:
+                                        throw new InfeasiblePathException("The operator must belong to 6 types: " + ifInst.getOperator());
+                                }
+                                if(ifTrueCase == null)
+                                    ifTrueCase = localCond;
+                                else if(ifTrueCase != localCond) {
+                                    isIf = false;
+                                    partialRes = false;
+                                    break;
+                                }
+                            }else{
+                                isIf = false;
+                                partialRes = false;
+                                break;
+                            }
+                        }
+                        if(partialRes == false)
+                            break;
+                    }
+                }
+            }
+        }
         Iterator<BasicBlockInContext> iSucc = supergraph.getSuccNodes(bb);
+//        if(isSwitch){
+//            System.out.println("***SWITCH***");
+//            System.out.print("[");
+//            for(int i=0 ; i<possibleLabels.length; i++)
+//                System.out.print(possibleLabels[i] + ((i == possibleLabels.length-1)?"":", "));
+//            System.out.println("]");
+//
+//        }
+
         while(iSucc.hasNext()){
             BasicBlockInContext succ = iSucc.next();
 
             // exclude exception paths
             if(!isRet && succ.isExitBlock())
                 continue;
+            else if(isSwitch){ // when we can slice infeasible cases
+                int label = succ.getLastInstructionIndex();
+                boolean feasibleCheck = false;
+                for(int i=0; i<possibleLabels.length; i++) {
+                    if(possibleLabels[i] == label)
+                        feasibleCheck = true;
+                }
+                if(!feasibleCheck)
+                    continue;
+            }else if(isIf){ // when we can slice an infeasible condition
+
+            }
+
             if(normalPathFilter.accept(bb, succ))
                 res.add(succ);
         }
@@ -211,5 +376,15 @@ public class GraphDataFlowManager {
         public boolean accept(BasicBlockInContext bb, BasicBlockInContext succ, DataFact df) {
             return true;
         }
+    }
+
+    class SwitchFilter {
+        public boolean accept(BasicBlockInContext bb, BasicBlockInContext succ, Set<InstanceKey> ikSet){
+            return true;
+        }
+    }
+
+    class IfFilter{
+
     }
 }
