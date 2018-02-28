@@ -15,7 +15,9 @@ import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by leesh on 23/02/2018.
@@ -43,25 +45,26 @@ public class GraphDataFlowManager {
         this.pa = pa;
     }
 
+    boolean debug = false;
     public Set<Pair<BasicBlockInContext, DataFact>> getNormalNexts(BasicBlockInContext node, DataFact fact){
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
 
-        SSAInstruction inst = node.getLastInstruction();
-
-        if(inst == null || fact.equals(DataFact.DEFAULT_FACT)) {
-            // if it is an empty block
-            try {
+        try {
+            if(fact.equals(DataFact.DEFAULT_FACT)) {
                 for(BasicBlockInContext succ : getNormalSuccessors(node)){
                     res.add(Pair.make(succ, fact));
                 }
-            } catch (InfeasiblePathException e) {
-                e.printStackTrace();
+            }else{
+                // TODO: need to handle each instruction's semantics
+                // TODO: do we need to consider the dense propagation or only sparse one?
+                for(BasicBlockInContext succ : getSparseNormalSuccessors(node, fact)){
+                    res.add(Pair.make(succ, fact));
+                }
             }
-        }else{
-            // TODO: need to handle each instruction's semantics
-            // TODO: do we need to consider the dense propagation or only sparse one?
-
+        } catch (InfeasiblePathException e) {
+            e.printStackTrace();
         }
+        debug = false;
         return res;
     }
 
@@ -96,15 +99,76 @@ public class GraphDataFlowManager {
         return res;
     }
 
+    public Set<Pair<BasicBlockInContext, DataFact>> getRetInfo(BasicBlockInContext call, BasicBlockInContext exit, DataFact fact) throws InfeasiblePathException {
+        Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
+
+        SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) call.getLastInstruction();
+
+        if(!invokeInst.hasDef())
+            return res;
+
+        int defV = invokeInst.getDef();
+
+        // TODO: we need to handle globlal data fact.
+        if((fact instanceof LocalDataFact) == false)
+            return res;
+
+        LocalDataFact ldf = (LocalDataFact) fact;
+        int v = ldf.getVar();
+
+        //TODO: we need to handle objects that do not be returned, but are alias with others.
+        if(!isReturned(exit.getNode().getDU(), v))
+            return res;
+
+        Iterator<BasicBlockInContext> iRetSites = supergraph.getReturnSites(call, exit.getNode());
+        while(iRetSites.hasNext()){
+            BasicBlockInContext retSite = iRetSites.next();
+            res.add(Pair.make(retSite, new LocalDataFact(retSite.getNode(), defV, ldf.getField())));
+        }
+        return res;
+    }
+
+    public Set<Pair<BasicBlockInContext, DataFact>> getCallerInfo(BasicBlockInContext entry, DataFact fact) {
+        Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
+
+        Iterator<BasicBlockInContext> iCallerBlock = supergraph.getPredNodes(entry);
+
+        if(fact instanceof LocalDataFact){
+            LocalDataFact ldf = (LocalDataFact) fact;
+
+            while(iCallerBlock.hasNext()){
+                BasicBlockInContext callerBlock = iCallerBlock.next();
+                SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) callerBlock.getLastInstruction();
+                int useV = invokeInst.getUse(ldf.getVar()-1);
+                res.add(Pair.make(callerBlock, new LocalDataFact(callerBlock.getNode(), useV, ldf.getField())));
+            }
+
+        }
+        return res;
+    }
+
     public Set<Pair<BasicBlockInContext, DataFact>> getExitNexts(BasicBlockInContext node, DataFact fact){
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
 
-        //TODO: revise this!
-        for(BasicBlockInContext ret : getExitSuccessors(node))
-            if(callToRetDataFilter.accept(node, ret, fact))
+        for(BasicBlockInContext ret : getExitSuccessors(node)) {
+            if (callToRetDataFilter.accept(node, ret, fact))
                 res.add(Pair.make(ret, fact));
+        }
 
         return res;
+    }
+
+    private boolean isReturned(DefUse du, int v){
+        Iterator<SSAInstruction> iUse = du.getUses(v);
+        while(iUse.hasNext()){
+            SSAInstruction useInst = iUse.next();
+
+            if(useInst instanceof SSAReturnInstruction){
+                if(useInst.getNumberOfUses() > 0 && useInst.getUse(0) == v)
+                    return true;
+            }
+        }
+        return false;
     }
 
     public Set<Pair<BasicBlockInContext, DataFact>> getCallerDataToEntry(BasicBlockInContext entry, DataFact fact) throws InfeasiblePathException {
@@ -159,10 +223,55 @@ public class GraphDataFlowManager {
         return fact;
     }
 
+    private Set<BasicBlockInContext> getNextClosestUseBlocks(BasicBlockInContext bb, DefUse du, int v) throws InfeasiblePathException {
+        Set<BasicBlockInContext> res = new HashSet<>();
+        Iterator<SSAInstruction> iUse = du.getUses(v);
+
+        Set<Integer> useIndexSet = new HashSet<>();
+
+        while(iUse.hasNext()){
+            SSAInstruction useInst = iUse.next();
+
+            if(useInst.iindex <= bb.getLastInstructionIndex())
+                continue;
+
+            useIndexSet.add(useInst.iindex);
+        }
+
+        Queue<BasicBlockInContext> bfsQueue = new LinkedBlockingQueue<>();
+        bfsQueue.add(bb);
+
+        while(!bfsQueue.isEmpty()){
+            BasicBlockInContext succ = bfsQueue.poll();
+            for(BasicBlockInContext succOfSucc : getNormalSuccessors(succ)){
+                if(succOfSucc.isExitBlock())
+                    res.add(succOfSucc);
+                else if(useIndexSet.contains(succOfSucc.getLastInstructionIndex())){
+                    res.add(succOfSucc);
+                }else
+                    bfsQueue.add(succOfSucc);
+            }
+        }
+
+        return res;
+    }
+
+    protected Set<BasicBlockInContext> getSparseNormalSuccessors(BasicBlockInContext bb, DataFact df) throws InfeasiblePathException {
+        if(df instanceof GlobalDataFact){
+            return getNormalSuccessors(bb);
+        }else if(df instanceof LocalDataFact){
+            LocalDataFact ldf = (LocalDataFact) df;
+            CGNode n = ldf.getNode();
+            DefUse du = n.getDU();
+            return getNextClosestUseBlocks(bb, du, ldf.getVar());
+        }else
+            throw new InfeasiblePathException("A data fact used to find sparse successors must be either GlobalDataFact or LocalDataFact: " + df.getClass().getName());
+    }
+
     protected Set<BasicBlockInContext> getNormalSuccessors(BasicBlockInContext bb) throws InfeasiblePathException {
         Set<BasicBlockInContext> res = new HashSet<>();
         // this method only handles normal nodes. So reject call and exit nodes.
-        if(bb.isExitBlock() || supergraph.isCall(bb))
+        if(bb.isExitBlock())
             return res;
 
         boolean isRet = false;
@@ -278,20 +387,14 @@ public class GraphDataFlowManager {
             }
         }
         Iterator<BasicBlockInContext> iSucc = supergraph.getSuccNodes(bb);
-//        if(isSwitch){
-//            System.out.println("***SWITCH***");
-//            System.out.print("[");
-//            for(int i=0 ; i<possibleLabels.length; i++)
-//                System.out.print(possibleLabels[i] + ((i == possibleLabels.length-1)?"":", "));
-//            System.out.println("]");
-//
-//        }
 
         while(iSucc.hasNext()){
             BasicBlockInContext succ = iSucc.next();
 
             // exclude exception paths
             if(!isRet && succ.isExitBlock())
+                continue;
+            if(succ.isEntryBlock())
                 continue;
             else if(isSwitch){ // when we can slice infeasible cases
                 int label = succ.getLastInstructionIndex();

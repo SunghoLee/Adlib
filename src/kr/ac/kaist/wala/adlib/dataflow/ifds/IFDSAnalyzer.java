@@ -71,7 +71,15 @@ public class IFDSAnalyzer {
                     propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
                 }
             }else if(supergraph.isExit(toNode)){
-
+                for(Pair<BasicBlockInContext, DataFact> callerP : graphManager.getCallerInfo(fromNode, fromFact)){
+                    for(Pair<BasicBlockInContext, DataFact> retP : graphManager.getRetInfo(callerP.fst(), toNode, toFact)){
+                        PathEdge nEdge = new PathEdge(callerP.fst(), callerP.snd(), retP.fst(), retP.snd());
+                        if(!seManager.contains(nEdge)){
+                            seManager.add(nEdge);
+                            
+                        }
+                    }
+                }
             }else{
                 for(Pair<BasicBlockInContext, DataFact> p : graphManager.getNormalNexts(toNode, toFact)){
                         propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));

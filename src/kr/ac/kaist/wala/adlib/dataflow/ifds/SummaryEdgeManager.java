@@ -28,4 +28,8 @@ public class SummaryEdgeManager {
         }
         return res;
     }
+
+    public boolean contains(PathEdge pe){
+        return edgeSet.contains(pe);
+    }
 }
