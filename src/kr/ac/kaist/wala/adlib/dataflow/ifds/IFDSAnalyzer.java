@@ -76,13 +76,15 @@ public class IFDSAnalyzer {
                         PathEdge nEdge = new PathEdge(callerP.fst(), callerP.snd(), retP.fst(), retP.snd());
                         if(!seManager.contains(nEdge)){
                             seManager.add(nEdge);
-                            
+                            for(PathEdge callerPE : peManager.findLocalEdgeTo(callerP.fst(), callerP.snd())){
+                                propagate(new PathEdge(callerPE.getFromNode(), callerPE.getFromFact(), retP.fst(), retP.snd()));
+                            }
                         }
                     }
                 }
             }else{
                 for(Pair<BasicBlockInContext, DataFact> p : graphManager.getNormalNexts(toNode, toFact)){
-                        propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
+                    propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
                 }
             }
             if(DEBUG && fromNode.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application)) {
@@ -98,6 +100,4 @@ public class IFDSAnalyzer {
 
         return null;
     }
-
-
 }

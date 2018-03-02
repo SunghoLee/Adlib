@@ -1,5 +1,7 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
+import com.ibm.wala.ipa.cfg.BasicBlockInContext;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,5 +19,16 @@ public class PathEdgeManager {
 
     public boolean contains(PathEdge pe){
         return pathSet.contains(pe);
+    }
+
+    public Set<PathEdge> findLocalEdgeTo(BasicBlockInContext bb, DataFact df){
+        Set<PathEdge> res = new HashSet<>();
+
+        for(PathEdge pe : pathSet){
+            if(pe.getToNode().equals(bb) && pe.getToFact().equals(df))
+                res.add(pe);
+        }
+
+        return res;
     }
 }

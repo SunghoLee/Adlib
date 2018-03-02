@@ -60,6 +60,7 @@ public class GraphDataFlowManager {
                 for(BasicBlockInContext succ : getSparseNormalSuccessors(node, fact)){
                     res.add(Pair.make(succ, fact));
                 }
+                SSAInstruction inst;
             }
         } catch (InfeasiblePathException e) {
             e.printStackTrace();
