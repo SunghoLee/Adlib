@@ -8,9 +8,13 @@ import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
+import com.ibm.wala.shrikeBT.Instruction;
 import com.ibm.wala.ssa.*;
+import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.intset.OrdinalSet;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.HashSet;
@@ -32,6 +36,7 @@ public class GraphDataFlowManager {
     private final InfeasibleDataFilter callToRetDataFilter;
     private final SummaryEdgeManager seManager;
     private final PointerAnalysis<InstanceKey> pa;
+    private final AliasAwareFlowFunction flowFun;
 
     public GraphDataFlowManager(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa, SummaryEdgeManager seManager){
         this.supergraph = supergraph;
@@ -43,6 +48,7 @@ public class GraphDataFlowManager {
         this.callToRetDataFilter = new DefaultDataFilter();
         this.seManager = seManager;
         this.pa = pa;
+        flowFun = new AliasAwareFlowFunction(supergraph, pa);
     }
 
     boolean debug = false;
@@ -55,12 +61,20 @@ public class GraphDataFlowManager {
                     res.add(Pair.make(succ, fact));
                 }
             }else{
-                // TODO: need to handle each instruction's semantics
                 // TODO: do we need to consider the dense propagation or only sparse one?
-                for(BasicBlockInContext succ : getSparseNormalSuccessors(node, fact)){
-                    res.add(Pair.make(succ, fact));
+                SSAInstruction inst = node.getLastInstruction();
+                Set<DataFact> nextFacts = new HashSet<>();
+
+                if(inst == null) {
+                    nextFacts.add(fact);
+                }else
+                    nextFacts.addAll(flowFun.visit(node.getNode(), inst, fact));
+
+                for(DataFact nextFact : nextFacts){
+                    for(BasicBlockInContext succ : getSparseNormalSuccessors(node, nextFact)){
+                        res.add(Pair.make(succ, nextFact));
+                    }
                 }
-                SSAInstruction inst;
             }
         } catch (InfeasiblePathException e) {
             e.printStackTrace();
@@ -79,6 +93,14 @@ public class GraphDataFlowManager {
 
         for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
             DataFact calleeDataFact = getCalleeDataFact(callee.getNode(), invokeInst, fact);
+
+            // Static fields of application classes do not be used in methods of primordial classes. So, skip the propagation.
+            if(fact instanceof GlobalDataFact){
+                GlobalDataFact gdf = (GlobalDataFact) fact;
+                if(gdf.getGlobalFact().getDeclaringClass().getClassLoader().equals(ClassLoaderReference.Application) &&
+                        callee.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial))
+                    continue;
+            }
             res.add(Pair.make(callee, calleeDataFact));
         }
 
@@ -93,9 +115,11 @@ public class GraphDataFlowManager {
         if(invokeInst == null)
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
-        for(BasicBlockInContext ret : getCallToReturnSuccessors(node))
-            if(callToRetDataFilter.accept(node, ret, fact))
+        for(BasicBlockInContext ret : getCallToReturnSuccessors(node)) {
+            // TODO: should we filter out data facts used in call sites?
+            if (callToRetDataFilter.accept(node, ret, fact))
                 res.add(Pair.make(ret, fact));
+        }
 
         return res;
     }
@@ -110,21 +134,30 @@ public class GraphDataFlowManager {
 
         int defV = invokeInst.getDef();
 
-        // TODO: we need to handle globlal data fact.
-        if((fact instanceof LocalDataFact) == false)
-            return res;
-
-        LocalDataFact ldf = (LocalDataFact) fact;
-        int v = ldf.getVar();
-
-        //TODO: we need to handle objects that do not be returned, but are alias with others.
-        if(!isReturned(exit.getNode().getDU(), v))
-            return res;
-
         Iterator<BasicBlockInContext> iRetSites = supergraph.getReturnSites(call, exit.getNode());
         while(iRetSites.hasNext()){
             BasicBlockInContext retSite = iRetSites.next();
-            res.add(Pair.make(retSite, new LocalDataFact(retSite.getNode(), defV, ldf.getField())));
+            // skip exceptional edges at return sites
+            if(retSite.isExitBlock())
+                continue;
+
+            if(fact instanceof LocalDataFact) {
+                LocalDataFact ldf = (LocalDataFact) fact;
+                int v = ldf.getVar();
+
+                if (isReturned(exit.getNode().getDU(), v))
+                    res.add(Pair.make(retSite, new LocalDataFact(retSite.getNode(), defV, ldf.getField())));
+
+                if (!(fact.getField() instanceof NoneField)) {
+                    for (DataFact aliasFact : flowFun.getLocalAliasOfCaller(retSite.getNode(), ldf)) {
+                        res.add(Pair.make(retSite, aliasFact));
+                    }
+                }
+            }else if(fact instanceof GlobalDataFact){
+                res.add(Pair.make(retSite, fact));
+            }else{
+                Assertions.UNREACHABLE("Only Local and Global data facts are considered in exit nodes: " + fact);
+            }
         }
         return res;
     }
@@ -242,8 +275,13 @@ public class GraphDataFlowManager {
         Queue<BasicBlockInContext> bfsQueue = new LinkedBlockingQueue<>();
         bfsQueue.add(bb);
 
+        Set<BasicBlockInContext> visited = new HashSet<>();
+
         while(!bfsQueue.isEmpty()){
             BasicBlockInContext succ = bfsQueue.poll();
+            if(visited.contains(succ))
+                continue;
+            visited.add(succ);
             for(BasicBlockInContext succOfSucc : getNormalSuccessors(succ)){
                 if(succOfSucc.isExitBlock())
                     res.add(succOfSucc);

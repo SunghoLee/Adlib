@@ -1,6 +1,6 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
-import com.ibm.wala.classLoader.IField;
+import com.ibm.wala.types.FieldReference;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 
 /**
@@ -8,14 +8,14 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
  */
 public class GlobalDataFact implements DataFact {
 
-    private final IField f;
+    private final FieldReference f;
     private final Field regf;
-    public GlobalDataFact(IField f, Field regf){
+    public GlobalDataFact(FieldReference f, Field regf){
         this.f = f;
         this.regf = regf;
     }
 
-    public IField getGlobalFact(){
+    public FieldReference getGlobalFact(){
         return this.f;
     }
 
@@ -42,5 +42,10 @@ public class GlobalDataFact implements DataFact {
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public String toString(){
+        return " [ " + f + " ] F( " + regf + " )";
     }
 }

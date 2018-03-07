@@ -5,7 +5,6 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.types.ClassLoaderReference;
-import kr.ac.kaist.wala.adlib.dataflow.AliasHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 /**
