@@ -13,7 +13,7 @@ import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.DataFlowAnalysis;
 import kr.ac.kaist.wala.adlib.dataflow.Node;
 import kr.ac.kaist.wala.adlib.dataflow.flowmodel.BuiltinFlowHandler;
-import kr.ac.kaist.wala.adlib.dataflow.flowmodel.MethodFlowModel;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.MethodFlowModel;
 import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.pointer.LocalDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.pointer.StaticFieldDataPointer;

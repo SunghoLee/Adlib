@@ -8,13 +8,13 @@ import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
-import com.ibm.wala.shrikeBT.Instruction;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.intset.OrdinalSet;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.HashSet;
@@ -37,6 +37,7 @@ public class GraphDataFlowManager {
     private final SummaryEdgeManager seManager;
     private final PointerAnalysis<InstanceKey> pa;
     private final AliasAwareFlowFunction flowFun;
+    private final FlowModelHandler modelHandler;
 
     public GraphDataFlowManager(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa, SummaryEdgeManager seManager){
         this.supergraph = supergraph;
@@ -49,6 +50,7 @@ public class GraphDataFlowManager {
         this.seManager = seManager;
         this.pa = pa;
         flowFun = new AliasAwareFlowFunction(supergraph, pa);
+        modelHandler = new FlowModelHandler();
     }
 
     boolean debug = false;
@@ -92,6 +94,10 @@ public class GraphDataFlowManager {
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
         for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
+            // cut flows to modeled methods
+            if(modelHandler.isModeled(callee.getNode()))
+                continue;
+
             DataFact calleeDataFact = getCalleeDataFact(callee.getNode(), invokeInst, fact);
 
             // Static fields of application classes do not be used in methods of primordial classes. So, skip the propagation.
@@ -109,16 +115,29 @@ public class GraphDataFlowManager {
 
     public Set<Pair<BasicBlockInContext, DataFact>> getCallToReturnNexts(BasicBlockInContext node, DataFact fact) throws InfeasiblePathException {
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
+        Set<DataFact> modeledFacts = new HashSet<>();
 
         SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) node.getLastInstruction();
 
         if(invokeInst == null)
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
+        //TODO: add flows between call sites and return sites regarding to modeled method calls
+        if(fact instanceof LocalDataFact) {
+            for (BasicBlockInContext callee : getCalleeSuccessors(node)) {
+                if (modelHandler.isModeled(callee.getNode())) {
+                    modeledFacts.addAll(modelHandler.matchDataFact(callee.getNode(), invokeInst, (LocalDataFact) fact));
+                }
+            }
+        }
+
         for(BasicBlockInContext ret : getCallToReturnSuccessors(node)) {
             // TODO: should we filter out data facts used in call sites?
             if (callToRetDataFilter.accept(node, ret, fact))
                 res.add(Pair.make(ret, fact));
+
+            for(DataFact modeledFact : modeledFacts)
+                res.add(Pair.make(ret, modeledFact));
         }
 
         return res;

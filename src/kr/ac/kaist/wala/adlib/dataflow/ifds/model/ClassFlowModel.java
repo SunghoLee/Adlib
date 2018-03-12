@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.dataflow.flowmodel;
+package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;

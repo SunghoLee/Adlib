@@ -3,6 +3,7 @@ package kr.ac.kaist.wala.adlib.dataflow.flowmodel;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.*;
 
 /**
  * Created by leesh on 11/10/2017.
