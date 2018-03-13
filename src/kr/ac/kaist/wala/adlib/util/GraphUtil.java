@@ -1,6 +1,6 @@
 package kr.ac.kaist.wala.adlib.util;
 
-import kr.ac.kaist.wala.adlib.analyzer.ReachableAPIFlowGraph;
+import kr.ac.kaist.wala.adlib.analysis.ReachableAPIFlowGraph;
 
 import java.io.*;
 

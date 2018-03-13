@@ -37,7 +37,7 @@ public class GraphDataFlowManager {
     private final SummaryEdgeManager seManager;
     private final PointerAnalysis<InstanceKey> pa;
     private final AliasAwareFlowFunction flowFun;
-    private final FlowModelHandler modelHandler;
+    private FlowModelHandler modelHandler;
 
     public GraphDataFlowManager(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa, SummaryEdgeManager seManager){
         this.supergraph = supergraph;
@@ -83,6 +83,11 @@ public class GraphDataFlowManager {
         }
         debug = false;
         return res;
+    }
+
+
+    public void setModelHandler(FlowModelHandler handler){
+        this.modelHandler = handler;
     }
 
     public Set<Pair<BasicBlockInContext, DataFact>> getCalleeNexts(BasicBlockInContext node, DataFact fact) throws InfeasiblePathException {

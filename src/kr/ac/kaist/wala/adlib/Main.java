@@ -1,6 +1,5 @@
 package kr.ac.kaist.wala.adlib;
 
-import com.google.common.collect.Lists;
 import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.AnalysisCache;
@@ -17,8 +16,8 @@ import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
-import kr.ac.kaist.wala.adlib.analyzer.APITarget;
-import kr.ac.kaist.wala.adlib.analyzer.MaliciousPatternChecker;
+import kr.ac.kaist.wala.adlib.analysis.APITarget;
+import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.callgraph.BranchSlicerForConstant;
 import kr.ac.kaist.wala.adlib.callgraph.CallGraphBuilderForHybridSDK;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
@@ -43,24 +42,6 @@ import java.util.*;
  */
 public class Main {
     private static boolean DEBUG = true;
-
-//    private static APITarget[] targetAPIs = {
-//            new APITarget(TypeName.findOrCreate("Landroid/content/pm/PackageManager")),//Landroid/content/pm/PackageManager
-//            new APITarget("Ljava/io/*"),
-//            new APITarget("Ljava/net/*"),
-////            new APITarget(TypeName.findOrCreate("Ljava/io/FileOutputStream")),
-////            new APITarget(TypeName.findOrCreate("Ljava/io/OutputStream")),
-//            new APITarget(TypeName.findOrCreate("Landroid/location/LocationManager")),//Landroid/location/LocationManager
-//            new APITarget(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V")), //Landroid/app/Activity, startActivity(Landroid/content/Intent;)V
-//            new APITarget(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("loadUrl(Ljava/lang/String;)V")),//Landroid/webkit/WebView, loadUrl(Ljava/lang/String;)V
-//            new APITarget(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V")),//evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V
-//            new APITarget(TypeName.findOrCreate("Ljava/net/URLConnection"), Selector.make("getInputStream()Ljava/io/InputStream;")),// Ljava/net/URLConnection, getInputStream()Ljava/io/InputStream;
-//            new APITarget(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;")),//Ljava/net/URL, openConnection()Ljava/net/URLConnection;
-//            new APITarget(TypeName.findOrCreate("Ljava/net/HttpURLConnection")),//Ljava/net/HttpURLConnection, setRequestMethod(Ljava/lang/String;)V
-//            new APITarget(TypeName.findOrCreate("Landroid/os/Vibrator"), Selector.make("vibrate([JI)V")),//Landroid/os/Vibrator, vibrate([JI)V
-////            new APITarget(TypeName.findOrCreate("Ljava/io/InputStream")), //Ljava/io/InputStream, read([BII)I,
-//            new APITarget(TypeName.findOrCreate("Landroid/location/Location")),//Ljava/net/URL, openConnection()Ljava/net/URLConnection;
-//    };
 
     private static Set<APITarget> targetAPIs = new HashSet<>();
 

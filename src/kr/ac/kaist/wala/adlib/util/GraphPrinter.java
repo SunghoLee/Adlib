@@ -1,7 +1,7 @@
 package kr.ac.kaist.wala.adlib.util;
 
-import kr.ac.kaist.wala.adlib.analyzer.APICallNode;
-import kr.ac.kaist.wala.adlib.analyzer.ReachableAPIFlowGraph;
+import kr.ac.kaist.wala.adlib.analysis.APICallNode;
+import kr.ac.kaist.wala.adlib.analysis.ReachableAPIFlowGraph;
 import kr.ac.kaist.wala.hybridroid.util.graph.visualize.Visualizer;
 
 import java.util.Iterator;

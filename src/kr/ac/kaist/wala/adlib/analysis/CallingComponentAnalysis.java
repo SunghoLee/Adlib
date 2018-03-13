@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.analyzer;
+package kr.ac.kaist.wala.adlib.analysis;
 
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;

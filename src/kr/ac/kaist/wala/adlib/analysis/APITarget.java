@@ -1,4 +1,4 @@
-package kr.ac.kaist.wala.adlib.analyzer;
+package kr.ac.kaist.wala.adlib.analysis;
 
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.ipa.cha.IClassHierarchy;

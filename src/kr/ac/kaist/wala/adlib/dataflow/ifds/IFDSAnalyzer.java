@@ -5,6 +5,7 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.types.ClassLoaderReference;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 /**
@@ -28,6 +29,11 @@ public class IFDSAnalyzer {
         peManager = new PathEdgeManager();
         seManager = new SummaryEdgeManager();
         this.graphManager = new GraphDataFlowManager(supergraph, pa, seManager);
+    }
+
+
+    public void setModelHandler(FlowModelHandler handler){
+        graphManager.setModelHandler(handler);
     }
 
     private void propagate(PathEdge pe){

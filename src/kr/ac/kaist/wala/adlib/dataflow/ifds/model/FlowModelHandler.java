@@ -14,7 +14,7 @@ import java.util.Set;
  */
 public class FlowModelHandler {
 
-    private ClassFlowModel[] models = {
+    protected ClassFlowModel[] models = {
             StringFlowModel.getInstance(),
             StringBufferFlowModel.getInstance(),
             StringBuilderFlowModel.getInstance()
