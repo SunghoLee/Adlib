@@ -8,11 +8,13 @@ import com.ibm.wala.types.ClassLoaderReference;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
+import java.util.Set;
+
 /**
  * Created by leesh on 22/02/2018.
  */
 public class IFDSAnalyzer {
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
 
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
@@ -38,7 +40,7 @@ public class IFDSAnalyzer {
 
     private void propagate(PathEdge pe){
         if(DEBUG){
-            if((pe.getFromFact() instanceof DefaultDataFact) == false)
+//            if((pe.getFromFact() instanceof DefaultDataFact) == false)
                 System.out.println("\t=> " + pe);
         }
         if(!peManager.contains(pe)){
@@ -47,17 +49,20 @@ public class IFDSAnalyzer {
         }
     }
 
-    public DataFlowResult analyze(BasicBlockInContext entry, DataFact seed) throws InfeasiblePathException {
+    public Set<PathEdge> analyze(BasicBlockInContext entry, DataFact seed) throws InfeasiblePathException {
         //TODO: need to put seed as an initial data fact
         PathEdge<BasicBlockInContext, DataFact> initialEdge = new PathEdge<>(entry, DataFact.DEFAULT_FACT, entry, DataFact.DEFAULT_FACT);
-        PathEdge<BasicBlockInContext, DataFact> seedEdge = new PathEdge<>(entry, seed, entry, seed);
         propagate(initialEdge);
-        propagate(seedEdge);
+
+        if(seed != null) {
+            PathEdge<BasicBlockInContext, DataFact> seedEdge = new PathEdge<>(entry, seed, entry, seed);
+            propagate(seedEdge);
+        }
 
         while(!workList.isEmpty()){
             PathEdge<BasicBlockInContext, DataFact> pe = workList.poll();
             if(DEBUG) {
-                if((pe.getFromFact() instanceof DefaultDataFact) == false)
+//                if((pe.getFromFact() instanceof DefaultDataFact) == false)
                     System.out.println("# " + pe);
             }
             BasicBlockInContext fromNode = pe.getFromNode();
@@ -103,6 +108,12 @@ public class IFDSAnalyzer {
                 System.out.println();
         }
 
-        return null;
+        System.out.println("#PATHSIZE: " + peManager.size());
+        return peManager.getEdges();
+    }
+
+    public void clear(){
+        peManager.clear();
+        seManager.clear();
     }
 }

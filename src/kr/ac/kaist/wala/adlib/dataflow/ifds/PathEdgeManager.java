@@ -31,4 +31,16 @@ public class PathEdgeManager {
 
         return res;
     }
+
+    public int size(){
+        return pathSet.size();
+    }
+
+    public Set<PathEdge> getEdges(){
+        return pathSet;
+    }
+
+    public void clear(){
+        pathSet.clear();
+    }
 }

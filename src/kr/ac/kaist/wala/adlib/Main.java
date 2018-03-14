@@ -1,8 +1,7 @@
 package kr.ac.kaist.wala.adlib;
 
+import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dalvik.classLoader.DexIRFactory;
-import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
-import com.ibm.wala.ipa.callgraph.AnalysisCache;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
@@ -14,18 +13,15 @@ import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
 import kr.ac.kaist.wala.adlib.analysis.APITarget;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
-import kr.ac.kaist.wala.adlib.callgraph.BranchSlicerForConstant;
 import kr.ac.kaist.wala.adlib.callgraph.CallGraphBuilderForHybridSDK;
+import kr.ac.kaist.wala.adlib.callgraph.HybridSDKModel;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.IFDSAnalyzer;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.InfeasiblePathException;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.LocalDataFact;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 import kr.ac.kaist.wala.hybridroid.util.debug.PointerAnalysisCommandlineDebugger;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
@@ -35,7 +31,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Created by leesh on 05/01/2017.
@@ -47,7 +45,7 @@ public class Main {
 
     private static MaliciousPatternChecker.MaliciousPattern[] maliciousPatterns = {
             new MaliciousPatternChecker.MaliciousPattern("LaunchingActivity",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("GettingLocation1",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/LocationManager"), Selector.make("getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
@@ -60,7 +58,7 @@ public class Main {
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("GettingLocation3",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/LocationManager"), Selector.make("requestLocationUpdates(Landroid/location/LocationRequest;Landroid/location/LocationListener;Landroid/os/Looper;Landroid/app/PendingIntent;)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/LocationManager"), Selector.make("requestLocationUpdates(Landroid/location/LocationRequest;Landroid/location/LocationListener;Landroid/os/Looper;Landroid/app/PendingIntent;)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("MaliciousFileDownload1",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
@@ -95,22 +93,22 @@ public class Main {
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/os/Vibrator"), Selector.make("vibrate(J)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl2",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;I)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;I)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl3",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;II)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;II)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl4",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;IILandroid/os/Handler;)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;IILandroid/os/Handler;)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl5",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;ILandroid/os/Handler;)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorEventListener;Landroid/hardware/Sensor;ILandroid/os/Handler;)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl6",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorListener;I)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorListener;I)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl7",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorListener;II)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE))),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/hardware/SensorManager"), Selector.make("registerListener(Landroid/hardware/SensorListener;II)Z"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("GetAppInfo1",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getApplicationInfo(Ljava/lang/String;II)Landroid/content/pm/ApplicationInfo;"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
@@ -206,21 +204,46 @@ public class Main {
 
 //        long pcStart = System.currentTimeMillis();
 
-        BranchSlicerForConstant slicer = new BranchSlicerForConstant(cg, pa);
-        cg = slicer.prune();
+//        BranchSlicerForConstant slicer = new BranchSlicerForConstant(cg, pa);
+//        cg = slicer.prune();
 
-        ICFGSupergraph supergraph = ICFGSupergraph.make(cg,new AnalysisCache());
-        IFDSAnalyzer ifds = new IFDSAnalyzer(supergraph, pa);
-        try {
-            for(CGNode n : cg) {
-                if(n.getMethod().getReference().toString().contains("< Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >")) {
-                    System.out.println("# SEED_MATCH: " + n);
-                    ifds.analyze(supergraph.getEntriesForProcedure(n)[0], new LocalDataFact(n, 2, NoneField.getInstance()));
+//        ICFGSupergraph supergraph = ICFGSupergraph.make(cg,new AnalysisCache());
+//        IFDSAnalyzer ifds = new IFDSAnalyzer(supergraph, pa);
+//        try {
+//            for(CGNode n : cg) {
+//                if(n.getMethod().getReference().toString().contains("< Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >")) {
+//                    System.out.println("# SEED_MATCH: " + n);
+//                    ifds.analyze(supergraph.getEntriesForProcedure(n)[0], new LocalDataFact(n, 2, NoneField.getInstance()));
+//                }
+//            }
+//        } catch (InfeasiblePathException e) {
+//            e.printStackTrace();
+//        }
+
+        MaliciousPatternChecker mpc = new MaliciousPatternChecker(cg, pa);
+        mpc.addMaliciousPatterns(maliciousPatterns);
+
+        for(IMethod entry : HybridSDKModel.getBridgeEntries()) {
+            for(CGNode entryNode : cg.getNodes(entry.getReference())) {
+//                if(!entryNode.toString().contains("vibration"))
+//                    continue;
+                if(entry.getNumberOfParameters() == 1){
+                    System.out.println("# SEED_MATCH: " + entryNode + " [ ANY ]");
+                    mpc.addSeed(entryNode, IFlowFunction.ANY);
                 }
+                for(int i=1; i<entry.getNumberOfParameters(); i++){
+                    System.out.println("# SEED_MATCH: " + entryNode + " [ " + (i+1) + " ]");
+                    mpc.addSeed(entryNode, (i+1));
+                }
+//                    if (n.getMethod().getReference().toString().contains("< Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >")) {
+//                        System.out.println("# SEED_MATCH: " + n);
+//                        mpc.addSeed(n, 2);
+
+//                    }
             }
-        } catch (InfeasiblePathException e) {
-            e.printStackTrace();
         }
+
+        mpc.checkPatterns();
         /*
         // Malicious Pattern Checking
         MaliciousPatternChecker pc = new MaliciousPatternChecker(cg.getClassHierarchy());

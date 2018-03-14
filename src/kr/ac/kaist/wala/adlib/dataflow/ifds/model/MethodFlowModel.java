@@ -3,6 +3,8 @@ package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.debug.Assertions;
 
+import java.util.Arrays;
+
 /**
  * Created by leesh on 11/10/2017.
  */
@@ -10,6 +12,7 @@ public class MethodFlowModel {
     public final static int RECEIVERV = 0;
     public final static int RETV = -1;
     public final static int NONE = -2;
+    public final static int ANY = -99;
 
     private final int[] from;
     private final int[] to;
@@ -43,5 +46,28 @@ public class MethodFlowModel {
                 return to;
         }
         return new int[]{MethodFlowModel.NONE};
+    }
+
+    @Override
+    public int hashCode(){
+        return ref.hashCode() + from.hashCode() + to.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(o instanceof MethodFlowModel){
+            MethodFlowModel mfm = (MethodFlowModel) o;
+            if(mfm.ref.equals(this.ref) && Arrays.equals(mfm.from, this.from) && Arrays.equals(mfm.to, this.to))
+                return true;
+        }
+        return false;
+    }
+
+    public int[] getFrom(){
+        return this.from;
+    }
+
+    public int[] getTo(){
+        return this.to;
     }
 }

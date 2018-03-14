@@ -62,6 +62,8 @@ public class AliasHandler {
                       //TODO: no-op
                     } else if (predPK instanceof ArrayContentsKey){
                         //TODO: implement this!
+                    } else if (predPK instanceof PropagationCallGraphBuilder.TypedPointerKey){
+                        //TODO: implement this!
                     } else
                         Assertions.UNREACHABLE("Should handle this type pointer key: " + predPK.getClass().getName());
                 }

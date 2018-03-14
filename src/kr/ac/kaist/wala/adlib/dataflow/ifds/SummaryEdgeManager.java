@@ -32,4 +32,8 @@ public class SummaryEdgeManager {
     public boolean contains(PathEdge pe){
         return edgeSet.contains(pe);
     }
+
+    public void clear(){
+        edgeSet.clear();
+    }
 }

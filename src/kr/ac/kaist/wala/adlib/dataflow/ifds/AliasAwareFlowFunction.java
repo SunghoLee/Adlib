@@ -39,16 +39,92 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         return Collections.singleton(fact);
     }
 
+    private Set<DataFact> getField(CGNode n, String instField, Field factField, int def){
+        if(factField instanceof FieldSeq){
+            String fst = ((FieldSeq) factField).getFirst();
+            if(fst.equals(instField))
+                return Collections.singleton(new LocalDataFact(n, def, ((FieldSeq) factField).getRest()));
+            else
+                return Collections.emptySet();
+        }else if(factField instanceof OpField){
+            Assertions.UNREACHABLE("Not implemented yet.");
+        }
+        Assertions.UNREACHABLE("Cannot reach here! : " + factField);
+        return Collections.emptySet();
+    }
+
     @Override
     public Set<DataFact> visitArrayLoad(CGNode n, SSAArrayLoadInstruction instruction, DataFact fact) {
         //TODO: implement this!
-        return null;
+        Set<DataFact> res = new HashSet<>();
+        res.add(fact);
+
+        /**
+         * [Condition]
+         * 1. if the data fact is a local data fact,
+         * 1-1. the instruction is not a static get, and
+         * 1-2. the get instruction has a same object reference with the data fact.
+         *
+         * 2. if the data fact is a global data fact,
+         * 2-1. the instruction is a static get, and
+         * 2-2. the get instruction has a same field reference with the data fact.
+         */
+        if(fact instanceof LocalDataFact &&
+                ((LocalDataFact) fact).getVar() == instruction.getArrayRef()) {
+            System.out.println("#I : " + instruction);
+            System.out.println("#F : " + fact);
+
+            res.addAll(getField(n, "[", fact.getField(), instruction.getDef()));
+
+        }else if(fact instanceof GlobalDataFact)
+            Assertions.UNREACHABLE("Non-local data field cannot reach here: " + fact);
+
+        return res;
     }
 
     @Override
     public Set<DataFact> visitArrayStore(CGNode n, SSAArrayStoreInstruction instruction, DataFact fact) {
         //TODO: implement this!
-        return null;
+        Set<DataFact> res = new HashSet<>();
+        res.add(fact);
+
+        if(fact instanceof LocalDataFact &&
+            ((LocalDataFact) fact).getVar() == instruction.getValue()) {
+
+            //TODO: handle aliases
+            DataFact newFact = new LocalDataFact(n, instruction.getArrayRef(), new FieldSeq("[", fact.getField()));
+            res.add(newFact);
+
+            for(DataFact aliasFact : aliasHandler.findAlias(n, newFact, new AliasHandler.PointerKeyFilter() {
+                @Override
+                public boolean accept(ICFGSupergraph supergraph, PointerKey pk) {
+                    if(pk instanceof LocalPointerKey){
+                        LocalPointerKey lpk = (LocalPointerKey) pk;
+                        if(lpk.getNode().equals(n))
+                            return true;
+                        else
+                            return false;
+                    } else if(pk instanceof StaticFieldKey){
+                        // cut the propagation of static field alias of primordial classes.
+                        StaticFieldKey sfpk = (StaticFieldKey) pk;
+                        if(sfpk.getField().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application))
+                            return true;
+                        return false;
+                    }
+                    return true;
+                }
+            }, new AliasHandler.InstanceKeyFilter() {
+                @Override
+                public boolean accept(ICFGSupergraph supergraph, InstanceKey ik) {
+                    return true;
+                }
+            })){
+                res.add(aliasFact);
+            }
+        } else if(fact instanceof GlobalDataFact)
+            Assertions.UNREACHABLE("Non-local data field cannot reach here: " + fact);
+
+        return res;
     }
 
     @Override
@@ -149,6 +225,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         Assertions.UNREACHABLE("Cannot reach here!");
         return Collections.emptySet();
     }
+
 
     @Override
     public Set<DataFact> visitGet(CGNode n, SSAGetInstruction instruction, DataFact fact) {

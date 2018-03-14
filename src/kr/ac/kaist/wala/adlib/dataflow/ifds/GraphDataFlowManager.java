@@ -69,8 +69,12 @@ public class GraphDataFlowManager {
 
                 if(inst == null) {
                     nextFacts.add(fact);
-                }else
+                }else {
+                    Set tt = flowFun.visit(node.getNode(), inst, fact);
+                    if(tt == null)
+                        System.out.println("Possible?");
                     nextFacts.addAll(flowFun.visit(node.getNode(), inst, fact));
+                }
 
                 for(DataFact nextFact : nextFacts){
                     for(BasicBlockInContext succ : getSparseNormalSuccessors(node, nextFact)){
@@ -105,6 +109,8 @@ public class GraphDataFlowManager {
 
             DataFact calleeDataFact = getCalleeDataFact(callee.getNode(), invokeInst, fact);
 
+            if(calleeDataFact == null)
+                continue;
             // Static fields of application classes do not be used in methods of primordial classes. So, skip the propagation.
             if(fact instanceof GlobalDataFact){
                 GlobalDataFact gdf = (GlobalDataFact) fact;
@@ -127,11 +133,11 @@ public class GraphDataFlowManager {
         if(invokeInst == null)
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
-        //TODO: add flows between call sites and return sites regarding to modeled method calls
-        if(fact instanceof LocalDataFact) {
+        // add flows between call sites and return sites regarding to modeled method calls
+        if(fact instanceof LocalDataFact || fact instanceof DefaultDataFact) {
             for (BasicBlockInContext callee : getCalleeSuccessors(node)) {
                 if (modelHandler.isModeled(callee.getNode())) {
-                    modeledFacts.addAll(modelHandler.matchDataFact(callee.getNode(), invokeInst, (LocalDataFact) fact));
+                    modeledFacts.addAll(modelHandler.matchDataFact(node.getNode(), callee.getNode(), invokeInst, fact));
                 }
             }
         }
@@ -273,12 +279,12 @@ public class GraphDataFlowManager {
             int i=0;
             for(; i<invokeInst.getNumberOfUses(); i++){
                 if(invokeInst.getUse(i) == v)
-                    break;
+                    return new LocalDataFact(callee, i+1, fact.getField());
             }
+        }else if(fact instanceof DefaultDataFact)
+            return fact;
 
-            return new LocalDataFact(callee, i+1, fact.getField());
-        }
-        return fact;
+        return null;
     }
 
     private Set<BasicBlockInContext> getNextClosestUseBlocks(BasicBlockInContext bb, DefUse du, int v) throws InfeasiblePathException {

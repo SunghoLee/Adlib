@@ -8,16 +8,22 @@ import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
+import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SSACFG;
-import com.ibm.wala.types.*;
+import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.Selector;
+import com.ibm.wala.types.TypeName;
+import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.analysis.APICallNode;
 import kr.ac.kaist.wala.adlib.dataflow.DataFlowAnalysis;
+import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.IFDSAnalyzer;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.model.ClassFlowModel;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.works.Work;
 
@@ -35,8 +41,10 @@ public class MaliciousPatternChecker {
     private final IClassHierarchy cha;
     private final IFDSAnalyzer ifds;
     private final Set<Pair<CGNode, Integer>> seeds = new HashSet<>();
+    private final CallGraph cg;
 
     public MaliciousPatternChecker(CallGraph cg, PointerAnalysis<InstanceKey> pa){
+        this.cg = cg;
         icfg = ICFGSupergraph.make(cg, new AnalysisCache());
         ifds = new IFDSAnalyzer(icfg, pa);
         cha = cg.getClassHierarchy();
@@ -46,7 +54,6 @@ public class MaliciousPatternChecker {
         mp.setClassHierrachy(cha);
         mps.add(mp);
     }
-
 
     public void addMaliciousPatterns(MaliciousPattern... mps){
         for(MaliciousPattern mp : mps) {
@@ -65,17 +72,8 @@ public class MaliciousPatternChecker {
     }
 
 
-    /**
-     * Check whether malicious patterns exist in the super graph.
-     * @return possible malicious patterns that exist in the super graph
-     */
-    public Set<MaliciousPatternWarning> checkPatterns(){
 
-
-
-        return warns;
-    }
-
+    ///
     private TypeReference makeClassTypeRef(TypeName tn){
         TypeReference tr = TypeReference.find(ClassLoaderReference.Primordial, tn);
         if(tr == null)
@@ -87,27 +85,164 @@ public class MaliciousPatternChecker {
         return tr;
     }
 
-    private Set<TypeReference> getAllSubClass(TypeReference tr){
+    private Set<TypeReference> getAllSubClass(TypeReference tr, IClassHierarchy cha){
         Set<TypeReference> res = new HashSet<>();
-
+        getAllSubClass(res, tr, cha);
         return res;
     }
-    private List<ClassFlowModel> patternsToModels(Set<MaliciousPattern> mps){
-        List<ClassFlowModel> res = new ArrayList<>();
 
-        for(MaliciousPattern mp : mps){
-            for(MaliciousPoint point : mp.getPoints()){
-                TypeReference tr = makeClassTypeRef(point.tn);
-                int from = point.getFlowFunction().getFrom();
-                int to = point.getFlowFunction().getTo();
+    private Set<TypeReference> getAllSubClass(Set<TypeReference> res, TypeReference tr, IClassHierarchy cha){
+//        System.out.println("#?? " + tr + "\t Contained? " + res.contains(tr));
+        if(cha.isInterface(tr)){
+            for (IClass c : cha.getImplementors(tr)) {
+                if(!res.contains(c.getReference())) {
+                    res.add(c.getReference());
+                    res.addAll(getAllSubClass(res, c.getReference(), cha));
+                }
+            }
+        }else {
+            for (IClass c : cha.computeSubClasses(tr)) {
+                if(!res.contains(c.getReference())) {
+                    res.add(c.getReference());
+                    res.addAll(getAllSubClass(res, c.getReference(), cha));
+                }
+            }
+        }
+        return res;
+    }
+    ///
+    private boolean matchPattern(MaliciousPattern mp, Set<PathEdge> edges){
+        List<MaliciousPoint> mpList = mp.getPoints();
+        //TODO: need to calculate the pathes from a seed to a last point? Now, to show an existence of a pattern, I just check whether the last point is reachable.
+//        mpList = Lists.reverse(mpList);
+//
+//        for(MaliciousPoint point : mpList){
+//
+//        }
+        MaliciousPoint lastPoint = mpList.get(mpList.size()-1);
+        return isReachable(lastPoint, edges);
+    }
 
-                MethodReference mr = MethodReference.findOrCreate(makeClassTypeRef(point.tn), point.getSelector());
+    private boolean isReachable(BasicBlockInContext bb, DataFact fact, Set<PathEdge> edges){
+        for(PathEdge pe : edges){
+//            if(pe.toString().contains("startActivity")) {
+//                System.out.println("======");
+//                System.out.println(pe);
+//                System.out.println("======");
+//            }
+            if(pe.getToNode().equals(bb) && pe.getToFact().equals(fact))
+                return true;
+        }
+        return false;
+    }
 
+    private boolean isReachable(MaliciousPoint mp, Set<PathEdge> edges){
+        PropagateFlowFunction ff = mp.getFlowFunction();
+
+        if(ff.getTo() != IFlowFunction.TERMINATE){
+            Assertions.UNREACHABLE("This pattern cannot be terminated: " + mp);
+        }
+
+        int inVarIndex = ff.getFrom();
+
+        TypeName tn = mp.getTypeName();
+        Selector s = mp.getSelector();
+
+        Set<TypeReference> trs = new HashSet<>();
+        Set<CGNode> posTarget = new HashSet<>();
+
+        TypeReference ori = makeClassTypeRef(tn);
+        trs.add(ori);
+        trs.addAll(getAllSubClass(ori, cha));
+
+        for(TypeReference tr : trs){
+            IClass c = cha.lookupClass(tr);
+            for(IMethod m : c.getAllMethods()){
+                if(m.getSelector().equals(s)) {
+                    posTarget.addAll(cg.getNodes(m.getReference()));
+                }
             }
         }
 
+        for(CGNode target : posTarget){
+            // all methods must have only one entry.
+            BasicBlockInContext entry = icfg.getEntriesForProcedure(target)[0];
+            Iterator<BasicBlockInContext> iPred = icfg.getPredNodes(entry);
+            while(iPred.hasNext()){
+                BasicBlockInContext pred = iPred.next();
+                SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) pred.getLastInstruction();
+                if(invokeInst == null)
+                    Assertions.UNREACHABLE("The previous block of an entry of any procedure must have a invoke instruction: " + pred);
+
+                DataFact fact = null;
+                switch(inVarIndex){
+                    case IFlowFunction.ANY:
+                        fact = DefaultDataFact.DEFAULT_FACT;
+                        break;
+                    case IFlowFunction.RETURN_VARIABLE:
+                        fact = new LocalDataFact(pred.getNode(), invokeInst.getDef(), NoneField.getInstance());
+                        break;
+                    case IFlowFunction.TERMINATE:
+                        Assertions.UNREACHABLE("How come the variable index of 'from' at a malicious point is terminate? " + mp);
+                        break;
+                    default:
+                        fact = new LocalDataFact(pred.getNode(), invokeInst.getUse(inVarIndex-1), NoneField.getInstance());
+                        break;
+                }
+                if(isReachable(pred, fact, edges))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Set<MaliciousPattern> findPatterns(Set<PathEdge> edges){
+        Set<MaliciousPattern> res = new HashSet<>();
+
+        for(MaliciousPattern mp : mps){
+            if(matchPattern(mp, edges))
+                res.add(mp);
+        }
         return res;
     }
+
+    /**
+     * Check whether malicious patterns exist in the super graph.
+     * @return possible malicious patterns that exist in the super graph
+     */
+    public Set<MaliciousPatternWarning> checkPatterns(){
+        MaliciousFlowModelHandler mfmh = new MaliciousFlowModelHandler(mps, cha);
+        ifds.setModelHandler(mfmh);
+        for(Pair p : seeds){
+            CGNode n = (CGNode) p.fst;
+            int var = (Integer) p.snd;
+
+            Set<PathEdge> res = new HashSet<>();
+
+            try {
+                BasicBlockInContext entry = icfg.getEntriesForProcedure(n)[0];
+
+                if(var == kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction.ANY) {
+                    res.addAll(ifds.analyze(entry, null));
+                }else{
+                    res.addAll(ifds.analyze(entry, new LocalDataFact(n, var, NoneField.getInstance())));
+                }
+                System.out.println("======");
+                System.out.println("SEED: " + n + " [ " + var + " ]");
+                for(MaliciousPattern mp : findPatterns(res)){
+                    System.out.println("[Found] " + mp);
+                }
+                System.out.println("======");
+                ifds.clear();
+            } catch (InfeasiblePathException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return warns;
+    }
+
 
     public static class MaliciousPoint {
         private final TypeName tn;
