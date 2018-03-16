@@ -14,6 +14,7 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.intset.OrdinalSet;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.BuiltinFlowPropagationModel;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
@@ -38,6 +39,7 @@ public class GraphDataFlowManager {
     private final PointerAnalysis<InstanceKey> pa;
     private final AliasAwareFlowFunction flowFun;
     private FlowModelHandler modelHandler;
+    private final BuiltinFlowPropagationModel builtinPolicy;
 
     public GraphDataFlowManager(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa, SummaryEdgeManager seManager){
         this.supergraph = supergraph;
@@ -50,7 +52,8 @@ public class GraphDataFlowManager {
         this.seManager = seManager;
         this.pa = pa;
         flowFun = new AliasAwareFlowFunction(supergraph, pa);
-        modelHandler = new FlowModelHandler();
+        modelHandler = new FlowModelHandler(pa.getClassHierarchy());
+        builtinPolicy = new BuiltinFlowPropagationModel();
     }
 
     boolean debug = false;
@@ -103,9 +106,13 @@ public class GraphDataFlowManager {
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
         for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
-            // cut flows to modeled methods
-            if(modelHandler.isModeled(callee.getNode()))
+
+            if(!builtinPolicy.isAllowed(callee.getNode()))
                 continue;
+            // cut flows to modeled methods
+            if(modelHandler.isModeled(callee.getNode())) {
+                continue;
+            }
 
             DataFact calleeDataFact = getCalleeDataFact(callee.getNode(), invokeInst, fact);
 
@@ -159,11 +166,6 @@ public class GraphDataFlowManager {
 
         SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) call.getLastInstruction();
 
-        if(!invokeInst.hasDef())
-            return res;
-
-        int defV = invokeInst.getDef();
-
         Iterator<BasicBlockInContext> iRetSites = supergraph.getReturnSites(call, exit.getNode());
         while(iRetSites.hasNext()){
             BasicBlockInContext retSite = iRetSites.next();
@@ -175,8 +177,9 @@ public class GraphDataFlowManager {
                 LocalDataFact ldf = (LocalDataFact) fact;
                 int v = ldf.getVar();
 
-                if (isReturned(exit.getNode().getDU(), v))
-                    res.add(Pair.make(retSite, new LocalDataFact(retSite.getNode(), defV, ldf.getField())));
+                if (isReturned(exit.getNode().getDU(), v) && invokeInst.hasDef()) {
+                    res.add(Pair.make(retSite, new LocalDataFact(retSite.getNode(), invokeInst.getDef(), ldf.getField())));
+                }
 
                 if (!(fact.getField() instanceof NoneField)) {
                     for (DataFact aliasFact : flowFun.getLocalAliasOfCaller(retSite.getNode(), ldf)) {

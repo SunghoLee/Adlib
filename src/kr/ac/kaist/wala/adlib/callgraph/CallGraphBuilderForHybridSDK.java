@@ -82,6 +82,10 @@ public class CallGraphBuilderForHybridSDK {
         setTargetSelectors(this.options, this.cha);
     }
 
+    public AnalysisOptions getOptions(){
+        return this.options;
+    }
+
     private IClassHierarchy buildClassHierarchy(AnalysisScope scope) throws ClassHierarchyException {
         return ClassHierarchy.make(scope);
     }

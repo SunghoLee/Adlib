@@ -3,9 +3,9 @@ package kr.ac.kaist.wala.adlib.dataflow.ifds;
 import com.ibm.wala.analysis.pointers.HeapGraph;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
-import com.ibm.wala.ipa.callgraph.propagation.*;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ssa.*;
-import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
@@ -77,7 +77,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             res.addAll(getField(n, "[", fact.getField(), instruction.getDef()));
 
         }else if(fact instanceof GlobalDataFact)
-            Assertions.UNREACHABLE("Non-local data field cannot reach here: " + fact);
+            return res;
 
         return res;
     }
@@ -95,34 +95,11 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             DataFact newFact = new LocalDataFact(n, instruction.getArrayRef(), new FieldSeq("[", fact.getField()));
             res.add(newFact);
 
-            for(DataFact aliasFact : aliasHandler.findAlias(n, newFact, new AliasHandler.PointerKeyFilter() {
-                @Override
-                public boolean accept(ICFGSupergraph supergraph, PointerKey pk) {
-                    if(pk instanceof LocalPointerKey){
-                        LocalPointerKey lpk = (LocalPointerKey) pk;
-                        if(lpk.getNode().equals(n))
-                            return true;
-                        else
-                            return false;
-                    } else if(pk instanceof StaticFieldKey){
-                        // cut the propagation of static field alias of primordial classes.
-                        StaticFieldKey sfpk = (StaticFieldKey) pk;
-                        if(sfpk.getField().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application))
-                            return true;
-                        return false;
-                    }
-                    return true;
-                }
-            }, new AliasHandler.InstanceKeyFilter() {
-                @Override
-                public boolean accept(ICFGSupergraph supergraph, InstanceKey ik) {
-                    return true;
-                }
-            })){
+            for(DataFact aliasFact : aliasHandler.findAlias(n, newFact)){
                 res.add(aliasFact);
             }
         } else if(fact instanceof GlobalDataFact)
-            Assertions.UNREACHABLE("Non-local data field cannot reach here: " + fact);
+            return res;
 
         return res;
     }
@@ -132,11 +109,11 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         if(fact instanceof LocalDataFact){
             LocalDataFact ldf = (LocalDataFact) fact;
 
+            if(instruction.getUse(0) != ldf.getVar() && instruction.getUse(1) != ldf.getVar())
+                return Collections.emptySet();
+
             if(!ldf.getField().equals(NoneField.getInstance()))
                 Assertions.UNREACHABLE("A local data fact flowed to a binary operation must not have a field.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
-
-            if(instruction.getUse(0) != ldf.getVar() && instruction.getUse(1) != ldf.getVar())
-                Assertions.UNREACHABLE("A local data fact flowed to a binary operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
             res.add(fact);
@@ -152,11 +129,11 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         if(fact instanceof LocalDataFact){
             LocalDataFact ldf = (LocalDataFact) fact;
 
+            if(instruction.getUse(0) != ldf.getVar())
+                return Collections.emptySet();
+
             if(!ldf.getField().equals(NoneField.getInstance()))
                 Assertions.UNREACHABLE("A local data fact flowed to a unary operation must not have a field.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
-
-            if(instruction.getUse(0) != ldf.getVar())
-                Assertions.UNREACHABLE("A local data fact flowed to a unary operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
             res.add(fact);
@@ -270,30 +247,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 DataFact newFact = new LocalDataFact(n, instruction.getRef(), new FieldSeq(instruction.getDeclaredField().getName().toString(), fact.getField()));
                 res.add(newFact);
 
-                for(DataFact aliasFact : aliasHandler.findAlias(n, newFact, new AliasHandler.PointerKeyFilter() {
-                    @Override
-                    public boolean accept(ICFGSupergraph supergraph, PointerKey pk) {
-                        if(pk instanceof LocalPointerKey){
-                            LocalPointerKey lpk = (LocalPointerKey) pk;
-                            if(lpk.getNode().equals(n))
-                                return true;
-                            else
-                                return false;
-                        } else if(pk instanceof StaticFieldKey){
-                            // cut the propagation of static field alias of primordial classes.
-                            StaticFieldKey sfpk = (StaticFieldKey) pk;
-                            if(sfpk.getField().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application))
-                                return true;
-                            return false;
-                        }
-                        return true;
-                    }
-                }, new AliasHandler.InstanceKeyFilter() {
-                    @Override
-                    public boolean accept(ICFGSupergraph supergraph, InstanceKey ik) {
-                        return true;
-                    }
-                })){
+                for(DataFact aliasFact : aliasHandler.findAlias(n, newFact)){
                     res.add(aliasFact);
                 }
             }
@@ -344,7 +298,8 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             LocalDataFact ldf = (LocalDataFact) fact;
 
             if(instruction.getUse(0) != ldf.getVar())
-                Assertions.UNREACHABLE("A local data fact flowed to a check cast operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
+                return Collections.emptySet();
+//                Assertions.UNREACHABLE("A local data fact flowed to a check cast operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
             res.add(fact);
@@ -420,30 +375,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
     public Set<DataFact> getLocalAliasOfCaller(CGNode n, LocalDataFact fact){
         Set<DataFact> res = new HashSet<>();
 
-        for(DataFact aliasFact : aliasHandler.findAlias(fact.getNode(), fact, new AliasHandler.PointerKeyFilter() {
-            @Override
-            public boolean accept(ICFGSupergraph supergraph, PointerKey pk) {
-                if(pk instanceof LocalPointerKey){
-                    LocalPointerKey lpk = (LocalPointerKey) pk;
-                    if(lpk.getNode().equals(n))
-                        return true;
-                    else
-                        return false;
-                } else if(pk instanceof StaticFieldKey){
-                    // cut the propagation of static field alias of primordial classes.
-                    StaticFieldKey sfpk = (StaticFieldKey) pk;
-                    if(sfpk.getField().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application))
-                        return true;
-                    return false;
-                }
-                return true;
-            }
-        }, new AliasHandler.InstanceKeyFilter() {
-            @Override
-            public boolean accept(ICFGSupergraph supergraph, InstanceKey ik) {
-                return true;
-            }
-        })){
+        for(DataFact aliasFact : aliasHandler.findAlias(n, fact)){
             res.add(aliasFact);
         }
 

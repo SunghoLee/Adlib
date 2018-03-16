@@ -2,6 +2,7 @@ package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.debug.Assertions;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 
 import java.util.Arrays;
 
@@ -30,7 +31,7 @@ public class MethodFlowModel {
         return new MethodFlowModel(ref, from, to);
     }
 
-    private MethodFlowModel(MethodReference ref, int[] from, int[] to){
+    MethodFlowModel(MethodReference ref, int[] from, int[] to){
         this.ref = ref;
         this.from = from;
         this.to = to;
@@ -45,7 +46,7 @@ public class MethodFlowModel {
             if(from[i] == data)
                 return to;
         }
-        return new int[]{MethodFlowModel.NONE};
+        return new int[]{};
     }
 
     @Override
@@ -61,6 +62,10 @@ public class MethodFlowModel {
                 return true;
         }
         return false;
+    }
+
+    public Field matchField(Field f){
+        return f;
     }
 
     public int[] getFrom(){

@@ -21,6 +21,7 @@ public class MaliciousFlowModelHandler extends FlowModelHandler {
     private static TypeReference ModelingClassTR = TypeReference.findOrCreateClass(ClassLoaderReference.Application, "Lmodel","MaliciousFlowModel");
 
     public MaliciousFlowModelHandler(Set<MaliciousPatternChecker.MaliciousPattern> mps, IClassHierarchy cha) {
+        super(cha);
         List<ClassFlowModel> pModels =  Arrays.asList(super.models);
         List<ClassFlowModel> nModels = new ArrayList<>();
         nModels.addAll(pModels);

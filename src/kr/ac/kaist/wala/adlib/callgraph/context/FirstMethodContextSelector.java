@@ -56,7 +56,7 @@ public class FirstMethodContextSelector implements ContextSelector{
         return base.getRelevantParameters(caller, site);
     }
 
-    class FirstMethodContextPair implements Context{
+    public static class FirstMethodContextPair implements Context{
         private final Context base;
         private final FirstMethod fm;
 

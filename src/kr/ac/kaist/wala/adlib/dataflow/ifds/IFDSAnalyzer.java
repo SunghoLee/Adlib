@@ -14,7 +14,7 @@ import java.util.Set;
  * Created by leesh on 22/02/2018.
  */
 public class IFDSAnalyzer {
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
 
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;

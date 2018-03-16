@@ -5,6 +5,7 @@ import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
+import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
@@ -13,13 +14,14 @@ import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
 import kr.ac.kaist.wala.adlib.analysis.APITarget;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.callgraph.CallGraphBuilderForHybridSDK;
 import kr.ac.kaist.wala.adlib.callgraph.HybridSDKModel;
+import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethod;
+import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
@@ -224,23 +226,24 @@ public class Main {
         mpc.addMaliciousPatterns(maliciousPatterns);
 
         for(IMethod entry : HybridSDKModel.getBridgeEntries()) {
-            for(CGNode entryNode : cg.getNodes(entry.getReference())) {
+            Context x;
+
+            CGNode entryNode = cg.getNode(entry, new FirstMethodContextSelector.FirstMethodContextPair(new FirstMethod(entry), Everywhere.EVERYWHERE));
 //                if(!entryNode.toString().contains("vibration"))
 //                    continue;
-                if(entry.getNumberOfParameters() == 1){
-                    System.out.println("# SEED_MATCH: " + entryNode + " [ ANY ]");
-                    mpc.addSeed(entryNode, IFlowFunction.ANY);
-                }
-                for(int i=1; i<entry.getNumberOfParameters(); i++){
-                    System.out.println("# SEED_MATCH: " + entryNode + " [ " + (i+1) + " ]");
-                    mpc.addSeed(entryNode, (i+1));
-                }
+            if(entry.getNumberOfParameters() == 1){
+                System.out.println("# SEED_MATCH: " + entryNode + " [ ANY ]");
+                mpc.addSeed(entryNode, IFlowFunction.ANY);
+            }
+            for(int i=1; i<entry.getNumberOfParameters(); i++){
+                System.out.println("# SEED_MATCH: " + entryNode + " [ " + (i+1) + " ]");
+                mpc.addSeed(entryNode, (i+1));
+            }
 //                    if (n.getMethod().getReference().toString().contains("< Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >")) {
 //                        System.out.println("# SEED_MATCH: " + n);
 //                        mpc.addSeed(n, 2);
 
 //                    }
-            }
         }
 
         mpc.checkPatterns();
