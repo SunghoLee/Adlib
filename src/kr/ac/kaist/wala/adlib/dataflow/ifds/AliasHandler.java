@@ -1,11 +1,11 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.analysis.pointers.HeapGraph;
+import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.*;
 import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
@@ -20,7 +20,7 @@ import java.util.*;
  * Created by leesh on 2018. 2. 19..
  */
 public class AliasHandler {
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
     private final HeapGraph<InstanceKey> hg;
@@ -120,6 +120,7 @@ public class AliasHandler {
 
     public Set<DataFact> findAlias(CGNode n, DataFact fact){
         Set<DataFact> res = new HashSet<>();
+        FieldFilter filter = new FieldFilter();
 
         if(fact instanceof LocalDataFact){
             LocalDataFact ldf = (LocalDataFact) fact;
@@ -163,9 +164,15 @@ public class AliasHandler {
                 });
 
                 List path = pathFinder.find();
+
+                if(!filter.accept(pk, path))
+                    continue;
+
                 Field newField = field;
 
                 if(path != null){
+                    System.out.println("FROM: " + fact);
+                    printList(path);
                     for(Object o : path){
                         if(o instanceof PointerKey){
                             if(o instanceof InstanceFieldKey){
@@ -263,5 +270,37 @@ public class AliasHandler {
         public boolean accept(ICFGSupergraph supergraph, PointerKey pk) {
             return true;
         }
+    }
+
+    class FieldFilter {
+        public boolean accept(PointerKey pk, List path){
+            PointerKey prevKey = pk;
+
+            if(path != null){
+                for(Object o : path){
+                    if(o instanceof PointerKey) {
+                        PointerKey succKey = (PointerKey) o;
+                        if(succKey instanceof InstanceFieldKey){
+                            InstanceFieldKey ifk = (InstanceFieldKey) succKey;
+                            IClass containerClass = ifk.getInstanceKey().getConcreteType();
+                            if(containerClass.getClassLoader().getReference().equals(ClassLoaderReference.Primordial))
+                                return false;
+                            else if(ifk.getInstanceKey().toString().contains("in FirstMethodContextPair: [First: DUMMY]"))
+                                return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+    }
+
+    private void printList(List path){
+//        System.out.println("=>");
+//        for(Object o : path){
+//            System.out.println("\t" + o);
+//        }
+//        System.out.println("<=");
     }
 }

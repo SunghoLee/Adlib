@@ -222,6 +222,28 @@ public class Main {
 //            e.printStackTrace();
 //        }
 
+        if(DEBUG) {
+            String name = "ir_test";
+            final CallGraph fcg = cg;
+            IRPrinter.printIR(fcg, name, new IRPrinter.Filter(){
+                @Override
+                public boolean filter(CGNode n) {
+                    if(n.getMethod().toString().contains("fakeRootMethod"))
+                        return true;
+                    if(n.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial)){
+                        if(!ARModeling.isModelingMethod(fcg.getClassHierarchy(), n.getMethod()))
+                            return false;
+                    }
+                    return true;
+                }
+            });
+
+            printIR(cg, name);
+
+            PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
+//            padebugger.debug();
+        }
+
         MaliciousPatternChecker mpc = new MaliciousPatternChecker(cg, pa);
         mpc.addMaliciousPatterns(maliciousPatterns);
 
@@ -279,27 +301,6 @@ public class Main {
 //            System.out.println("W: " + w);
 //        }
 */
-        if(DEBUG) {
-            String name = "ir_test";
-            final CallGraph fcg = cg;
-            IRPrinter.printIR(fcg, name, new IRPrinter.Filter(){
-                @Override
-                public boolean filter(CGNode n) {
-                    if(n.getMethod().toString().contains("fakeRootMethod"))
-                        return true;
-                    if(n.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Primordial)){
-                        if(!ARModeling.isModelingMethod(fcg.getClassHierarchy(), n.getMethod()))
-                            return false;
-                    }
-                    return true;
-                }
-            });
-
-            printIR(cg, name);
-
-            PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
-//            padebugger.debug();
-        }
 
 //            Visualizer vis = Visualizer.getInstance();
 //            vis.setType(Visualizer.GraphType.Digraph);
