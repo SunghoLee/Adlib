@@ -126,7 +126,7 @@ public class AliasHandler {
             final PointerKey targetPK = pa.getHeapModel().getPointerKeyForLocal(ldf.getNode(), ldf.getVar());
 
             Set<PointerKey> localPKs = localPKMap.get(n);
-            localPKs.addAll(statics);
+//            localPKs.addAll(statics);
             Collection targets = OrdinalSet.toCollection(pa.getPointsToSet(targetPK));
 
             Field field = fact.getField();

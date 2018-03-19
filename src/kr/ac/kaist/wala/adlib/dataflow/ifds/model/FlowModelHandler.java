@@ -10,7 +10,7 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.LocalDataFact;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.model.collection.MapFlowModel;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.collection.*;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,6 +33,10 @@ public class FlowModelHandler {
                 StringBuilderFlowModel.getInstance(),
                 UrlDecoderFlowModel.getInstance(),
                 MapFlowModel.getInstance(cha),
+                ListFlowModel.getInstance(cha),
+                SetFlowModel.getInstance(cha),
+                IteratorFlowModel.getInstance(cha),
+                CollectionFlowModel.getInstance(cha),
         };
     }
 
@@ -58,8 +62,8 @@ public class FlowModelHandler {
         Set<DataFact> res = new HashSet<>();
         MethodFlowModel mfm = getMethodModel(target);
 
-        if(invokeInst.toString().contains("put(Ljava"))
-            System.out.println("^^^^^^^^");
+        res.add(dfact);
+
         if(dfact instanceof LocalDataFact) {
             LocalDataFact fact = (LocalDataFact) dfact;
             int index = -100;
