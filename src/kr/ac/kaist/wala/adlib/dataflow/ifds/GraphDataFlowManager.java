@@ -107,8 +107,8 @@ public class GraphDataFlowManager {
 
         for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
 
-            if(!builtinPolicy.isAllowed(callee.getNode()))
-                continue;
+//            if(!builtinPolicy.isAllowed(callee.getNode()))
+//                continue;
             // cut flows to modeled methods
             if(modelHandler.isModeled(callee.getNode())) {
                 continue;
@@ -131,18 +131,29 @@ public class GraphDataFlowManager {
         return res;
     }
 
-    public Set<Pair<BasicBlockInContext, DataFact>> getCallToReturnNexts(BasicBlockInContext node, DataFact fact) throws InfeasiblePathException {
+    boolean debugg = false;
+
+    public Set<Pair<BasicBlockInContext, DataFact>> getCallToReturnNexts(BasicBlockInContext node, DataFact fact, PathEdge pe) throws InfeasiblePathException {
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
         Set<DataFact> modeledFacts = new HashSet<>();
+
+        debugg = false;
+
+        if(pe.toString().contains("ExplodedBlock[7](original:BB[SSA:5..6]4 - com.nativex.monetization.mraid.JSIAdToDeviceHandler.storePicture(Ljava/lang/String;)V) [ Node: < Application, Lcom/nativex/monetization/mraid/JSIAdToDeviceHandler, storePicture(Ljava/lang/String;)V > Context: FirstMethodContextPair: [First: < Application, Lcom/nativex/monetization/mraid/JSIAdToDevice, storePicture(Ljava/lang/String;)V >] : Everywhere"))
+            debugg = true;
 
         SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) node.getLastInstruction();
 
         if(invokeInst == null)
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
+        if(debugg)
+            System.out.println("REALLY??: " + getCalleeSuccessors(node).size());
         // add flows between call sites and return sites regarding to modeled method calls
         if(fact instanceof LocalDataFact || fact instanceof DefaultDataFact) {
             for (BasicBlockInContext callee : getCalleeSuccessors(node)) {
+                if(debugg)
+                    System.out.println("OKAYMAN!!!");
                 if (modelHandler.isModeled(callee.getNode())) {
                     modeledFacts.addAll(modelHandler.matchDataFact(node.getNode(), callee.getNode(), invokeInst, fact));
                 }

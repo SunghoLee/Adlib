@@ -1,5 +1,6 @@
 package kr.ac.kaist.wala.adlib;
 
+import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.ipa.callgraph.CGNode;
@@ -9,6 +10,7 @@ import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
@@ -239,6 +241,22 @@ public class Main {
             });
 
             printIR(cg, name);
+
+//            for(PointerKey pk : pa.getPointerKeys()){
+//                if(pk.toString().contains("[Node: synthetic < Primordial, Landroid/os/Handler, obtainMessage(ILjava/lang/Object;)Landroid/os/Message; > Context: FirstMethodContextPair: [First: < Application, Lcom/nativex/monetization/mraid/JSIAdToDevice, storePicture(Ljava/lang/String;)V >] : Everywhere, v4]")){
+//                    System.out.println("#PK: " + pk);
+//                    for(InstanceKey ik : pa.getPointsToSet(pk)){
+//                        System.out.println("\t#IK: " + ik);
+//                        for(IField f: ik.getConcreteType().getAllFields()) {
+//                            PointerKey fpk = pa.getHeapModel().getPointerKeyForInstanceField(ik, f);
+//                            System.out.println("\t\t#FPK: " + fpk);
+//                            for(InstanceKey fik : pa.getPointsToSet(fpk)){
+//                                System.out.println("\t\t\t#FIK: " + fik);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
 
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
 //            padebugger.debug();

@@ -37,6 +37,7 @@ import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelCla
 import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.entries.RecursiveParamDefFakeRootMethod;
+import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
 import kr.ac.kaist.wala.adlib.model.thread.*;
 import kr.ac.kaist.wala.hybridroid.models.AndroidHybridAppModel;
 import kr.ac.kaist.wala.hybridroid.utils.LocalFileReader;
@@ -98,17 +99,6 @@ public class CallGraphBuilderForHybridSDK {
      */
     protected Iterable<AndroidEntryPoint> findEntrypoints(IClassHierarchy cha) throws ClassHierarchyException {
         return HybridSDKModel.getEntrypoints(properties, cha, this.initInst);
-
-//        Set<AndroidEntryPointLocator.LocatorFlags> flags = HashSetFactory.make();
-//        flags.add(AndroidEntryPointLocator.LocatorFlags.INCLUDE_CALLBACKS);
-//        flags.add(AndroidEntryPointLocator.LocatorFlags.EP_HEURISTIC);
-//        flags.add(AndroidEntryPointLocator.LocatorFlags.CB_HEURISTIC);
-//        AndroidEntryPointLocator eps = new AndroidEntryPointLocator(flags);
-//        List<AndroidEntryPoint> es = eps.getEntryPoints(cha);
-//
-//        System.out.println("Entry: " + es.size());
-//
-//        return () -> es.iterator();
     }
 
     /**
@@ -208,8 +198,8 @@ public class CallGraphBuilderForHybridSDK {
      */
     protected void setTargetSelectors(AnalysisOptions options, IClassHierarchy cha) {
 //        com.ibm.wala.ipa.callgraph.impl.Util.addDefaultSelectors(options, cha);
-        options.setSelector(new ThreadModelMethodTargetSelector(new ContextModelMethodTargetSelector(new LambdaMethodTargetSelector(new ClassHierarchyMethodTargetSelector(cha)), cha), cha));
-        options.setSelector(new ClassHierarchyClassTargetSelector(cha));
+        options.setSelector(new ModelingMethodTargetSelector(new LambdaMethodTargetSelector(new ClassHierarchyMethodTargetSelector(cha)), cha));
+        options.setSelector(new ModelingClassTargetSelector(new ClassHierarchyClassTargetSelector(cha), cha));
         options.setUseConstantSpecificKeys(true);
     }
 
@@ -231,33 +221,6 @@ public class CallGraphBuilderForHybridSDK {
         PointerAnalysis<InstanceKey> pa = delegate.getPointerAnalysis();
         Slicer sc;
         this.pa = pa;
-//        for(CGNode n: cg){
-//            if(n.toString().contains("< Application, Lcom/tapjoy/TJAdUnitJSBridge$1, onDispatchMethod(Ljava/lang/String;Lorg/json/JSONObject;)V > ")){//Context: CallStringContext: [ com.tapjoy.TJWebViewJSInterface.dispatchMethod(Ljava/lang/String;)V@76 com.ibm.wala.FakeRootClass.fakeRootMethod()V@45 ]")){
-//                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n, 26);
-//                System.out.println(pk.toString());
-//                for(InstanceKey ik : pa.getPointsToSet(pk)){
-//                    System.out.println("ik: " + ik);
-//                }
-////                PointerKey npk = pa.getHeapModel().getPointerKeyForLocal(n, 1);
-////                System.out.println(npk.toString());
-////                for(InstanceKey ik : pa.getPointsToSet(npk)){
-////                    System.out.println("ik: " + ik);
-////                }
-//            }
-////            else if(n.toString().contains("Node: synthetic < Primordial, Landroid/content/Context, getApplicationContext()Landroid/content/Context; > Context: Everywhere")){
-////                PointerKey pk = pa.getHeapModel().getPointerKeyForLocal(n, 2);
-////                System.out.println(pk.toString());
-////                for(InstanceKey ik : pa.getPointsToSet(pk)){
-////                    System.out.println("ik: " + ik);
-////                }
-////                PointerKey pk2 = pa.getHeapModel().getPointerKeyForLocal(n, 1);
-////                System.out.println(pk2.toString());
-////                for(InstanceKey ik : pa.getPointsToSet(pk2)){
-////                    System.out.println("ik: " + ik);
-////                }
-////            }
-//        }
-
         return cg;
     }
 
@@ -307,158 +270,6 @@ public class CallGraphBuilderForHybridSDK {
         @Override
         public InstanceKey getInstanceKeyForMetadataObject(Object obj, TypeReference objType) {
             return siteBased.getInstanceKeyForMetadataObject(obj, objType);
-        }
-    }
-
-    public static class ContextModelMethodTargetSelector implements MethodTargetSelector {
-        final private MethodTargetSelector base;
-        final private IClassHierarchy cha;
-        final private IClass contextWrapperModelClass;
-        final private IClass alertDialogBuilderModelClass;
-        final private IClass handlerModelClass;
-        final private IClass referenceModelClass;
-
-        public ContextModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha) {
-            this.base = base;
-            this.cha = cha;
-            this.contextWrapperModelClass = AndroidContextWrapperModelClass.getInstance(cha);
-            this.alertDialogBuilderModelClass = AndroidAlertDialogBuilderModelClass.getInstance(cha);
-            this.handlerModelClass = AndroidHandlerModelClass.getInstance(cha);
-            referenceModelClass = JavaReferenceModelClass.getInstance(cha);
-            //ArtMethod b;
-            Class a;
-        }
-
-        @Override
-        public IMethod getCalleeTarget(CGNode caller, CallSiteReference site, IClass receiver) {
-            IMethod target = base.getCalleeTarget(caller, site, receiver);
-
-            if (site.isDispatch() && receiver != null && target != null) {
-                if (AndroidContextWrapperModelClass.isSubClassOfContextWrapper(target.getDeclaringClass()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETSYSTEMSERVICE_SELECTOR)) {
-                    return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                } else if (AndroidContextWrapperModelClass.isSubClassOfContextWrapper(target.getDeclaringClass()) && site.getDeclaredTarget().getSelector().equals(AndroidContextWrapperModelClass.GETAPPLICATIONCONTEXT_SELECTOR)) {
-                    return contextWrapperModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                }else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidHandlerModelClass.SEND_MESSAGE_SELECTOR)) {
-                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                }else if (target.getDeclaringClass().getName().equals(JavaReferenceModelClass.JAVA_REFERENCE_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(JavaReferenceModelClass.GET_SELECTOR)) {
-                    return referenceModelClass.getMethod(site.getDeclaredTarget().getSelector());
-                }
-
-                //                }
-//                else if (target.getDeclaringClass().getName().equals(AndroidAlertDialogBuilderModelClass.ANDROID_ALERT_DIALOG_BUILDER_MODEL_CLASS.getName()) && site.getDeclaredTarget().getSelector().equals(AndroidAlertDialogBuilderModelClass.SHOW_SELECTOR)) {
-//                    return alertDialogBuilderModelClass.getMethod(site.getDeclaredTarget().getSelector());
-            }
-            return target;
-        }
-    }
-
-    public static class ThreadModelMethodTargetSelector implements MethodTargetSelector {
-        private MethodTargetSelector base;
-
-        private static Set<Selector> SCHEDULE_SELECTOR_SET;
-        private static Set<Selector> RUN_SELECTOR_SET;
-        private static Set<Selector> EXECUTE_SELECTOR_SET;
-        private AbstractModelClass timerModelClass;
-        private AbstractModelClass threadModelClass;
-        private AbstractModelClass threadPoolExecutorModelClass;
-        private AbstractModelClass viewModelClass;
-        final private AbstractModelClass handlerModelClass;
-        final private AbstractModelClass asyncTaskModelClass;
-        private final AbstractModelClass executorModelClass;
-
-        static {
-            SCHEDULE_SELECTOR_SET = new HashSet<>();
-            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_AT_FIXED_RATE_SELECTOR1);
-            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_AT_FIXED_RATE_SELECTOR2);
-            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR1);
-            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR2);
-            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR3);
-            SCHEDULE_SELECTOR_SET.add(JavaTimerModelClass.SCHEDULE_SELECTOR4);
-
-            RUN_SELECTOR_SET = new HashSet<>();
-            RUN_SELECTOR_SET.add(JavaThreadModelClass.START_SELECTOR);
-
-            EXECUTE_SELECTOR_SET = new HashSet<>();
-            EXECUTE_SELECTOR_SET.add(JavaThreadPoolExecutorModelClass.EXECUTE_SELECTOR);
-        }
-
-        public ThreadModelMethodTargetSelector(MethodTargetSelector base, IClassHierarchy cha) {
-            this.base = base;
-            handlerModelClass = AndroidHandlerModelClass.getInstance(cha);
-            asyncTaskModelClass = AndroidAsyncTaskModelClass.getInstance(cha);
-            executorModelClass = JavaExecutorModelClass.getInstance(cha);
-            initThreadModel(cha);
-        }
-
-        private void initThreadModel(IClassHierarchy cha) {
-            if (timerModelClass == null)
-                timerModelClass = JavaTimerModelClass.getInstance(cha);
-            if (threadModelClass == null)
-                threadModelClass = JavaThreadModelClass.getInstance(cha);
-            if (threadPoolExecutorModelClass == null)
-                threadPoolExecutorModelClass = JavaThreadPoolExecutorModelClass.getInstance(cha);
-            if (viewModelClass == null)
-                viewModelClass = AndroidViewModelClass.getInstance(cha);
-        }
-
-        @Override
-        public IMethod getCalleeTarget(CGNode caller, CallSiteReference site, IClass receiver) {
-            IMethod target = base.getCalleeTarget(caller, site, receiver);
-
-            if (site.isDispatch() && receiver != null && target != null) {
-                TypeReference targetType = target.getDeclaringClass().getReference();
-                Selector targetSelector = site.getDeclaredTarget().getSelector();
-
-                IMethod model = timerModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-                model = threadModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-                model = threadPoolExecutorModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-                model = viewModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-                model = asyncTaskModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-                model = executorModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-                model = handlerModelClass.match(targetType, targetSelector);
-                if(model != null)
-                    return model;
-
-//                if (target.getDeclaringClass().getName().equals(JavaTimerModelClass.JAVA_TIMER_MODEL_CLASS.getName()) && SCHEDULE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
-//                    return timerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                } else if (target.getDeclaringClass().getName().equals(JavaThreadModelClass.JAVA_THREAD_MODEL_CLASS.getName()) && RUN_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
-//                    return threadModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                } else if (target.getDeclaringClass().getName().equals(JavaThreadPoolExecutorModelClass.JAVA_THREAD_POOL_EXECUTOR_MODEL_CLASS.getName()) && EXECUTE_SELECTOR_SET.contains(site.getDeclaredTarget().getSelector())) {
-//                    return threadPoolExecutorModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                } else if (target.getDeclaringClass().getName().equals(AndroidViewModelClass.ANDROID_VIEW_MODEL_CLASS.getName()) && AndroidViewModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-//                    return viewModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                } else if (target.getDeclaringClass().getName().equals(AndroidAsyncTaskModelClass.ANDROID_ASYNC_TASK_MODEL_CLASS.getName()) && (AndroidAsyncTaskModelClass.EXECUTE_SELECTOR1.equals(site.getDeclaredTarget().getSelector()) || AndroidAsyncTaskModelClass.EXECUTE_SELECTOR2.equals(site.getDeclaredTarget().getSelector()))) {
-//                    return asyncTaskModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                } else if (target.getDeclaringClass().getName().equals(JavaExecutorModelClass.JAVA_EXECUTOR_MODEL_CLASS.getName()) && JavaExecutorModelClass.EXECUTOR_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-//                    return executorModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                }
-
-//                else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_DELAYED_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-//                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                } else if (target.getDeclaringClass().getName().equals(AndroidHandlerModelClass.ANDROID_HANDLER_MODEL_CLASS.getName()) && AndroidHandlerModelClass.POST_SELECTOR.equals(site.getDeclaredTarget().getSelector())) {
-//                    return handlerModelClass.getMethod(site.getDeclaredTarget().getSelector());
-//                }
-            }
-
-            return target;
         }
     }
 

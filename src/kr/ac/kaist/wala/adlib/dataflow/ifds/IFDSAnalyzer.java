@@ -14,7 +14,7 @@ import java.util.Set;
  * Created by leesh on 22/02/2018.
  */
 public class IFDSAnalyzer {
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
 
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
@@ -74,7 +74,7 @@ public class IFDSAnalyzer {
                 for(Pair<BasicBlockInContext, DataFact> p : graphManager.getCalleeNexts(toNode, toFact)){
                     propagate(new PathEdge(p.fst(), p.snd(), p.fst(), p.snd()));
                 }
-                for(Pair<BasicBlockInContext, DataFact> p : graphManager.getCallToReturnNexts(toNode, toFact)){
+                for(Pair<BasicBlockInContext, DataFact> p : graphManager.getCallToReturnNexts(toNode, toFact, pe)){
                     propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
                 }
                 for(Pair<BasicBlockInContext, DataFact> p : seManager.getSummaryFrom(toNode, toFact)){

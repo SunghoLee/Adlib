@@ -9,6 +9,7 @@ import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.ExplicitCallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.*;
 import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFABuilder;
+import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.ssa.SymbolTable;
@@ -198,6 +199,7 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
                 /// Lee: end
                 return;
             }
+            ClassHierarchy c;
             IField f = getClassHierarchy().resolveField(field);
             if (f == null) {
                 if (DEBUG) {

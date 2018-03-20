@@ -1,12 +1,16 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.analysis.pointers.HeapGraph;
+import com.ibm.wala.classLoader.IClass;
+import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.FieldReference;
+import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
@@ -301,6 +305,27 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 return Collections.emptySet();
 //                Assertions.UNREACHABLE("A local data fact flowed to a check cast operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
+            Field field = ldf.getField();
+            if(field instanceof FieldSeq){
+                FieldSeq seq = (FieldSeq) field;
+                String firstField = seq.getFirst();
+
+                boolean isCompatible = false;
+
+                for(TypeReference tr : instruction.getDeclaredResultTypes()){
+                    IClassHierarchy cha = supergraph.getClassHierarchy();
+                    IClass c = cha.lookupClass(tr);
+                    for(IField f : c.getAllInstanceFields()){
+                        if(f.getName().toString().equals(firstField)) {
+                            isCompatible = true;
+                            break;
+                        }
+                    }
+                }
+
+                if(!isCompatible)
+                    return Collections.emptySet();
+            }
             Set<DataFact> res = new HashSet<>();
             res.add(fact);
             res.add(new LocalDataFact(n, instruction.getDef(), fact.getField()));

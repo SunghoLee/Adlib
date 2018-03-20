@@ -20,7 +20,7 @@ import java.util.*;
  * Created by leesh on 2018. 2. 19..
  */
 public class AliasHandler {
-    private final static boolean DEBUG = false;
+    private final static boolean DEBUG = true;
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
     private final HeapGraph<InstanceKey> hg;

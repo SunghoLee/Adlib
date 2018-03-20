@@ -42,6 +42,10 @@ public class FlowModelHandler {
 
     public boolean isModeled(CGNode target){
         //TODO: improve the matching performance
+
+        if(target.getMethod().getSelector().toString().contains("append(Ljava/lang/String;)Ljava/lang/StringBuilder;"))
+            System.out.println("TTTTTTTTTT!");
+
         if(getMethodModel(target) != null)
             return true;
 
@@ -64,6 +68,8 @@ public class FlowModelHandler {
 
         res.add(dfact);
 
+        if(target.getMethod().getSelector().toString().contains("append(Ljava/lang/String;)Ljava/lang/StringBuilder;"))
+            System.out.println("WOWOWOWOWO!");
         if(dfact instanceof LocalDataFact) {
             LocalDataFact fact = (LocalDataFact) dfact;
             int index = -100;
