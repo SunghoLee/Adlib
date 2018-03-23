@@ -13,6 +13,7 @@ import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import com.ibm.wala.util.intset.OrdinalSet;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 
 import java.util.*;
 
@@ -133,25 +134,23 @@ public class AliasHandler {
             Field field = fact.getField();
 
             Set<InstanceKey> realTargets = new HashSet<>();
-            if(field instanceof FieldSeq){
-                String fst = ((FieldSeq) field).getFirst();
-                if(fst.equals("this$0")){
-                    field = ((FieldSeq) field).getRest();
-                    for(Object target : targets){
-                        Iterator<Object> iSucc = hg.getSuccNodes(target);
-                        while(iSucc.hasNext()){
-                            PointerKey pk = (PointerKey) iSucc.next();
-                            if(pk instanceof InstanceFieldKey){
-                                InstanceFieldKey ifk = (InstanceFieldKey) pk;
-                                if(ifk.getField().getName().toString().equals("this$0")){
-                                    realTargets.addAll(OrdinalSet.toCollection(pa.getPointsToSet(ifk)));
-                                }
+            Set<Field> newFields = new HashSet<>();
+            if(field.isMatched("this$0")){
+                newFields.addAll(field.pop("this$0"));
+                for(Object target : targets){
+                    Iterator<Object> iSucc = hg.getSuccNodes(target);
+                    while(iSucc.hasNext()){
+                        PointerKey pk = (PointerKey) iSucc.next();
+                        if(pk instanceof InstanceFieldKey){
+                            InstanceFieldKey ifk = (InstanceFieldKey) pk;
+                            if(ifk.getField().getName().toString().equals("this$0")){
+                                realTargets.addAll(OrdinalSet.toCollection(pa.getPointsToSet(ifk)));
                             }
                         }
                     }
-                }else
-                    realTargets.addAll(targets);
-            }
+                }
+            }else
+                realTargets.addAll(targets);
 
             for(PointerKey pk : localPKs){
                 BFSPathFinder pathFinder = new BFSPathFinder((Graph) hg, pk, new Predicate() {
@@ -167,24 +166,23 @@ public class AliasHandler {
 
                 if(!filter.accept(pk, path))
                     continue;
-
-                Field newField = field;
-
-                if(path != null){
-                    System.out.println("FROM: " + fact);
-                    printList(path);
-                    for(Object o : path){
-                        if(o instanceof PointerKey){
-                            if(o instanceof InstanceFieldKey){
-                                InstanceFieldKey ifk = (InstanceFieldKey) o;
-                                String fieldName = ifk.getField().getName().toString();
-                                newField = new FieldSeq(fieldName, newField);
-                            }else if(o instanceof LocalPointerKey){
-                                LocalPointerKey lpk = (LocalPointerKey) o;
-                                res.add(new LocalDataFact(n, lpk.getValueNumber(), newField));
-                            }else if(o instanceof StaticFieldKey){
-                                StaticFieldKey sfk = (StaticFieldKey) o;
-                                res.add(new GlobalDataFact(sfk.getField().getReference(), newField));
+                for(Field newField : newFields) {
+                    if (path != null) {
+                        System.out.println("FROM: " + fact);
+                        printList(path);
+                        for (Object o : path) {
+                            if (o instanceof PointerKey) {
+                                if (o instanceof InstanceFieldKey) {
+                                    InstanceFieldKey ifk = (InstanceFieldKey) o;
+                                    String fieldName = ifk.getField().getName().toString();
+                                    newField = FieldSeq.make(SingleField.make(fieldName), newField);
+                                } else if (o instanceof LocalPointerKey) {
+                                    LocalPointerKey lpk = (LocalPointerKey) o;
+                                    res.add(new LocalDataFact(n, lpk.getValueNumber(), newField));
+                                } else if (o instanceof StaticFieldKey) {
+                                    StaticFieldKey sfk = (StaticFieldKey) o;
+                                    res.add(new GlobalDataFact(sfk.getField().getReference(), newField));
+                                }
                             }
                         }
                     }
@@ -199,6 +197,7 @@ public class AliasHandler {
 
         if(DEBUG){
             System.out.println("***** ALIAS *****");
+            System.out.println("N: " + n);
             System.out.println("FROM: " + fact);
             for(DataFact df : res)
                 System.out.println("\t=> " + df);

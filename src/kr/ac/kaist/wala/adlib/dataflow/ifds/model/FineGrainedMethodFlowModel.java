@@ -4,7 +4,10 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 /**
@@ -32,26 +35,35 @@ public final class FineGrainedMethodFlowModel extends MethodFlowModel {
     }
 
     @Override
-    public Field matchField(Field f){
+    public Set<Field> matchField(Field f){
         StringTokenizer tokenizer = new StringTokenizer(field, ".");
-        Field newF = f;
+        Set<Field> res = new HashSet<>();
+
+//        Field newF = f;
+        res.add(f);
 
         while(tokenizer.hasMoreTokens()){
             String newField = tokenizer.nextToken();
+            Set<Field> nexts = new HashSet<>();
 
-            if(newField.startsWith("-")){
-                newField = newField.substring(1);
-                if(newF instanceof FieldSeq && ((FieldSeq) newF).getFirst().equals(newField)) {
-                    newF = ((FieldSeq) newF).getRest();
-                }else{
+            for(Field newF : res) {
+                if (newField.startsWith("-")) {
+                    newField = newField.substring(1);
+                    if (newF.isMatched(newField)) {
+                        nexts.addAll(newF.pop(newField));
+                    } else {
+                        // no-op: this field is not possible to be matched with the model's field.
 //                    Assertions.UNREACHABLE("The field is not matched with this F: \n\t @ Field: " + newF + "\n\t @ minField: " + field);
-                    return null;
+//                        return null;
+                    }
+                } else {
+                    nexts.add(FieldSeq.make(SingleField.make(newField), newF));
                 }
-            }else {
-                newF = new FieldSeq(newField, newF);
             }
+            res.clear();;
+            res.addAll(nexts);
         }
 
-        return newF;
+        return res;
     }
 }

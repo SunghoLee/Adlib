@@ -32,7 +32,7 @@ import com.ibm.wala.util.functions.Function;
 import com.ibm.wala.util.strings.Atom;
 import kr.ac.kaist.wala.adlib.InitInstsParser;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
-import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
+import kr.ac.kaist.wala.adlib.model.TypeBasedBuiltinModeler;
 import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelClass;
 import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
@@ -76,6 +76,7 @@ public class CallGraphBuilderForHybridSDK {
         this.initInst = initInsts;
         this.scope = makeAnalysisScope(sdk);
         this.cha = buildClassHierarchy(this.scope);
+        System.out.println("#### ? " + cha.isAssignableFrom(cha.lookupClass(TypeReference.JavaLangObject), cha.lookupClass(TypeReference.JavaLangString)));
         this.entries = findEntrypoints(this.cha);
         this.options = makeAnalysisOptions(this.scope, this.entries);
         this.delegate = makeDelegateBuilder(this.cha, this.options);

@@ -7,8 +7,6 @@ import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dalvik.ipa.callgraph.impl.AndroidEntryPoint;
-import com.ibm.wala.dalvik.util.AndroidComponent;
-import com.ibm.wala.dalvik.util.AndroidEntryPointLocator;
 import com.ibm.wala.ipa.callgraph.impl.AbstractRootMethod;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
@@ -23,21 +21,6 @@ import java.util.Collections;
  */
 public class ConcreteTypeParamEntryPoint extends AndroidEntryPoint {
     private final IClass klass;
-
-    public ConcreteTypeParamEntryPoint(AndroidEntryPointLocator.AndroidPossibleEntryPoint p, IMethod method, IClassHierarchy cha, AndroidComponent inComponent) {
-        super(p, method, cha, inComponent);
-        klass = null;
-    }
-
-    public ConcreteTypeParamEntryPoint(AndroidEntryPointLocator.AndroidPossibleEntryPoint p, IMethod method, IClassHierarchy cha) {
-        super(p, method, cha);
-        klass = null;
-    }
-
-    public ConcreteTypeParamEntryPoint(ExecutionOrder o, IMethod method, IClassHierarchy cha, AndroidComponent inComponent) {
-        super(o, method, cha, inComponent);
-        klass = null;
-    }
 
     public ConcreteTypeParamEntryPoint(ExecutionOrder o, IMethod method, IClassHierarchy cha) {
         super(o, method, cha);

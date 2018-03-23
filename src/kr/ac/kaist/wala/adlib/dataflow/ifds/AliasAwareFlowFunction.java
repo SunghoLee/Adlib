@@ -15,7 +15,7 @@ import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.OpField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,14 +44,12 @@ public class AliasAwareFlowFunction implements IFlowFunction {
     }
 
     private Set<DataFact> getField(CGNode n, String instField, Field factField, int def){
-        if(factField instanceof FieldSeq){
-            String fst = ((FieldSeq) factField).getFirst();
-            if(fst.equals(instField))
-                return Collections.singleton(new LocalDataFact(n, def, ((FieldSeq) factField).getRest()));
-            else
-                return Collections.emptySet();
-        }else if(factField instanceof OpField){
-            Assertions.UNREACHABLE("Not implemented yet.");
+        if(factField.isMatched(instField)){
+            Set<DataFact> res=  new HashSet<>();
+            for(Field f : factField.pop(instField)) {
+                res.add(new LocalDataFact(n, def, f));
+            }
+            return res;
         }
         Assertions.UNREACHABLE("Cannot reach here! : " + factField);
         return Collections.emptySet();
@@ -96,7 +94,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             ((LocalDataFact) fact).getVar() == instruction.getValue()) {
 
             //TODO: handle aliases
-            DataFact newFact = new LocalDataFact(n, instruction.getArrayRef(), new FieldSeq("[", fact.getField()));
+            DataFact newFact = new LocalDataFact(n, instruction.getArrayRef(), FieldSeq.make(SingleField.make("["), fact.getField()));
             res.add(newFact);
 
             for(DataFact aliasFact : aliasHandler.findAlias(n, newFact)){
@@ -194,16 +192,15 @@ public class AliasAwareFlowFunction implements IFlowFunction {
     }
 
     private Set<DataFact> getField(CGNode n, FieldReference instField, Field factField, int def){
-        if(factField instanceof FieldSeq){
-            String fst = ((FieldSeq) factField).getFirst();
-            if(fst.equals(instField.getName().toString()))
-                return Collections.singleton(new LocalDataFact(n, def, ((FieldSeq) factField).getRest()));
-            else
-                return Collections.emptySet();
-        }else if(factField instanceof OpField){
-            Assertions.UNREACHABLE("Not implemented yet.");
+        if(factField.isMatched(instField.getName().toString())){
+            Set<DataFact> res = new HashSet<>();
+            for(Field f : factField.pop(instField.getName().toString())) {
+                res.add(new LocalDataFact(n, def, f));
+            }
+            return res;
         }
-        Assertions.UNREACHABLE("Cannot reach here!");
+        // it is possible if the data fact is the receiver object.
+//        Assertions.UNREACHABLE("Cannot reach here!");
         return Collections.emptySet();
     }
 
@@ -248,7 +245,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 res.add(new GlobalDataFact(instruction.getDeclaredField(), fact.getField()));
             }else{
                 //TODO: handle aliases
-                DataFact newFact = new LocalDataFact(n, instruction.getRef(), new FieldSeq(instruction.getDeclaredField().getName().toString(), fact.getField()));
+                DataFact newFact = new LocalDataFact(n, instruction.getRef(), FieldSeq.make(SingleField.make(instruction.getDeclaredField().getName().toString()), fact.getField()));
                 res.add(newFact);
 
                 for(DataFact aliasFact : aliasHandler.findAlias(n, newFact)){
@@ -302,28 +299,26 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             LocalDataFact ldf = (LocalDataFact) fact;
 
             if(instruction.getUse(0) != ldf.getVar())
-                return Collections.emptySet();
-//                Assertions.UNREACHABLE("A local data fact flowed to a check cast operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
+                return Collections.singleton(fact);
 
             Field field = ldf.getField();
-            if(field instanceof FieldSeq){
-                FieldSeq seq = (FieldSeq) field;
-                String firstField = seq.getFirst();
 
+            if(!(field instanceof NoneField)) {
                 boolean isCompatible = false;
 
-                for(TypeReference tr : instruction.getDeclaredResultTypes()){
+                for (TypeReference tr : instruction.getDeclaredResultTypes()) {
                     IClassHierarchy cha = supergraph.getClassHierarchy();
                     IClass c = cha.lookupClass(tr);
-                    for(IField f : c.getAllInstanceFields()){
-                        if(f.getName().toString().equals(firstField)) {
+                    for (IField f : c.getAllInstanceFields()) {
+                        if (field.isMatched(f.getName().toString())) {
                             isCompatible = true;
                             break;
                         }
                     }
                 }
 
-                if(!isCompatible)
+                //cut this spurious flow!
+                if (!isCompatible)
                     return Collections.emptySet();
             }
             Set<DataFact> res = new HashSet<>();

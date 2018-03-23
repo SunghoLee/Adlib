@@ -1,28 +1,27 @@
 package kr.ac.kaist.wala.adlib.model.components;
 
-import com.ibm.wala.classLoader.*;
+import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.MethodSummary;
 import com.ibm.wala.ipa.summaries.SummarizedMethod;
 import com.ibm.wala.ipa.summaries.SummarizedMethodWithNames;
 import com.ibm.wala.ipa.summaries.VolatileMethodSummary;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
-import com.ibm.wala.shrikeCT.ClassConstants;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.types.*;
-import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import com.ibm.wala.util.strings.Atom;
-import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
+import kr.ac.kaist.wala.adlib.model.ModelClass;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A modeling class for Android built-in android/os/Handler.
  * Created by leesh on 14/01/2017.
  */
-public class AndroidHandlerModelClass extends AbstractModelClass {
+public class AndroidHandlerModelClass extends ModelClass {
 
     public static final TypeReference ANDROID_HANDLER_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/os/Handler"));
@@ -50,27 +49,23 @@ public class AndroidHandlerModelClass extends AbstractModelClass {
         return klass;
     }
 
-    public IMethod match(TypeReference t, Selector s){
-        if(t.getName().equals(ANDROID_HANDLER_MODEL_CLASS.getName()) && methods.containsKey(s))
-            return methods.get(s);
-
-        return null;
-    }
-
     private AndroidHandlerModelClass(IClassHierarchy cha) {
         super(ANDROID_HANDLER_MODEL_CLASS, cha);
         this.cha = cha;
 
         initMethodsForHandler();
 
-        this.addMethod(this.clinit());
+        addMethod(this.clinit());
     }
 
     private void initMethodsForHandler(){
-        this.addMethod(this.send(SEND_MESSAGE_SELECTOR)); this.addMethod(this.postDelayed(POST_DELAYED_SELECTOR));
-        this.addMethod(this.post(POST_SELECTOR)); this.addMethod(this.obtain1(OBTAIN_MESSAGE_SELECTOR1));
-        this.addMethod(this.obtain2(OBTAIN_MESSAGE_SELECTOR2)); this.addMethod(this.obtain3(OBTAIN_MESSAGE_SELECTOR3));
-        this.addMethod(this.obtain4(OBTAIN_MESSAGE_SELECTOR4));
+        addMethod(this.send(SEND_MESSAGE_SELECTOR));
+        addMethod(this.postDelayed(POST_DELAYED_SELECTOR));
+        addMethod(this.post(POST_SELECTOR));
+        addMethod(this.obtain1(OBTAIN_MESSAGE_SELECTOR1));
+        addMethod(this.obtain2(OBTAIN_MESSAGE_SELECTOR2));
+        addMethod(this.obtain3(OBTAIN_MESSAGE_SELECTOR3));
+        addMethod(this.obtain4(OBTAIN_MESSAGE_SELECTOR4));
     }
 
     /**
@@ -361,160 +356,5 @@ public class AndroidHandlerModelClass extends AbstractModelClass {
         clinit.setStatic(true);
 
         return new SummarizedMethodWithNames(clinitRef, clinit, this);
-    }
-
-    @Override
-    public IMethod getMethod(Selector selector) {
-        //assert (macroModel != null) : "Macro Model was not set yet!";
-        if(methods.containsKey(selector)){
-            return methods.get(selector);
-        }
-        throw new IllegalArgumentException("Could not resolve " + selector);
-    }
-
-    @Override
-    public Collection<IMethod> getDeclaredMethods() {
-        Set<IMethod> methods = HashSetFactory.make();
-        methods.addAll(this.methods.values());
-
-        return Collections.unmodifiableCollection(methods);
-    }
-
-    @Override
-    public Collection<IMethod> getAllMethods()  {
-        return getDeclaredMethods();
-    }
-
-    public void addMethod(IMethod method) {
-        if (this.methods.containsKey(method.getSelector())) {
-            // TODO: Check this matches on signature not on contents!
-            // TODO: What on different Context versions
-            throw new IllegalStateException("The AndroidThreadModelClass already contains a Method called " + method.getName());
-        }
-        assert(this.methods != null);
-        this.methods.put(method.getSelector(), method);
-    }
-
-    @Override
-    public IMethod getClassInitializer()  {
-        return getMethod(MethodReference.clinitSelector);
-    }
-
-    //
-    //  Contents of the class: Fields
-    //  We have none...
-    //
-    private Map<Atom, IField> fields = new HashMap<Atom, IField>();
-
-    @Override
-    public IField getField(Atom name) {
-        if (fields.containsKey(name)) {
-            return fields.get(name);
-        } else {
-            return null;
-        }
-    }
-
-    public void putField(Atom name, TypeReference type) {
-        final FieldReference fdRef = FieldReference.findOrCreate(this.getReference(), name, type);
-        final int accessFlags = ClassConstants.ACC_STATIC | ClassConstants.ACC_PUBLIC;
-        final IField field = new FieldImpl(this, fdRef, accessFlags, null, null);
-
-        this.fields.put(name, field);
-    }
-
-    /**
-     *  This class does not contain any fields.
-     */
-    @Override
-    public Collection<IField> getAllFields()  {
-        return fields.values();
-    }
-
-    /**
-     *  This class does not contain any fields.
-     */
-    @Override
-    public Collection<IField> getDeclaredStaticFields() {
-        return fields.values();
-    }
-
-    /**
-     *  This class does not contain any fields.
-     */
-    @Override
-    public Collection<IField> getAllStaticFields() {
-        return fields.values();
-    }
-
-    /**
-     *  This class does not contain any fields.
-     */
-    @Override
-    public Collection<IField> getDeclaredInstanceFields() throws UnsupportedOperationException {
-        return Collections.emptySet();
-    }
-
-    /**
-     *  This class does not contain any fields.
-     */
-    @Override
-    public Collection<IField> getAllInstanceFields()  {
-        return Collections.emptySet();
-    }
-
-
-
-    //
-    //  Class Modifiers
-    //
-
-    /**
-     *  This is a public final class.
-     */
-    @Override
-    public int getModifiers() {
-        return  ClassConstants.ACC_PUBLIC |
-                ClassConstants.ACC_FINAL;
-    }
-    @Override
-    public boolean isPublic() {         return true;  }
-    @Override
-    public boolean isPrivate() {        return false; }
-    @Override
-    public boolean isInterface() {      return false; }
-    @Override
-    public boolean isAbstract() {       return false; }
-    @Override
-    public boolean isArrayClass () {    return false; }
-
-    /**
-     *  This is a subclass of the root class.
-     */
-    @Override
-    public IClass getSuperclass() throws UnsupportedOperationException {
-        return getClassHierarchy().getRootClass();
-    }
-
-    /**
-     *  This class does not impement any interfaces.
-     */
-    @Override
-    public Collection<IClass> getAllImplementedInterfaces() {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Collection<IClass> getDirectInterfaces() {
-        return Collections.emptySet();
-    }
-
-    //
-    //  Misc
-    //
-
-    @Override
-    public boolean isReferenceType() {
-        return getReference().isReferenceType();
     }
 }

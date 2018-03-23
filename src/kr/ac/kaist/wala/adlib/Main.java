@@ -242,11 +242,11 @@ public class Main {
 
             printIR(cg, name);
 
-//            for(PointerKey pk : pa.getPointerKeys()){
-//                if(pk.toString().contains("[Node: synthetic < Primordial, Landroid/os/Handler, obtainMessage(ILjava/lang/Object;)Landroid/os/Message; > Context: FirstMethodContextPair: [First: < Application, Lcom/nativex/monetization/mraid/JSIAdToDevice, storePicture(Ljava/lang/String;)V >] : Everywhere, v4]")){
-//                    System.out.println("#PK: " + pk);
-//                    for(InstanceKey ik : pa.getPointsToSet(pk)){
-//                        System.out.println("\t#IK: " + ik);
+            for(PointerKey pk : pa.getPointerKeys()){
+                if(pk.toString().contains("[Node: < Application, Lcom/nativex/monetization/mraid/JSIAdToDeviceHandler, storePicture(Ljava/lang/String;)V > Context: FirstMethodContextPair: [First: < Application, Lcom/nativex/monetization/mraid/JSIAdToDevice, storePicture(Ljava/lang/String;)V >] : Everywhere, v18]")){
+                    System.out.println("#PK: " + pk);
+                    for(InstanceKey ik : pa.getPointsToSet(pk)){
+                        System.out.println("\t#IK: " + ik);
 //                        for(IField f: ik.getConcreteType().getAllFields()) {
 //                            PointerKey fpk = pa.getHeapModel().getPointerKeyForInstanceField(ik, f);
 //                            System.out.println("\t\t#FPK: " + fpk);
@@ -254,10 +254,10 @@ public class Main {
 //                                System.out.println("\t\t\t#FIK: " + fik);
 //                            }
 //                        }
-//                    }
-//                }
-//            }
-
+                    }
+                }
+            }
+//System.exit(-1);
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
 //            padebugger.debug();
         }

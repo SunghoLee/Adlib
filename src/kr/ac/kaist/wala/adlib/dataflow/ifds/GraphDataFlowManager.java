@@ -73,9 +73,6 @@ public class GraphDataFlowManager {
                 if(inst == null) {
                     nextFacts.add(fact);
                 }else {
-                    Set tt = flowFun.visit(node.getNode(), inst, fact);
-                    if(tt == null)
-                        System.out.println("Possible?");
                     nextFacts.addAll(flowFun.visit(node.getNode(), inst, fact));
                 }
 

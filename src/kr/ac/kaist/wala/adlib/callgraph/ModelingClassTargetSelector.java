@@ -5,15 +5,14 @@ import com.ibm.wala.classLoader.NewSiteReference;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.ClassTargetSelector;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
-import kr.ac.kaist.wala.adlib.model.AbstractModelClass;
-import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
+import kr.ac.kaist.wala.adlib.model.ModelClass;
 
 /**
  * Created by leesh on 20/03/2018.
  */
 public class ModelingClassTargetSelector implements ClassTargetSelector {
     private final ClassTargetSelector base;
-    private AbstractModelClass[] models;
+    private ModelClass[] models;
 
     public ModelingClassTargetSelector(ClassTargetSelector base, IClassHierarchy cha){
         this.base = base;
@@ -22,8 +21,8 @@ public class ModelingClassTargetSelector implements ClassTargetSelector {
     }
 
     private void init(IClassHierarchy cha){
-        models = new AbstractModelClass[]{
-                AndroidMessageModelClass.getInstance(cha),
+        models = new ModelClass[]{
+//                AndroidMessageModelClass.getInstance(cha),
         };
     }
 

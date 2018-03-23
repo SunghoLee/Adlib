@@ -5,6 +5,8 @@ import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Created by leesh on 11/10/2017.
@@ -64,8 +66,8 @@ public class MethodFlowModel {
         return false;
     }
 
-    public Field matchField(Field f){
-        return f;
+    public Set<Field> matchField(Field f){
+        return Collections.singleton(f);
     }
 
     public int[] getFrom(){
