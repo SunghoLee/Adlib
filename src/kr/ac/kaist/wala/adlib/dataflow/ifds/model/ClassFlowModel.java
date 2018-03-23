@@ -38,4 +38,9 @@ public abstract class ClassFlowModel {
      * initialize a Class type reference and Method flow models for each class modeling.
      */
     protected abstract void init();
+
+    @Override
+    public String toString(){
+        return "[CFM] " + ref;
+    }
 }

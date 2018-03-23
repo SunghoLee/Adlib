@@ -18,7 +18,7 @@ import java.util.*;
  * Created by leesh on 13/03/2018.
  */
 public class MaliciousFlowModelHandler extends FlowModelHandler {
-    private static TypeReference ModelingClassTR = TypeReference.findOrCreateClass(ClassLoaderReference.Application, "Lmodel","MaliciousFlowModel");
+    private static TypeReference ModelingClassTR = TypeReference.findOrCreateClass(ClassLoaderReference.Application, "Lmodel/malicious/flow","MaliciousFlowModel");
 
     public MaliciousFlowModelHandler(Set<MaliciousPatternChecker.MaliciousPattern> mps, IClassHierarchy cha) {
         super(cha);

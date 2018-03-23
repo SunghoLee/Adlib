@@ -12,10 +12,7 @@ import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.*;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +34,52 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         aliasHandler = new AliasHandler(supergraph, pa);
     }
 
+    public boolean isCompatible(Field field, TypeReference tr){
+        if(field.equals(NoneField.getInstance()) || field.equals(TopField.getInstance()))
+            return true;
+
+        IClassHierarchy cha = supergraph.getClassHierarchy();
+        boolean isInterface = false;
+
+        // for the class corresponding to tr.
+        if(!tr.isArrayType()) {
+            IClass c = cha.lookupClass(tr);
+            if(!(isInterface = c.isInterface())) {
+                for (IField f : c.getAllInstanceFields()) {
+                    if (field.isMatched(f.getName().toString())) {
+                        return true;
+                    }
+                }
+            }
+
+        }
+
+        // for all sub classes of tr.
+        if(isInterface){
+            for (IClass sc : cha.getImplementors(tr)) {
+                if (!sc.isArrayClass()) {
+                    for (IField f : sc.getDeclaredInstanceFields()) {
+                        if (field.isMatched(f.getName().toString())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }else {
+            for (IClass sc : cha.computeSubClasses(tr)) {
+                if (!sc.isArrayClass()) {
+                    for (IField f : sc.getDeclaredInstanceFields()) {
+                        if (field.isMatched(f.getName().toString())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        return false;
+    }
 
     @Override
     public Set<DataFact> visitGoto(CGNode n, SSAGotoInstruction instruction, DataFact fact) {
@@ -114,7 +157,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             if(instruction.getUse(0) != ldf.getVar() && instruction.getUse(1) != ldf.getVar())
                 return Collections.emptySet();
 
-            if(!ldf.getField().equals(NoneField.getInstance()))
+            if(!ldf.getField().equals(NoneField.getInstance()) &&!ldf.getField().equals(TopField.getInstance()))
                 Assertions.UNREACHABLE("A local data fact flowed to a binary operation must not have a field.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
@@ -134,7 +177,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             if(instruction.getUse(0) != ldf.getVar())
                 return Collections.emptySet();
 
-            if(!ldf.getField().equals(NoneField.getInstance()))
+            if(!ldf.getField().equals(NoneField.getInstance()) && !ldf.getField().equals(TopField.getInstance()))
                 Assertions.UNREACHABLE("A local data fact flowed to a unary operation must not have a field.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
@@ -230,6 +273,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 ((GlobalDataFact) fact).getGlobalFact().equals(instruction.getDeclaredField())){
             res.add(new LocalDataFact(n, instruction.getDef(), fact.getField()));
         }
+
         return res;
     }
 
@@ -237,6 +281,10 @@ public class AliasAwareFlowFunction implements IFlowFunction {
     public Set<DataFact> visitPut(CGNode n, SSAPutInstruction instruction, DataFact fact) {
         Set<DataFact> res = new HashSet<>();
         res.add(fact);
+//        boolean debug = false;
+//
+//        if(instruction.toString().contains("putfield 1.< Primordial, Ljava/lang/Thread, target, <Primordial,Ljava/lang/Runnable> > = 2") && fact.getField().toString().equals("url.$"))
+//            debug = true;
 
         if(fact instanceof LocalDataFact &&
                 ((LocalDataFact) fact).getVar() == instruction.getVal()) {
@@ -307,13 +355,9 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 boolean isCompatible = false;
 
                 for (TypeReference tr : instruction.getDeclaredResultTypes()) {
-                    IClassHierarchy cha = supergraph.getClassHierarchy();
-                    IClass c = cha.lookupClass(tr);
-                    for (IField f : c.getAllInstanceFields()) {
-                        if (field.isMatched(f.getName().toString())) {
-                            isCompatible = true;
-                            break;
-                        }
+                    if(isCompatible(field, tr)) {
+                        isCompatible = true;
+                        break;
                     }
                 }
 

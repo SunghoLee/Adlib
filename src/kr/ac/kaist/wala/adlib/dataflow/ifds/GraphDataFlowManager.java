@@ -56,7 +56,6 @@ public class GraphDataFlowManager {
         builtinPolicy = new BuiltinFlowPropagationModel();
     }
 
-    boolean debug = false;
     public Set<Pair<BasicBlockInContext, DataFact>> getNormalNexts(BasicBlockInContext node, DataFact fact){
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
 
@@ -85,7 +84,6 @@ public class GraphDataFlowManager {
         } catch (InfeasiblePathException e) {
             e.printStackTrace();
         }
-        debug = false;
         return res;
     }
 
@@ -104,8 +102,6 @@ public class GraphDataFlowManager {
 
         for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
 
-//            if(!builtinPolicy.isAllowed(callee.getNode()))
-//                continue;
             // cut flows to modeled methods
             if(modelHandler.isModeled(callee.getNode())) {
                 continue;
@@ -134,23 +130,14 @@ public class GraphDataFlowManager {
         Set<Pair<BasicBlockInContext, DataFact>> res = new HashSet<>();
         Set<DataFact> modeledFacts = new HashSet<>();
 
-        debugg = false;
-
-        if(pe.toString().contains("ExplodedBlock[7](original:BB[SSA:5..6]4 - com.nativex.monetization.mraid.JSIAdToDeviceHandler.storePicture(Ljava/lang/String;)V) [ Node: < Application, Lcom/nativex/monetization/mraid/JSIAdToDeviceHandler, storePicture(Ljava/lang/String;)V > Context: FirstMethodContextPair: [First: < Application, Lcom/nativex/monetization/mraid/JSIAdToDevice, storePicture(Ljava/lang/String;)V >] : Everywhere"))
-            debugg = true;
-
         SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) node.getLastInstruction();
 
         if(invokeInst == null)
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
-        if(debugg)
-            System.out.println("REALLY??: " + getCalleeSuccessors(node).size());
         // add flows between call sites and return sites regarding to modeled method calls
         if(fact instanceof LocalDataFact || fact instanceof DefaultDataFact) {
             for (BasicBlockInContext callee : getCalleeSuccessors(node)) {
-                if(debugg)
-                    System.out.println("OKAYMAN!!!");
                 if (modelHandler.isModeled(callee.getNode())) {
                     modeledFacts.addAll(modelHandler.matchDataFact(node.getNode(), callee.getNode(), invokeInst, fact));
                 }
@@ -289,8 +276,11 @@ public class GraphDataFlowManager {
             int v = ldf.getVar();
             int i=0;
             for(; i<invokeInst.getNumberOfUses(); i++){
-                if(invokeInst.getUse(i) == v)
-                    return new LocalDataFact(callee, i+1, fact.getField());
+                if(invokeInst.getUse(i) == v) {
+                    // cut infeasible path using the type information with the field of this data fact
+                    if(flowFun.isCompatible(fact.getField(), callee.getMethod().getParameterType(i)))
+                        return new LocalDataFact(callee, i + 1, fact.getField());
+                }
             }
         }else if(fact instanceof DefaultDataFact)
             return fact;
@@ -323,13 +313,15 @@ public class GraphDataFlowManager {
             if(visited.contains(succ))
                 continue;
             visited.add(succ);
+
             for(BasicBlockInContext succOfSucc : getNormalSuccessors(succ)){
                 if(succOfSucc.isExitBlock())
                     res.add(succOfSucc);
                 else if(useIndexSet.contains(succOfSucc.getLastInstructionIndex())){
                     res.add(succOfSucc);
-                }else
+                }else {
                     bfsQueue.add(succOfSucc);
+                }
             }
         }
 
@@ -369,24 +361,28 @@ public class GraphDataFlowManager {
                 int condV = switchInst.getUse(0);
                 PointerKey condPK = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV);
                 OrdinalSet<InstanceKey> ikSet = pa.getPointsToSet(condPK);
-                possibleLabels = new int[ikSet.size()];
-                int index = 0;
-                for(InstanceKey ik : ikSet){
-                    // we only handle switch statements when all possible condition values are constant.
-                    if(ik instanceof ConstantKey){
-                        isSwitch = true;
-                        int caseValue = (Integer)((ConstantKey) ik).getValue();
-                        int beforeCasesSize = index;
-                        for(int i=0; i<caseLabels.length-1; i+=2){
-                            if(caseValue == caseLabels[i]) {
-                                possibleLabels[index++] = caseLabels[i+1];
+                if(ikSet.size() == 0)
+                    isSwitch = false;
+                else {
+                    possibleLabels = new int[ikSet.size()];
+                    int index = 0;
+                    for (InstanceKey ik : ikSet) {
+                        // we only handle switch statements when all possible condition values are constant.
+                        if (ik instanceof ConstantKey) {
+                            isSwitch = true;
+                            int caseValue = (Integer) ((ConstantKey) ik).getValue();
+                            int beforeCasesSize = index;
+                            for (int i = 0; i < caseLabels.length - 1; i += 2) {
+                                if (caseValue == caseLabels[i]) {
+                                    possibleLabels[index++] = caseLabels[i + 1];
+                                }
                             }
+                            if (beforeCasesSize == index)
+                                possibleLabels[index++] = switchInst.getDefault();
+                        } else {
+                            isSwitch = false;
+                            break;
                         }
-                        if(beforeCasesSize == index)
-                            possibleLabels[index++] = switchInst.getDefault();
-                    }else{
-                        isSwitch = false;
-                        break;
                     }
                 }
             }else if(bb.getLastInstruction() instanceof SSAConditionalBranchInstruction) {

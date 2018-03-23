@@ -76,7 +76,6 @@ public class CallGraphBuilderForHybridSDK {
         this.initInst = initInsts;
         this.scope = makeAnalysisScope(sdk);
         this.cha = buildClassHierarchy(this.scope);
-        System.out.println("#### ? " + cha.isAssignableFrom(cha.lookupClass(TypeReference.JavaLangObject), cha.lookupClass(TypeReference.JavaLangString)));
         this.entries = findEntrypoints(this.cha);
         this.options = makeAnalysisOptions(this.scope, this.entries);
         this.delegate = makeDelegateBuilder(this.cha, this.options);

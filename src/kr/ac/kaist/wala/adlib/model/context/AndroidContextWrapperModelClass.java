@@ -178,8 +178,6 @@ public class AndroidContextWrapperModelClass extends ModelClass {
             equalsParams.add(serviceStringV);
             final int callEqualsPc = getSS.getNextProgramCounter();
             final CallSiteReference equalsCallSite = CallSiteReference.make(callEqualsPc, equalsMR, IInvokeInstruction.Dispatch.VIRTUAL);
-            System.out.println("PARAM1: " + paramStringV);
-            System.out.println("M: " + equalsCallSite);
             final SSAInstruction equalsCall = instructionFactory.InvokeInstruction(callEqualsPc, equalsRetV, equalsParams, exception, equalsCallSite);
             getSS.addStatement(equalsCall);
 //            insts.add(equalsCall);

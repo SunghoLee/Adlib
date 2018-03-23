@@ -52,8 +52,9 @@ public class FlowModelHandler {
     private MethodFlowModel getMethodModel(CGNode n){
         for(ClassFlowModel cfm : models){
             for(MethodFlowModel mfm : cfm.getMethods())
-                if(mfm.getReference().equals(n.getMethod().getReference()))
+                if(mfm.getReference().equals(n.getMethod().getReference())) {
                     return mfm;
+                }
         }
         return null;
     }
@@ -85,8 +86,10 @@ public class FlowModelHandler {
 
             for (int i : mfm.matchFlow(index)) {
                 System.out.println("=== ");
+                System.out.println("MODEL: " + mfm);
                 System.out.println("INST: " + invokeInst);
                 System.out.println("FROM: " + invokeInst.getUse(index));
+                System.out.println("I: " + i);
                 System.out.println("TO: " + ((i == MethodFlowModel.RETV) ? invokeInst.getDef() : invokeInst.getUse(i)));
                 System.out.println("=== ");
                 Field f = fact.getField();

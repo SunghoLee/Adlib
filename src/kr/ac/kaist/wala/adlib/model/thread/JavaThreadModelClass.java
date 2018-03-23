@@ -1,16 +1,20 @@
 package kr.ac.kaist.wala.adlib.model.thread;
 
 import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.FieldImpl;
+import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.MethodSummary;
 import com.ibm.wala.ipa.summaries.SummarizedMethod;
 import com.ibm.wala.ipa.summaries.SummarizedMethodWithNames;
 import com.ibm.wala.ipa.summaries.VolatileMethodSummary;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
+import com.ibm.wala.shrikeCT.ClassConstants;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.types.*;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
+import com.ibm.wala.util.strings.Atom;
 import kr.ac.kaist.wala.adlib.model.ModelClass;
 
 import java.util.ArrayList;
@@ -26,6 +30,7 @@ public class JavaThreadModelClass extends ModelClass {
 
     public static final TypeReference JAVA_THREAD_MODEL_CLASS = TypeReference.findOrCreate(
             ClassLoaderReference.Primordial, TypeName.string2TypeName("Ljava/lang/Thread"));
+    public static final Selector INIT_SELECTOR = Selector.make("<init>(Ljava/lang/Runnable;)V");
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
     public static final Selector START_SELECTOR = Selector.make("start()V");
     public static final FieldReference TARGET_FIELD = FieldReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/lang/Thread", "target", "Ljava/lang/Runnable");
@@ -36,23 +41,64 @@ public class JavaThreadModelClass extends ModelClass {
 
     public static JavaThreadModelClass getInstance(IClassHierarchy cha) {
         if(klass == null){
-            klass = new JavaThreadModelClass(cha);
+            klass = new JavaThreadModelClass((ClassHierarchy)cha);
         }
         return klass;
     }
 
-    private JavaThreadModelClass(IClassHierarchy cha) {
+    private JavaThreadModelClass(ClassHierarchy cha) {
         super(JAVA_THREAD_MODEL_CLASS, cha);
         this.cha = cha;
 
         initMethodsForThread();
-
+        initField();
         this.addMethod(this.clinit());
+
+        //TODO: Solve the subclass problem: all subclasses must point to this new Thread class as their super class.
+        cha.remove(JAVA_THREAD_MODEL_CLASS);
+        cha.addClass(this);
     }
 
     private void initMethodsForThread(){
         this.addMethod(this.runOfRunnable(START_SELECTOR));
+        this.addMethod(this.init(INIT_SELECTOR));
     }
+
+    private void initField(){
+        FieldImpl targetF = new FieldImpl(this,
+                FieldReference.findOrCreate(JAVA_THREAD_MODEL_CLASS, Atom.findOrCreateAsciiAtom("target"), TypeReference.find(ClassLoaderReference.Primordial, RUNNABLE_TYPE_NAME)),
+                ClassConstants.ACC_PROTECTED,
+                null, null);
+        addField(targetF);
+    }
+
+    /**
+     * <init>(Ljava/lang/Runnable;)V
+     * @param s
+     * @return
+     */
+    private SummarizedMethod init(Selector s) {
+        final MethodReference initRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary init = new VolatileMethodSummary(new MethodSummary(initRef));
+        init.setStatic(false);
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        int ssaNo = 3;
+        final TypeReference runnableTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/lang/Runnable");
+        final SSAValue threadArgV = new SSAValue(1, JAVA_THREAD_MODEL_CLASS, initRef);
+        final SSAValue runnableArgV = new SSAValue(2, runnableTR, initRef);
+
+        // 1.target = 2;
+        final int putTargetpc = init.getNextProgramCounter();
+        init.addStatement(instructionFactory.PutInstruction(putTargetpc, threadArgV, runnableArgV, FieldReference.findOrCreate(JAVA_THREAD_MODEL_CLASS, Atom.findOrCreateAsciiAtom("target"), runnableTR)));
+
+        // return;
+        final int retpc = init.getNextProgramCounter();
+        init.addStatement(instructionFactory.ReturnInstruction(retpc));
+
+        return new SummarizedMethodWithNames(initRef, init, this);
+    }
+
 
     /**
      *  Generate run of Thread for AndroidThreadModelClass.

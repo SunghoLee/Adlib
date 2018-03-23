@@ -133,6 +133,7 @@ public class AliasHandler {
 
             Field field = fact.getField();
 
+            // Specially handle a synthetic field pointing an outer class.
             Set<InstanceKey> realTargets = new HashSet<>();
             Set<Field> newFields = new HashSet<>();
             if(field.isMatched("this$0")){
@@ -149,9 +150,10 @@ public class AliasHandler {
                         }
                     }
                 }
-            }else
+            }else {
+                newFields.add(field);
                 realTargets.addAll(targets);
-
+            }
             for(PointerKey pk : localPKs){
                 BFSPathFinder pathFinder = new BFSPathFinder((Graph) hg, pk, new Predicate() {
                     @Override
@@ -168,7 +170,6 @@ public class AliasHandler {
                     continue;
                 for(Field newField : newFields) {
                     if (path != null) {
-                        System.out.println("FROM: " + fact);
                         printList(path);
                         for (Object o : path) {
                             if (o instanceof PointerKey) {

@@ -77,4 +77,9 @@ public class MethodFlowModel {
     public int[] getTo(){
         return this.to;
     }
+
+    @Override
+    public String toString(){
+        return "[FlowModel] " + ref;
+    }
 }
