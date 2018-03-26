@@ -81,23 +81,47 @@ public class Main {
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([BII)I"), PropagateFlowFunction.getInstance(1, 2)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([BII)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
 
-//            new MaliciousPatternChecker.MaliciousPattern("MaliciousFileDownload2",
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("connect()V"), PropagateFlowFunction.getInstance(1, 1)),
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("getInputStream()Ljava/io/InputStream;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([BII)I"), PropagateFlowFunction.getInstance(1, 2)),
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([BII)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
-//
             new MaliciousPatternChecker.MaliciousPattern("HttpRequest1",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    // init HttpGet
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/methods/HttpGet"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/methods/HttpGet"), Selector.make("<init>(Ljava/net/URI;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    // init HttpPost
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/methods/HttpPost"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/methods/HttpPost"), Selector.make("<init>(Ljava/net/URI;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    // execute a http command
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/HttpHost;Lorg/apache/http/HttpRequest;Lorg/apache/http/client/HttpResponseHandler;)Ljava/lang/Object;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest2",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/HttpHost;Lorg/apache/http/HttpRequest;Lorg/apache/http/client/HttpResponseHandler;Lorg/apache/http/protocol/HttpContext;)Ljava/lang/Object;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest3",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/client/methods/HttpUriRequest;Lorg/apache/http/client/HttpResponseHandler;)Ljava/lang/Object;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest4",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/HttpHost;Lorg/apache/http/HttpRequest;)Lorg/apache/http/HttpResponse;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest5",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/HttpHost;Lorg/apache/http/HttpRequest;Lorg/apache/http/protocol/HttpContext;)Lorg/apache/http/HttpResponse;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest6",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/client/methods/HttpUriRequest;)Lorg/apache/http/HttpResponse;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest7",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/HttpClient"), Selector.make("execute(Lorg/apache/http/client/methods/HttpUriRequest;Lorg/apache/http/protocol/HttpContext;)Lorg/apache/http/HttpResponse;"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest8",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Lorg/apache/http/client/methods/HttpGet"), Selector.make("<init>(Ljava/net/URI;)V"), PropagateFlowFunction.getInstance(2, 1)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("connect()V"), PropagateFlowFunction.getInstance(1, 1)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("getOutputStream()Ljava/io/OutputStream;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/Writer"), Selector.make("write(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
-//            new MaliciousPatternChecker.MaliciousPattern("HttpRequest2",
-//                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"))),
+            new MaliciousPatternChecker.MaliciousPattern("HttpRequest9",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("connect()V"), PropagateFlowFunction.getInstance(1, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("getOutputStream()Ljava/io/OutputStream;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/Writer"), Selector.make("write(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("SensorControl8",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/os/Vibrator"), Selector.make("vibrate([JI)V"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.TERMINATE))),

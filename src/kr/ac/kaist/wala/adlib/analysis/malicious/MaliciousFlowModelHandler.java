@@ -41,11 +41,12 @@ public class MaliciousFlowModelHandler extends FlowModelHandler {
                 for(TypeReference tr : classes){
                     IClass clazz = cha.lookupClass(tr);
                     for(IMethod method : clazz.getAllMethods()){
-                        if(method.getSelector().equals(point.getSelector()))
+                        if(method.getSelector().equals(point.getSelector())) {
                             methodModels.add(MethodFlowModel.make(method.getReference(),
-                                    new int[]{(point.getFlowFunction().getFrom() == IFlowFunction.ANY)? MethodFlowModel.ANY : point.getFlowFunction().getFrom() - 1},
-                                    (point.getFlowFunction().getTo() == IFlowFunction.TERMINATE)? new int[]{} :
-                                            new int[]{(point.getFlowFunction().getTo() == IFlowFunction.RETURN_VARIABLE)? MethodFlowModel.RETV : point.getFlowFunction().getTo() - 1}));
+                                    new int[]{(point.getFlowFunction().getFrom() == IFlowFunction.ANY) ? MethodFlowModel.ANY : point.getFlowFunction().getFrom() - 1},
+                                    (point.getFlowFunction().getTo() == IFlowFunction.TERMINATE) ? new int[]{} :
+                                            new int[]{(point.getFlowFunction().getTo() == IFlowFunction.RETURN_VARIABLE) ? MethodFlowModel.RETV : point.getFlowFunction().getTo() - 1}));
+                        }
                     }
                 }
             }
@@ -78,7 +79,9 @@ public class MaliciousFlowModelHandler extends FlowModelHandler {
     }
 
     private Set<TypeReference> getAllSubClass(Set<TypeReference> res, TypeReference tr, IClassHierarchy cha){
-//        System.out.println("#?? " + tr + "\t Contained? " + res.contains(tr));
+        if(cha.lookupClass(tr) == null){
+            Assertions.UNREACHABLE("The class, " + tr + ", is missing in the ClassHierarchy.");
+        }
         if(cha.isInterface(tr)){
             for (IClass c : cha.getImplementors(tr)) {
                 if(!res.contains(c.getReference())) {
