@@ -1337,5 +1337,8 @@ public class ClassHierarchy implements IClassHierarchy {
     return unresolved;
   }
 
+  public void remove(TypeReference m){
+    map.remove(m);
+  }
 /** END Custom change: remember unresolved classes */
 }
