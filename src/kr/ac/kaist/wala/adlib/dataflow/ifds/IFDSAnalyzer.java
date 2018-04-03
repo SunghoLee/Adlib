@@ -24,14 +24,14 @@ public class IFDSAnalyzer {
     private final GraphDataFlowManager graphManager;
     private final WorkList workList = new WorkList();
 
-    private final PathEdgeManager recorder;
+    private final PropagationGraph recorder;
 
     public IFDSAnalyzer(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa){
         this.supergraph = supergraph;
         this.pa = pa;
         ah = new AliasHandler(supergraph, pa);
         peManager = new PathEdgeManager();
-        this.recorder = new PathEdgeManager();
+        this.recorder = new PropagationGraph();
         seManager = new SummaryEdgeManager();
         this.graphManager = new GraphDataFlowManager(supergraph, pa, seManager);
     }
@@ -41,7 +41,7 @@ public class IFDSAnalyzer {
         graphManager.setModelHandler(handler);
     }
 
-    private void propagate(PathEdge pre, PathEdge pe){
+    private void propagate(PathEdge<BasicBlockInContext, DataFact> pre, PathEdge<BasicBlockInContext, DataFact> pe){
         if(DEBUG){
 //            if((pe.getFromFact() instanceof DefaultDataFact) == false)
                 System.out.println("\t=> " + pe);
@@ -50,24 +50,21 @@ public class IFDSAnalyzer {
             peManager.propagate(pe);
             workList.put(pe);
         }
-
-        if(pre != null){
-            if(!pre.getToFact().equals(pe.getToFact())){
-                recorder.propagate(new PathEdge(pre.getToNode(), pre.getFromFact(), pe.));
-            }
-        }else{
-            recorder.propagate(pe);
-        }
+        if(pre == null)
+            System.out.println("Is possible? " + pe);
+        recorder.addEdge(pre, pe);
     }
 
     public Set<PathEdge> analyze(BasicBlockInContext entry, DataFact seed) throws InfeasiblePathException {
         //TODO: need to put seed as an initial data fact
         PathEdge<BasicBlockInContext, DataFact> initialEdge = new PathEdge<>(entry, DataFact.DEFAULT_FACT, entry, DataFact.DEFAULT_FACT);
         propagate(null, initialEdge);
+        recorder.addSeed(initialEdge);
 
         if(seed != null) {
             PathEdge<BasicBlockInContext, DataFact> seedEdge = new PathEdge<>(entry, seed, entry, seed);
             propagate(null, seedEdge);
+            recorder.addSeed(seedEdge);
         }
 
         while(!workList.isEmpty()){
@@ -126,5 +123,9 @@ public class IFDSAnalyzer {
     public void clear(){
         peManager.clear();
         seManager.clear();
+    }
+
+    public PropagationGraph getPropagationGraph(){
+        return this.recorder;
     }
 }

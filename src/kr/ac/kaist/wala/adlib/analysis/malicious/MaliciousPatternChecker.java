@@ -26,6 +26,8 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.works.Work;
+import kr.ac.kaist.wala.adlib.util.GraphPrinter;
+import kr.ac.kaist.wala.adlib.util.GraphUtil;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -111,7 +113,7 @@ public class MaliciousPatternChecker {
         return res;
     }
     ///
-    private boolean matchPattern(MaliciousPattern mp, Set<PathEdge> edges){
+    private Set<PathEdge> matchPattern(MaliciousPattern mp, Set<PathEdge> edges){
         List<MaliciousPoint> mpList = mp.getPoints();
         //TODO: need to calculate the pathes from a seed to a last point? Now, to show an existence of a pattern, I just check whether the last point is reachable.
 //        mpList = Lists.reverse(mpList);
@@ -123,20 +125,26 @@ public class MaliciousPatternChecker {
         return isReachable(lastPoint, edges);
     }
 
-    private boolean isReachable(BasicBlockInContext bb, DataFact fact, Set<PathEdge> edges){
+    private Set<PathEdge> isReachable(BasicBlockInContext bb, DataFact fact, Set<PathEdge> edges){
+        Set<PathEdge> res = new HashSet<>();
+
         for(PathEdge pe : edges){
 //            if(pe.toString().contains("startActivity")) {
 //                System.out.println("======");
 //                System.out.println(pe);
 //                System.out.println("======");
 //            }
-            if(pe.getToNode().equals(bb) && pe.getToFact().equals(fact))
-                return true;
+            if(pe.getToNode().equals(bb) && pe.getToFact().equals(fact)) {
+                res.add(pe);
+            }
         }
-        return false;
+
+        return res;
     }
 
-    private boolean isReachable(MaliciousPoint mp, Set<PathEdge> edges){
+    private Set<PathEdge> isReachable(MaliciousPoint mp, Set<PathEdge> edges){
+        Set<PathEdge> res = new HashSet<>();
+
         PropagateFlowFunction ff = mp.getFlowFunction();
 
         if(ff.getTo() != IFlowFunction.TERMINATE){
@@ -189,20 +197,20 @@ public class MaliciousPatternChecker {
                         fact = new LocalDataFact(pred.getNode(), invokeInst.getUse(inVarIndex-1), NoneField.getInstance());
                         break;
                 }
-                if(isReachable(pred, fact, edges))
-                    return true;
+                res.addAll(isReachable(pred, fact, edges));
             }
         }
 
-        return false;
+        return res;
     }
 
-    private Set<MaliciousPattern> findPatterns(Set<PathEdge> edges){
-        Set<MaliciousPattern> res = new HashSet<>();
+    private Set<Pair<MaliciousPattern, Set<PathEdge>>> findPatterns(Set<PathEdge> edges){
+        Set<Pair<MaliciousPattern, Set<PathEdge>>> res = new HashSet<>();
 
         for(MaliciousPattern mp : mps){
-            if(matchPattern(mp, edges))
-                res.add(mp);
+            Set<PathEdge> pe = matchPattern(mp, edges);
+            if(!pe.isEmpty())
+                res.add(Pair.make(mp, pe));
         }
         return res;
     }
@@ -228,10 +236,24 @@ public class MaliciousPatternChecker {
                 }else{
                     res.addAll(ifds.analyze(entry, new LocalDataFact(n, var, NoneField.getInstance())));
                 }
+                PropagationGraph graph = ifds.getPropagationGraph();
+
                 System.out.println("======");
                 System.out.println("SEED: " + n + " [ " + var + " ]");
-                for(MaliciousPattern mp : findPatterns(res)){
-                    System.out.println("[Found] " + mp);
+                for(Pair<MaliciousPattern, Set<PathEdge>> mp : findPatterns(res)){
+                    System.out.println("[Found] " + mp.fst);
+                    Set<PathEdge> reaches = mp.snd;
+                    int i = 1;
+
+                    for(PathEdge<BasicBlockInContext, DataFact> reach : reaches) {
+                        PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
+                        for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
+                            String fn = mp.fst + "( " + (i++) + " )";
+                            GraphPrinter.print(fn, path);
+
+                        }
+                    }
+                    System.out.println("\tThe flows are printed! ( " + (i-1) + " )");
                 }
                 System.out.println("======");
                 ifds.clear();

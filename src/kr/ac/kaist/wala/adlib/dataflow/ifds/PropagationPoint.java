@@ -1,10 +1,8 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
-import com.ibm.wala.cfg.InducedCFG;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.INodeWithNumber;
-import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,29 +18,27 @@ public class PropagationPoint implements INodeWithNumber {
     private int id;
 
     private final BasicBlockInContext bb;
-    private final DataFact fromFact;
-    private final DataFact toFact;
+    private final DataFact fact;
 
-    public static PropagationPoint make(BasicBlockInContext bb, DataFact from, DataFact to){
+    public static PropagationPoint make(BasicBlockInContext bb, DataFact fact){
         if(points.containsKey(bb)){
             for(PropagationPoint p : points.get(bb)){
-                if(p.fromFact.equals(from) && p.toFact.equals(to))
+                if(p.fact.equals(fact))
                     return p;
             }
         }else
             points.put(bb, new HashSet<>());
 
-        PropagationPoint p = new PropagationPoint(bb, from, to);
+        PropagationPoint p = new PropagationPoint(bb, fact);
         points.get(bb).add(p);
 
         return p;
     }
 
 
-    private PropagationPoint(BasicBlockInContext bb, DataFact from, DataFact to){
+    private PropagationPoint(BasicBlockInContext bb, DataFact fact){
         this.bb = bb;
-        this.fromFact = from;
-        this.toFact = to;
+        this.fact = fact;
     }
 
     @Override
@@ -55,15 +51,21 @@ public class PropagationPoint implements INodeWithNumber {
         Assertions.UNREACHABLE("Did not implement this!");
     }
 
-    public DataFact getFromFact(){
-        return this.fromFact;
-    }
-
-    public DataFact getToFact(){
-        return this.toFact;
+    public DataFact getFact(){
+        return this.fact;
     }
 
     public BasicBlockInContext getBlock(){
         return this.bb;
+    }
+
+    @Override
+    public int hashCode(){
+        return bb.hashCode() + fact.hashCode();
+    }
+
+    @Override
+    public String toString(){
+        return "[PP@ " + ((bb.isEntryBlock())? "ENTRY" : ((bb.isExitBlock())? "EXIT" : "NORMAL")) + "] " + bb.getLastInstructionIndex() + " ) " + bb.getLastInstruction() + " *** " + bb.getNode();
     }
 }
