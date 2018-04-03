@@ -24,11 +24,14 @@ public class IFDSAnalyzer {
     private final GraphDataFlowManager graphManager;
     private final WorkList workList = new WorkList();
 
+    private final PathEdgeManager recorder;
+
     public IFDSAnalyzer(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa){
         this.supergraph = supergraph;
         this.pa = pa;
         ah = new AliasHandler(supergraph, pa);
         peManager = new PathEdgeManager();
+        this.recorder = new PathEdgeManager();
         seManager = new SummaryEdgeManager();
         this.graphManager = new GraphDataFlowManager(supergraph, pa, seManager);
     }
@@ -38,7 +41,7 @@ public class IFDSAnalyzer {
         graphManager.setModelHandler(handler);
     }
 
-    private void propagate(PathEdge pe){
+    private void propagate(PathEdge pre, PathEdge pe){
         if(DEBUG){
 //            if((pe.getFromFact() instanceof DefaultDataFact) == false)
                 System.out.println("\t=> " + pe);
@@ -47,16 +50,24 @@ public class IFDSAnalyzer {
             peManager.propagate(pe);
             workList.put(pe);
         }
+
+        if(pre != null){
+            if(!pre.getToFact().equals(pe.getToFact())){
+                recorder.propagate(new PathEdge(pre.getToNode(), pre.getFromFact(), pe.));
+            }
+        }else{
+            recorder.propagate(pe);
+        }
     }
 
     public Set<PathEdge> analyze(BasicBlockInContext entry, DataFact seed) throws InfeasiblePathException {
         //TODO: need to put seed as an initial data fact
         PathEdge<BasicBlockInContext, DataFact> initialEdge = new PathEdge<>(entry, DataFact.DEFAULT_FACT, entry, DataFact.DEFAULT_FACT);
-        propagate(initialEdge);
+        propagate(null, initialEdge);
 
         if(seed != null) {
             PathEdge<BasicBlockInContext, DataFact> seedEdge = new PathEdge<>(entry, seed, entry, seed);
-            propagate(seedEdge);
+            propagate(null, seedEdge);
         }
 
         while(!workList.isEmpty()){
@@ -72,13 +83,13 @@ public class IFDSAnalyzer {
 
             if(supergraph.isCall(toNode)){
                 for(Pair<BasicBlockInContext, DataFact> p : graphManager.getCalleeNexts(toNode, toFact)){
-                    propagate(new PathEdge(p.fst(), p.snd(), p.fst(), p.snd()));
+                    propagate(pe, new PathEdge(p.fst(), p.snd(), p.fst(), p.snd()));
                 }
                 for(Pair<BasicBlockInContext, DataFact> p : graphManager.getCallToReturnNexts(toNode, toFact, pe)){
-                    propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
+                    propagate(pe, new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
                 }
                 for(Pair<BasicBlockInContext, DataFact> p : seManager.getSummaryFrom(toNode, toFact)){
-                    propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
+                    propagate(pe, new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
                 }
             }else if(supergraph.isExit(toNode)){
                 for(Pair<BasicBlockInContext, DataFact> callerP : graphManager.getCallerInfo(fromNode, fromFact)){
@@ -87,14 +98,14 @@ public class IFDSAnalyzer {
                         if(!seManager.contains(nEdge)){
                             seManager.add(nEdge);
                             for(PathEdge callerPE : peManager.findLocalEdgeTo(callerP.fst(), callerP.snd())){
-                                propagate(new PathEdge(callerPE.getFromNode(), callerPE.getFromFact(), retP.fst(), retP.snd()));
+                                propagate(pe, new PathEdge(callerPE.getFromNode(), callerPE.getFromFact(), retP.fst(), retP.snd()));
                             }
                         }
                     }
                 }
             }else{
                 for(Pair<BasicBlockInContext, DataFact> p : graphManager.getNormalNexts(toNode, toFact)){
-                    propagate(new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
+                    propagate(pe, new PathEdge(fromNode, fromFact, p.fst(), p.snd()));
                 }
             }
             if(DEBUG && fromNode.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application)) {
