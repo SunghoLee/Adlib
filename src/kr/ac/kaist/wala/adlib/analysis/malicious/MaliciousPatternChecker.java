@@ -222,6 +222,8 @@ public class MaliciousPatternChecker {
      */
     public Set<MaliciousPatternWarning> checkPatterns(){
         MaliciousFlowModelHandler mfmh = new MaliciousFlowModelHandler(mps, cha);
+        List<String> warn = new ArrayList<>();
+
         ifds.setModelHandler(mfmh);
         for(Pair p : seeds){
             CGNode n = (CGNode) p.fst;
@@ -239,10 +241,10 @@ public class MaliciousPatternChecker {
                 }
                 PropagationGraph graph = ifds.getPropagationGraph();
 
-                System.out.println("======");
-                System.out.println("SEED: " + n + " [ " + var + " ]");
+                warn.add("======");
+                warn.add("SEED: " + n + " [ " + var + " ]");
                 for(Pair<MaliciousPattern, Set<PathEdge>> mp : findPatterns(res)){
-                    System.out.println("[Found] " + mp.fst);
+                    warn.add("[Found] " + mp.fst);
                     Set<PathEdge> reaches = mp.snd;
                     int i = 1;
 
@@ -252,17 +254,21 @@ public class MaliciousPatternChecker {
                             String fn = mp.fst.patternName + "(" + (i++) + ")";
                             String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path));
                             String svgF = GraphUtil.convertDotToSvg(dotF);
-                            System.out.println("\t - The flows are printed in " + svgF);
+                            warn.add("\t - The flows are printed in " + svgF);
                         }
                     }
                 }
-                System.out.println("======");
-                ifds.clear();
+                warn.add("======");
+                //TODO: should we clear
+//                ifds.clear();
             } catch (InfeasiblePathException e) {
                 e.printStackTrace();
             }
         }
 
+        for(String s : warn){
+            System.out.println(s);
+        }
         return warns;
     }
 
