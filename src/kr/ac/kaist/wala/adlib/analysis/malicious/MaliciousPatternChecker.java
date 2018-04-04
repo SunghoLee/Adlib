@@ -225,9 +225,12 @@ public class MaliciousPatternChecker {
         List<String> warn = new ArrayList<>();
 
         ifds.setModelHandler(mfmh);
+        int index = 0;
         for(Pair p : seeds){
             CGNode n = (CGNode) p.fst;
             int var = (Integer) p.snd;
+
+            index++;
 
             Set<PathEdge> res = new HashSet<>();
 
@@ -251,7 +254,7 @@ public class MaliciousPatternChecker {
                     for(PathEdge<BasicBlockInContext, DataFact> reach : reaches) {
                         PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
                         for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
-                            String fn = mp.fst.patternName + "(" + (i++) + ")";
+                            String fn = mp.fst.patternName+ "_I_" + index + "(" + (i++) + ")";
                             String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path));
                             String svgF = GraphUtil.convertDotToSvg(dotF);
                             warn.add("\t - The flows are printed in " + svgF);
@@ -260,7 +263,7 @@ public class MaliciousPatternChecker {
                 }
                 warn.add("======");
                 //TODO: should we clear
-//                ifds.clear();
+                ifds.clear();
             } catch (InfeasiblePathException e) {
                 e.printStackTrace();
             }
