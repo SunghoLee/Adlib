@@ -194,8 +194,10 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         if(fact instanceof LocalDataFact){
             LocalDataFact ldf = (LocalDataFact) fact;
 
+            // this case is for return-sites
             if(instruction.getUse(0) != ldf.getVar())
-                Assertions.UNREACHABLE("A local data fact flowed to a conversion operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
+                return Collections.singleton(fact);
+//                Assertions.UNREACHABLE("A local data fact flowed to a conversion operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
             res.add(fact);

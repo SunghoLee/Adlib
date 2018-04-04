@@ -28,6 +28,7 @@ import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
 import kr.ac.kaist.wala.adlib.dataflow.works.Work;
 import kr.ac.kaist.wala.adlib.util.GraphPrinter;
 import kr.ac.kaist.wala.adlib.util.GraphUtil;
+import kr.ac.kaist.wala.adlib.util.PathOptimizer;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -249,7 +250,7 @@ public class MaliciousPatternChecker {
                         PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
                         for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
                             String fn = mp.fst.patternName + "(" + (i++) + ")";
-                            String dotF = GraphPrinter.print(fn, path);
+                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path));
                             String svgF = GraphUtil.convertDotToSvg(dotF);
                             System.out.println("\t - The flows are printed in " + svgF);
                         }

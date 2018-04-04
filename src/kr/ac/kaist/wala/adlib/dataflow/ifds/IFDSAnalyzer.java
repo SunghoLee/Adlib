@@ -24,14 +24,14 @@ public class IFDSAnalyzer {
     private final GraphDataFlowManager graphManager;
     private final WorkList workList = new WorkList();
 
-    private final PropagationGraph recorder;
+    private final PropagationGraphBuilder recorder;
 
     public IFDSAnalyzer(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa){
         this.supergraph = supergraph;
         this.pa = pa;
         ah = new AliasHandler(supergraph, pa);
         peManager = new PathEdgeManager();
-        this.recorder = new PropagationGraph();
+        this.recorder = new PropagationGraphBuilder();
         seManager = new SummaryEdgeManager();
         this.graphManager = new GraphDataFlowManager(supergraph, pa, seManager);
     }
@@ -125,6 +125,6 @@ public class IFDSAnalyzer {
     }
 
     public PropagationGraph getPropagationGraph(){
-        return this.recorder;
+        return this.recorder.getGraph();
     }
 }

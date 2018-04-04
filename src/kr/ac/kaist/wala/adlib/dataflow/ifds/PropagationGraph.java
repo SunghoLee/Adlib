@@ -1,6 +1,5 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
-import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.impl.SparseNumberedGraph;
 
@@ -13,22 +12,17 @@ import java.util.Set;
 public class PropagationGraph extends SparseNumberedGraph<PropagationPoint> {
     private Set<PropagationPoint> seeds = new HashSet<>();
 
-    public void addSeed(PathEdge<BasicBlockInContext, DataFact> seed){
-        PropagationPoint seedPP = PropagationPoint.make(seed.getFromNode(), seed.getFromFact());
-        this.addNode(seedPP);
+    public void addSeed(PropagationPoint seedPP){
+        addNode(seedPP);
         seeds.add(seedPP);
     }
 
-    public void addEdge(PathEdge<BasicBlockInContext, DataFact> pre, PathEdge<BasicBlockInContext, DataFact> to){
-        PropagationPoint prePP = PropagationPoint.make(pre.getToNode(), pre.getToFact());
-
+    public void addEdge(PropagationPoint prePP, PropagationPoint postPP){
         if(!this.containsNode(prePP))
             Assertions.UNREACHABLE("Pre node must be already added to a propagation graph: " + prePP);
 
-        PropagationPoint postPP = PropagationPoint.make(to.getToNode(), to.getToFact());
-        this.addNode(postPP);
-
-        this.addEdge(prePP, postPP);
+        super.addNode(postPP);
+        super.addEdge(prePP, postPP);
     }
 
     public Set<PropagationPoint> getSeeds(){
