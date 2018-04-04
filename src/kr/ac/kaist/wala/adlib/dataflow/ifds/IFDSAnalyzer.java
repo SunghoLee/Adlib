@@ -50,9 +50,8 @@ public class IFDSAnalyzer {
             peManager.propagate(pe);
             workList.put(pe);
         }
-        if(pre == null)
-            System.out.println("Is possible? " + pe);
-        recorder.addEdge(pre, pe);
+        if(pre != null)
+            recorder.addEdge(pre, pe);
     }
 
     public Set<PathEdge> analyze(BasicBlockInContext entry, DataFact seed) throws InfeasiblePathException {

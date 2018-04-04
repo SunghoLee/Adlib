@@ -39,6 +39,8 @@ public class PropagationPoint implements INodeWithNumber {
     private PropagationPoint(BasicBlockInContext bb, DataFact fact){
         this.bb = bb;
         this.fact = fact;
+        this.id = ID;
+        ID++;
     }
 
     @Override
@@ -66,6 +68,12 @@ public class PropagationPoint implements INodeWithNumber {
 
     @Override
     public String toString(){
-        return "[PP@ " + ((bb.isEntryBlock())? "ENTRY" : ((bb.isExitBlock())? "EXIT" : "NORMAL")) + "] " + bb.getLastInstructionIndex() + " ) " + bb.getLastInstruction() + " *** " + bb.getNode();
+        if(bb.isEntryBlock()){
+            return "[PP@ ENTRY ( " + fact + " )] " + bb.getNode();
+        }else if(bb.isExitBlock()){
+            return "[PP@ EXIT ( " + fact + " )] " + bb.getNode();
+        }else{
+            return "[PP@ NORMAL ( " + fact + " )] ( " + bb.getLastInstructionIndex() + " ) " + bb.getLastInstruction() + " IN " + bb.getNode();
+        }
     }
 }

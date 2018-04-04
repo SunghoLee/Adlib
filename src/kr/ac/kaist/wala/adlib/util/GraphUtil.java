@@ -1,5 +1,6 @@
 package kr.ac.kaist.wala.adlib.util;
 
+import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import kr.ac.kaist.wala.adlib.analysis.ReachableAPIFlowGraph;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.PropagationGraph;
@@ -40,5 +41,27 @@ public class GraphUtil {
                 paths.add(r);
         }
         return paths;
+    }
+
+    public static String convertDotToSvg(String ori){
+        File f = new File(ori);
+        if(!f.exists())
+            Assertions.UNREACHABLE("The file, " + ori +", does not exist.");
+
+        String svg = ori.substring(0, ori.lastIndexOf(".")) + ".svg";
+
+        String cmd[] = {
+          "dot",
+                "-Tsvg",
+                ori,
+                "-o",
+                svg
+        };
+        try {
+            Runtime.getRuntime().exec(cmd, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return svg;
     }
 }

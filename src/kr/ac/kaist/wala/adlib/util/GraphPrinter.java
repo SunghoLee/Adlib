@@ -45,7 +45,7 @@ public class GraphPrinter {
         vis.printGraph("ppgraph.dot");
     }
 
-    public static void print(String name, List<PropagationPoint> path){
+    public static String print(String name, List<PropagationPoint> path){
         Visualizer vis = Visualizer.getInstance();
         vis.setType(Visualizer.GraphType.Digraph);
 
@@ -53,10 +53,12 @@ public class GraphPrinter {
 
         for(PropagationPoint n : path){
             if(pre != null)
-                vis.fromAtoB(pre, n);
+                vis.fromAtoB(n, pre);
             pre = n;
         }
 
         vis.printGraph(name + ".dot");
+
+        return name + ".dot";
     }
 }

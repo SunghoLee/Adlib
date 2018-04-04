@@ -248,12 +248,12 @@ public class MaliciousPatternChecker {
                     for(PathEdge<BasicBlockInContext, DataFact> reach : reaches) {
                         PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
                         for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
-                            String fn = mp.fst + "( " + (i++) + " )";
-                            GraphPrinter.print(fn, path);
-
+                            String fn = mp.fst.patternName + "(" + (i++) + ")";
+                            String dotF = GraphPrinter.print(fn, path);
+                            String svgF = GraphUtil.convertDotToSvg(dotF);
+                            System.out.println("\t - The flows are printed in " + svgF);
                         }
                     }
-                    System.out.println("\tThe flows are printed! ( " + (i-1) + " )");
                 }
                 System.out.println("======");
                 ifds.clear();
