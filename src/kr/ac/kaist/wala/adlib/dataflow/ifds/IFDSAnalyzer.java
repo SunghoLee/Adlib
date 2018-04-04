@@ -120,7 +120,13 @@ public class IFDSAnalyzer {
     }
 
     public void clear(){
+    }
+
+    public void clearPE(){
         peManager.clear();
+    }
+
+    public void clearSE(){
         seManager.clear();
     }
 

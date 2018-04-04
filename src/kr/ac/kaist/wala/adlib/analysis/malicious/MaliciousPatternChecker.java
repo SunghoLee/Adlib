@@ -263,7 +263,7 @@ public class MaliciousPatternChecker {
                 }
                 warn.add("======");
                 //TODO: should we clear
-                ifds.clear();
+                ifds.clearPE();
             } catch (InfeasiblePathException e) {
                 e.printStackTrace();
             }
