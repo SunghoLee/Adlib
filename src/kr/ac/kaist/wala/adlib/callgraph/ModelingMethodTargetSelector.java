@@ -6,6 +6,7 @@ import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.MethodTargetSelector;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
+import com.ibm.wala.types.Selector;
 import kr.ac.kaist.wala.adlib.model.ModelClass;
 import kr.ac.kaist.wala.adlib.model.TypeBasedBuiltinModeler;
 import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelClass;
@@ -13,6 +14,8 @@ import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
 import kr.ac.kaist.wala.adlib.model.thread.*;
+
+import java.io.IOException;
 
 /**
  * Created by leesh on 20/03/2018.
@@ -52,6 +55,7 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
 
     @Override
     public IMethod getCalleeTarget(CGNode caller, CallSiteReference site, IClass receiver) {
+        Selector ss = site.getDeclaredTarget().getSelector();
         IMethod baseM = base.getCalleeTarget(caller, site, receiver);
         if(baseM != null) {
             boolean isStatic = baseM.isStatic();
@@ -77,10 +81,21 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
 
             if(receiver != null){
                 ModelClass modelClass = modeler.getClass(receiver);
-                if(modelClass != null)
+                if(modelClass != null) {
                     return modelClass.getMethod(site.getDeclaredTarget().getSelector());
-            }
+                }
+            }else if(isStatic){
+                IClass staticKlass = cha.lookupClass(site.getDeclaredTarget().getDeclaringClass());
+                ModelClass mc = modeler.getClass(staticKlass);
 
+                if(mc != null) {
+                    for (IMethod m : mc.getDeclaredMethods()) {
+                        if (m.isStatic() && m.getSelector().equals(site.getDeclaredTarget().getSelector())) {
+                            return m;
+                        }
+                    }
+                }
+            }
         }
 
         return baseM;

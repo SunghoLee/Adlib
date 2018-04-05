@@ -3,13 +3,16 @@ package kr.ac.kaist.wala.adlib.model;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.classLoader.NewSiteReference;
+import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.MethodSummary;
 import com.ibm.wala.ipa.summaries.SummarizedMethod;
 import com.ibm.wala.ipa.summaries.SummarizedMethodWithNames;
 import com.ibm.wala.ipa.summaries.VolatileMethodSummary;
 import com.ibm.wala.ssa.ConstantValue;
+import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
+import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeName;
@@ -19,6 +22,7 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -46,7 +50,6 @@ public class TypeBasedBuiltinModeler{
         for(ModelClass newKlass : newKlasses){
             classMap.put(newKlass.getReference(), newKlass);
         }
-
         return cha;
     }
 
@@ -80,6 +83,7 @@ public class TypeBasedBuiltinModeler{
                     c.addMethod(modeledM);
                 }
             }
+
             c.setSuperClass(newSuperClass);
             newKlasses.add(c);
             return c;

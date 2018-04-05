@@ -13,6 +13,7 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.collection.*;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +39,7 @@ public class FlowModelHandler {
                 SetFlowModel.getInstance(cha),
                 IteratorFlowModel.getInstance(cha),
                 CollectionFlowModel.getInstance(cha),
+                UriFlowModel.getInstance(),
         };
     }
 
@@ -76,6 +78,17 @@ public class FlowModelHandler {
                     else
                         index = i;
                     break;
+                }
+            }
+
+            if(invokeInst.toString().contains("139 = invokevirtual < Application, Landroid/net/Uri, getLastPathSegment()Ljava/lang/String; > 135 @20 exception:138")){
+                System.out.println("===> " + invokeInst);
+                System.out.println("===> DF: " + fact);
+                System.out.println("===> index: " + index);
+                try {
+                    System.in.read();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
 

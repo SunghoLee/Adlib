@@ -241,6 +241,7 @@ public class CallGraphBuilderForHybridSDK {
             if (options.getClassTargetSelector() == null)
                 Assertions.UNREACHABLE("Must set a ClassTargetSelector to use SelectiveClassBasedInstanceKey");
 
+            //TTTTTTTTT
             IClass klass = options.getClassTargetSelector().getAllocatedTarget(node, allocation);
             if (klass != null) {
                 TypeReference allocationType = options.getClassTargetSelector().getAllocatedTarget(node, allocation).getReference();

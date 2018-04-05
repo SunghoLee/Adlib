@@ -52,6 +52,11 @@ public class Main {
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("init(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
 
+            new MaliciousPatternChecker.MaliciousPattern("LaunchingActivity2",
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/ComponentName"), Selector.make("init(Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("setComponent(Landroid/content/ComponentName;)Landroid/content/Intent;"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
+
             new MaliciousPatternChecker.MaliciousPattern("GettingLocation1",
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/LocationManager"), Selector.make("getLastKnownLocation(Ljava/lang/String;)Landroid/location/Location;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/Location"), Selector.make("getLatitude()D"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
@@ -292,7 +297,7 @@ public class Main {
             }
 //System.exit(-1);
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
-//            padebugger.debug();
+            padebugger.debug();
         }
 
         MaliciousPatternChecker mpc = new MaliciousPatternChecker(cg, pa);
