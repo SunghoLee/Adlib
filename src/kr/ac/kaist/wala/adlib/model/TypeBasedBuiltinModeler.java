@@ -3,16 +3,13 @@ package kr.ac.kaist.wala.adlib.model;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.classLoader.NewSiteReference;
-import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.MethodSummary;
 import com.ibm.wala.ipa.summaries.SummarizedMethod;
 import com.ibm.wala.ipa.summaries.SummarizedMethodWithNames;
 import com.ibm.wala.ipa.summaries.VolatileMethodSummary;
 import com.ibm.wala.ssa.ConstantValue;
-import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
-import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeName;
@@ -22,6 +19,9 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -30,6 +30,7 @@ import java.util.*;
  * Created by leesh on 14/01/2017.
  */
 public class TypeBasedBuiltinModeler{
+    private List<String> logs = new ArrayList<>();
     private Set<IClass> alreadyModeled = HashSetFactory.make();
     private Map<TypeReference, ModelClass> classMap = HashMapFactory.make();
 
@@ -50,6 +51,21 @@ public class TypeBasedBuiltinModeler{
         for(ModelClass newKlass : newKlasses){
             classMap.put(newKlass.getReference(), newKlass);
         }
+
+        File f = new File("model.log");
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter("model.log"));
+            for(String s : logs){
+                bw.write(s);
+                bw.newLine();
+            }
+            bw.flush();
+            bw.close();
+            logs.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return cha;
     }
 
@@ -91,6 +107,38 @@ public class TypeBasedBuiltinModeler{
         return null;
     }
 
+    private TypeReference findConcreteSubClass(IClassHierarchy cha, TypeReference sc){
+        if(sc.isPrimitiveType())
+            return sc;
+
+        IClass c = cha.lookupClass(sc);
+
+        if(c == null){
+            logs.add("The class does not exist: " + sc);
+            return null;
+        }
+
+        if(c.isAbstract()){
+            // TODO: should we consider all subclasses? currently, just pickup the first concrete subclass.
+            for(IClass sub : cha.computeSubClasses(sc)){
+                if(sub.getReference().equals(sc))
+                    continue;
+                return findConcreteSubClass(cha, sub.getReference());
+            }
+        }
+
+        else if(c.isInterface()){
+            // TODO: should we consider all subclasses? currently, just pickup the first concrete subclass.
+            for(IClass sub : cha.getImplementors(sc)){
+                if(sub.getReference().equals(sc))
+                    continue;
+                return findConcreteSubClass(cha, sub.getReference());
+            }
+        }
+
+        return sc;
+    }
+
     private SummarizedMethod typeBasedRetMethod(IClass c, IMethod m, IClassHierarchy cha) {
         final MethodReference mRef = m.getReference();
         final VolatileMethodSummary newM = new VolatileMethodSummary(new MethodSummary(mRef));
@@ -100,10 +148,19 @@ public class TypeBasedBuiltinModeler{
 
         int ssaNo = m.getNumberOfParameters() + 1;
 
+        TypeReference retType = findConcreteSubClass(cha, m.getReturnType());
+
+        if(retType == null) {
+            retType = m.getReturnType();
+            logs.add("A concrete sub class does not exist: " + m.getReturnType());
+//            Assertions.UNREACHABLE("The return type cannot be a abstract class: " + m.getReturnType());
+        }
+
+
         // 1 = new X;
         final int newPC = newM.getNextProgramCounter();
         final SSAValue newV = new SSAValue(ssaNo++, m.getReturnType(), mRef);
-        final NewSiteReference nsr = NewSiteReference.make(newPC, m.getReturnType());
+        final NewSiteReference nsr = NewSiteReference.make(newPC, retType);
 
         // for array type
         if(m.getReturnType().isArrayType()){
@@ -119,7 +176,7 @@ public class TypeBasedBuiltinModeler{
 
             final int newElePC = newM.getNextProgramCounter();
             final SSAValue newEleV = new SSAValue(ssaNo++, m.getReturnType().getArrayElementType(), mRef);
-            final NewSiteReference eleNSR = NewSiteReference.make(newElePC, m.getReturnType().getArrayElementType());
+            final NewSiteReference eleNSR = NewSiteReference.make(newElePC, findConcreteSubClass(cha, m.getReturnType().getArrayElementType()));
             final SSAInstruction newEleInst = instructionFactory.NewInstruction(newElePC, newEleV, eleNSR);
             newM.addStatement(newEleInst);
 

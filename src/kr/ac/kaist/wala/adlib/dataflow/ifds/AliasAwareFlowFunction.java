@@ -116,9 +116,6 @@ public class AliasAwareFlowFunction implements IFlowFunction {
          */
         if(fact instanceof LocalDataFact &&
                 ((LocalDataFact) fact).getVar() == instruction.getArrayRef()) {
-            System.out.println("#I : " + instruction);
-            System.out.println("#F : " + fact);
-
             res.addAll(getField(n, "[", fact.getField(), instruction.getDef()));
 
         }else if(fact instanceof GlobalDataFact)

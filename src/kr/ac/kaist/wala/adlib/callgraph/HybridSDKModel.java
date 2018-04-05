@@ -33,7 +33,7 @@ public class HybridSDKModel {
     //Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS . vibrate(Ljava/lang/String;)V
     public static boolean TEST_MODE = true;
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("storePicture(Ljava/lang/String;)V"));
-    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("open(Ljava/lang/String;)V"));
+    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("shouldEnableCloseRegion(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("setPageSize(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge"), Selector.make("deleteFile(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/smaato/soma/internal/connector/OrmmaBridge"), Selector.make("storePicture(Ljava/lang/String;)V"));
@@ -51,14 +51,6 @@ public class HybridSDKModel {
         Thread t;
         HybriDroidDriver driver = new HybriDroidDriver(prop, cha);
         Set<BridgeClass> bridges = driver.getBridgeClassesViaAnn();
-
-//        MethodReference testMR = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, TypeName.findOrCreate("Lcom/nativex/monetization/mraid/JSIAdToDeviceHandler")), Selector.make("open(Ljava/lang/String;)V"));
-//
-//        IMethod entry = cha.resolveMethod(testMR);
-//
-//        bridgeEntries.add(entry);
-//        entries.add(new ConcreteTypeParamEntryPoint(new AndroidEntryPoint.ExecutionOrder(MIDDLE_OF_LOOP_ORDER++), entry, cha));
-
 
         // attach bridge methods invocation to entry model
         for(BridgeClass bridge : bridges){
@@ -122,27 +114,13 @@ public class HybridSDKModel {
         entryList.addAll(entries);
         Collections.sort(entryList, (AndroidEntryPoint o1, AndroidEntryPoint o2) -> o1.order.compareTo(o2.order));
 
-        // for JVM version < 1.8
-//        Collections.sort(entryList, new Comparator<AndroidEntryPoint>() {
-//            @Override
-//            public int compare(AndroidEntryPoint o1, AndroidEntryPoint o2) {
-//                    return o1.order.compareTo(o2.order);
-//            }
-//        });
-
+        System.out.println("##################### ENTRIES #####################");
         for(AndroidEntryPoint aep : entryList){
             System.out.println("#Entry: " + aep);
         }
+        System.out.println("###################################################");
         //JVM 1.8
         return () -> entryList.iterator();
-
-        // for JVM version < 1.8
-//        return new Iterable<AndroidEntryPoint>(){
-//            @Override
-//            public Iterator<AndroidEntryPoint> iterator() {
-//                return entryList.iterator();
-//            }
-//        };
     }
 
     /**
@@ -175,13 +153,6 @@ public class HybridSDKModel {
      * @return
      */
     private static IMethod findNearestMethod(IClass klass, Selector method){
-//        System.out.println("#C: " + klass);
-//        for(IMethod m : klass.getDeclaredMethods())
-//            System.out.println("\t#M: " + m);
-//        if(klass.toString().endsWith("TJPlacement"))
-//            System.exit(-1);
-//        if(method == null)
-//            return null;
         IMethod m = klass.getMethod(method);
         return m;
     }

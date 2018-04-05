@@ -30,11 +30,9 @@ import kr.ac.kaist.wala.adlib.model.ARModeling;
 import kr.ac.kaist.wala.hybridroid.util.debug.PointerAnalysisCommandlineDebugger;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
 import org.json.simple.parser.ParseException;
+import sun.jvm.hotspot.tools.StackTrace;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -49,11 +47,11 @@ public class Main {
 
     private static MaliciousPatternChecker.MaliciousPattern[] maliciousPatterns = {
             new MaliciousPatternChecker.MaliciousPattern("LaunchingActivity1",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("init(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
 
             new MaliciousPatternChecker.MaliciousPattern("LaunchingActivity2",
-                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/ComponentName"), Selector.make("init(Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                    new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/ComponentName"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("setComponent(Landroid/content/ComponentName;)Landroid/content/Intent;"), PropagateFlowFunction.getInstance(2, 1)),
                     new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE))),
 
@@ -216,9 +214,12 @@ public class Main {
         String sdk = args[1];
         String initInstFile = args[2];
 
-        System.out.println("#Prop: " + prop);
-        System.out.println("#SDK: " + sdk);
-        System.out.println("#Init: " + initInstFile);
+        System.out.println("##################### INIT Fs #####################");
+        System.out.println("#PROP: " + prop);
+        System.out.println("#AdSDK: " + sdk);
+        System.out.println("#INIT: " + initInstFile);
+        System.out.println("###################################################");
+
         long start = System.currentTimeMillis();
         long cgStart = System.currentTimeMillis();
 
@@ -297,7 +298,7 @@ public class Main {
             }
 //System.exit(-1);
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
-            padebugger.debug();
+//            padebugger.debug();
         }
 
         MaliciousPatternChecker mpc = new MaliciousPatternChecker(cg, pa);

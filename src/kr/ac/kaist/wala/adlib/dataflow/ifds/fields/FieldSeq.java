@@ -73,19 +73,8 @@ public class FieldSeq implements Field {
         ll.addAll(r.toSimpleList());
         //fl: [obj]
         //ll: [data, $]
-        boolean debug = false;
-        if(f.toString().equals("this$1")){
-            debug = true;
-            System.out.println("FL: " + fl);
-            System.out.println("LL: " + ll);
-        }
-        for(int i=0; i < Math.min(fl.size(), ll.size()); i++){
-            if(debug){
-                System.out.println("I: " + i);
-                System.out.println("FL: " + fl);
-                System.out.println("LL: " + ll);
-            }
 
+        for(int i=0; i < Math.min(fl.size(), ll.size()); i++){
             int marker = 0;
             for(int j=0; j < fl.size(); j++){
                 if(ll.get(j).equals("*")) { // data != *
@@ -98,18 +87,11 @@ public class FieldSeq implements Field {
                 }
             }
 
-            if(debug){
-                System.out.println("==> match: " + marker);
-            }
             if(marker == -2){ // no match case
                 return new FieldSeq(f, r);
             }else if(marker == -1){ // further search  thiscase
                 fl.add(ll.get(0)); // fl: [obj, data]
                 ll = ll.subList(1, ll.size()); //ll: [$]
-                if(debug){
-                    System.out.println("FL: " + fl);
-                    System.out.println("LL: " + ll);
-                }
             }else if(marker == 0 && ll.size() != 0){ // match case
                 Pair<Field, Field> p = split(r, fl.size());
                 return new FieldSeq(StarField.make(p.fst), p.snd);

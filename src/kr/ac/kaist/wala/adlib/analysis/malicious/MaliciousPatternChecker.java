@@ -19,13 +19,10 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.analysis.APICallNode;
-import kr.ac.kaist.wala.adlib.dataflow.DataFlowAnalysis;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
-import kr.ac.kaist.wala.adlib.dataflow.pointer.IDataPointer;
-import kr.ac.kaist.wala.adlib.dataflow.works.Work;
 import kr.ac.kaist.wala.adlib.util.GraphPrinter;
 import kr.ac.kaist.wala.adlib.util.GraphUtil;
 import kr.ac.kaist.wala.adlib.util.PathOptimizer;
@@ -95,7 +92,6 @@ public class MaliciousPatternChecker {
     }
 
     private Set<TypeReference> getAllSubClass(Set<TypeReference> res, TypeReference tr, IClassHierarchy cha){
-//        System.out.println("#?? " + tr + "\t Contained? " + res.contains(tr));
         if(cha.isInterface(tr)){
             for (IClass c : cha.getImplementors(tr)) {
                 if(!res.contains(c.getReference())) {
@@ -130,11 +126,6 @@ public class MaliciousPatternChecker {
         Set<PathEdge> res = new HashSet<>();
 
         for(PathEdge pe : edges){
-//            if(pe.toString().contains("startActivity")) {
-//                System.out.println("======");
-//                System.out.println(pe);
-//                System.out.println("======");
-//            }
             if(pe.getToNode().equals(bb) && pe.getToFact().equals(fact)) {
                 res.add(pe);
             }
@@ -262,7 +253,7 @@ public class MaliciousPatternChecker {
                     }
                 }
                 warn.add("======");
-                //TODO: should we clear
+                //TODO: should we clear?
                 ifds.clearPE();
             } catch (InfeasiblePathException e) {
                 e.printStackTrace();
@@ -461,29 +452,6 @@ public class MaliciousPatternChecker {
                     return true;
             }
             return false;
-        }
-    }
-
-    class MPData extends DataFlowAnalysis.DataWithWork{
-        private Set<MaliciousPattern> mpSet;
-
-        public MPData(IDataPointer p, Work w, Set<MaliciousPattern> mpSet) {
-            super(p, w);
-            this.mpSet = mpSet;
-        }
-
-        public Set<MaliciousPattern> getMaliciousPatterns(){
-            return  this.mpSet;
-        }
-
-        @Override
-        public int hashCode() {
-            return super.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return super.equals(o);
         }
     }
 }

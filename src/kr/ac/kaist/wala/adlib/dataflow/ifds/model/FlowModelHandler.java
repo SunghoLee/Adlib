@@ -1,5 +1,6 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 
+import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
@@ -13,7 +14,6 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.collection.*;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -22,10 +22,14 @@ import java.util.Set;
  * Created by leesh on 12/03/2018.
  */
 public class FlowModelHandler {
+    private static boolean DEBUG = false;
     protected ClassFlowModel[] models;
+    private static boolean SUB_CLASS_FLAG = true;
+    private final IClassHierarchy cha;
 
     public FlowModelHandler(IClassHierarchy cha){
         init(cha);
+        this.cha = cha;
     }
 
     private void init(IClassHierarchy cha){
@@ -53,8 +57,12 @@ public class FlowModelHandler {
 
     private MethodFlowModel getMethodModel(CGNode n){
         for(ClassFlowModel cfm : models){
+            IClass sc = cha.lookupClass(cfm.getReference());
+            boolean futher = (sc != null ) && cha.isSubclassOf(n.getMethod().getDeclaringClass(), sc) && SUB_CLASS_FLAG;
             for(MethodFlowModel mfm : cfm.getMethods())
                 if(mfm.getReference().equals(n.getMethod().getReference())) {
+                    return mfm;
+                }else if(futher && n.getMethod().getSelector().equals(mfm.getReference().getSelector())){
                     return mfm;
                 }
         }
@@ -81,30 +89,21 @@ public class FlowModelHandler {
                 }
             }
 
-            if(invokeInst.toString().contains("139 = invokevirtual < Application, Landroid/net/Uri, getLastPathSegment()Ljava/lang/String; > 135 @20 exception:138")){
-                System.out.println("===> " + invokeInst);
-                System.out.println("===> DF: " + fact);
-                System.out.println("===> index: " + index);
-                try {
-                    System.in.read();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
             // if the fact is not used in this invoke instruction, just pass none.
             // it is possible, when this instruction is at a return site.
             if (index == -100)
                 return Collections.emptySet();
 
             for (int i : mfm.matchFlow(index)) {
-                System.out.println("=== ");
-                System.out.println("MODEL: " + mfm);
-                System.out.println("INST: " + invokeInst);
-                System.out.println("FROM: " + invokeInst.getUse(index));
-                System.out.println("I: " + i);
-                System.out.println("TO: " + ((i == MethodFlowModel.RETV) ? invokeInst.getDef() : invokeInst.getUse(i)));
-                System.out.println("=== ");
+                if(DEBUG) {
+                    System.out.println("=== ");
+                    System.out.println("MODEL: " + mfm);
+                    System.out.println("INST: " + invokeInst);
+                    System.out.println("FROM: " + invokeInst.getUse(index));
+                    System.out.println("I: " + i);
+                    System.out.println("TO: " + ((i == MethodFlowModel.RETV) ? invokeInst.getDef() : invokeInst.getUse(i)));
+                    System.out.println("=== ");
+                }
                 Field f = fact.getField();
                 Set<Field> newFs = mfm.matchField(f);
 

@@ -76,6 +76,17 @@ public class CallGraphBuilderForHybridSDK {
         this.initInst = initInsts;
         this.scope = makeAnalysisScope(sdk);
         this.cha = buildClassHierarchy(this.scope);
+
+//        Iterator<IClass> iC = cha.iterator();
+//
+//        while(iC.hasNext()){
+//            IClass k = iC.next();
+//            if(k.toString().contains("Stub")){
+//                System.out.println("K: " + k);
+//            }
+//        }
+//        System.exit(-1);
+
         this.entries = findEntrypoints(this.cha);
         this.options = makeAnalysisOptions(this.scope, this.entries);
         this.delegate = makeDelegateBuilder(this.cha, this.options);
@@ -166,7 +177,6 @@ public class CallGraphBuilderForHybridSDK {
      * @return call graph builder
      */
     protected CallGraphBuilder makeDelegateBuilder(IClassHierarchy cha, AnalysisOptions options) {
-        test(cha);
         ReflectionResolvingCallGraph builder = new ReflectionResolvingCallGraph(2, cha, options, new AnalysisCache(new DexIRFactory()), null, null) {
             @Override
             protected ExplicitCallGraph createEmptyCallGraph(IClassHierarchy cha, AnalysisOptions options) {
@@ -241,8 +251,8 @@ public class CallGraphBuilderForHybridSDK {
             if (options.getClassTargetSelector() == null)
                 Assertions.UNREACHABLE("Must set a ClassTargetSelector to use SelectiveClassBasedInstanceKey");
 
-            //TTTTTTTTT
             IClass klass = options.getClassTargetSelector().getAllocatedTarget(node, allocation);
+
             if (klass != null) {
                 TypeReference allocationType = options.getClassTargetSelector().getAllocatedTarget(node, allocation).getReference();
                 if (instanceTypes.contains(allocationType))
@@ -526,15 +536,6 @@ public class CallGraphBuilderForHybridSDK {
                 }
             }
         }
-//            if(caller.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application) && site.toString().contains("invokestatic") && site.toString().contains("forName")) {
-//                System.out.println("#Caller: " + caller);
-//                System.out.println("#Site: " + site);
-//                System.out.println("#Class: " + site.getDeclaredTarget().getDeclaringClass());
-//                System.out.println("#Method: " + site.getDeclaredTarget().getSelector());
-//                System.out.println("#recv: " + recv);
-//                System.out.println("#iKey: " + Arrays.asList(iKey));
-//                System.out.println("=====");
-//            }
             return super.getTargetForCall(caller, site, recv, iKey);
         }
 
@@ -829,18 +830,6 @@ public class CallGraphBuilderForHybridSDK {
                 return "[InstanceKey for Reflection Method] " + klass.getTargetMethod();
             }
         }
-    }
-
-    private void test(IClassHierarchy cha){
-//        for(IClass k : cha){
-//            if(k.toString().contains("Upsight")){
-//                System.out.println("#c: " + k);
-//                for(IMethod m : k.getDeclaredMethods()){
-//                        System.out.println("\t#m: " + m);
-//                }
-//            }
-//        }
-//        System.exit(-1);
     }
 }
 

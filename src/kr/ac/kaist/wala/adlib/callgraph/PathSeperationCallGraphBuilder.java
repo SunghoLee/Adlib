@@ -119,8 +119,6 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
             } else {
                 if (isStatic) {
                     PointerKey fKey = getPointerKeyForStaticField(f);
-//          system.newConstraint(def, assignOperator, fKey);
-
                     /// Lee: begin
                     Context ctxt = node.getContext();
                     if(ctxt.get(FirstMethodContextSelector.FIRST_METHOD) instanceof FirstMethod) {
@@ -128,14 +126,7 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
 
                         if(path != null) {
                             PropagationCallGraphBuilder.FilterOperator pathFilter = new PathSeparationFilter(path);
-
-//            try {
                             system.newStatement(system.findOrCreatePointsToSet(def), pathFilter, system.findOrCreatePointsToSet(fKey), true, true);
-//              system.newConstraint(def, pathFilter, fKey);
-//            }catch(OutOfMemoryError e){
-//              System.out.println(system.findOrCreatePointsToSet(fKey) + " \n " + fKey);
-//              e.printStackTrace();
-//            }
                         }
                     }
                     /// Lee: end

@@ -26,7 +26,7 @@ public class BridgeClass {
     private void initBridgeMethods(IClass c){
         mSet = new HashSet<BridgeMethod>();
 
-        System.err.println("====== Bridge Info ======");
+        System.err.println("##################### BRIDGE ######################");
         System.err.println("#Class: " + c);
         for(IMethod m : c.getAllMethods()){
             if(HybriDroidTypes.hasJavascriptInterfaceAnnotation(m)) {
@@ -34,7 +34,7 @@ public class BridgeClass {
                 mSet.add(new BridgeMethod(m.getReference()));
             }
         }
-        System.err.println("=========================");
+        System.err.println("####################################################");
     }
 
     public TypeReference getReference(){

@@ -29,7 +29,6 @@ public class ModelingClassTargetSelector implements ClassTargetSelector {
     @Override
     public IClass getAllocatedTarget(CGNode caller, NewSiteReference site) {
         IClass c = base.getAllocatedTarget(caller, site);
-
         if(c != null){
             for(IClass mc : models){
                 if(c.getName().equals(mc.getName()))

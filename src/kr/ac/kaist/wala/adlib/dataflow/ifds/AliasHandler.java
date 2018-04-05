@@ -21,7 +21,7 @@ import java.util.*;
  * Created by leesh on 2018. 2. 19..
  */
 public class AliasHandler {
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
     private final HeapGraph<InstanceKey> hg;
@@ -170,7 +170,6 @@ public class AliasHandler {
                     continue;
                 for(Field newField : newFields) {
                     if (path != null) {
-                        printList(path);
                         for (Object o : path) {
                             if (o instanceof PointerKey) {
                                 if (o instanceof InstanceFieldKey) {
@@ -294,13 +293,5 @@ public class AliasHandler {
 
             return true;
         }
-    }
-
-    private void printList(List path){
-//        System.out.println("=>");
-//        for(Object o : path){
-//            System.out.println("\t" + o);
-//        }
-//        System.out.println("<=");
     }
 }

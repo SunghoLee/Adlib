@@ -49,10 +49,6 @@ public final class APICallNode implements Serializable{
     public boolean equals(Object o){
         if(o instanceof APICallNode){
             APICallNode acn = (APICallNode) o;
-//            if(this.tn.toString().equals("Ljava/io/File") && acn.tn.toString().equals("Ljava/io/File") && this.selector.toString().equals("delete()Z") && acn.selector.toString().equals("delete()Z")){
-//                System.out.println("TNEQ? " + acn.tn.equals(this.tn));
-//                System.out.println("STEQ? " + acn.selector.equals(this.selector));
-//            }
             if(acn.tn.equals(this.tn) && acn.selector.equals(this.selector) && acn.entryNum == this.entryNum)
                 return true;
         }
