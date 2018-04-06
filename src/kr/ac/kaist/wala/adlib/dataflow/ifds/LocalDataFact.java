@@ -1,7 +1,9 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.ipa.callgraph.CGNode;
+import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 
 /**
  * Created by leesh on 27/02/2018.
@@ -13,6 +15,8 @@ public class LocalDataFact implements DataFact {
     private final Field f;
 
     public LocalDataFact(CGNode n, int v, Field f){
+        if(f instanceof SingleField)
+            Assertions.UNREACHABLE("Single field cannot be assigned itself: " + f);
         this.n = n;
         this.v = v;
         this.f = f;

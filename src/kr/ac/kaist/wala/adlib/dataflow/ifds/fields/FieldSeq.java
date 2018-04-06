@@ -5,6 +5,8 @@ import com.ibm.wala.util.debug.Assertions;
 
 import java.util.*;
 
+import static kr.ac.kaist.wala.adlib.dataflow.ifds.AliasAwareFlowFunction.DDD;
+
 /**
  * Created by leesh on 27/02/2018.
  */
@@ -33,8 +35,10 @@ public class FieldSeq implements Field {
             if(rest.isMatched(fst))
                 return rest;
             return new FieldSeq(fst, rest);
+        }else if(fst instanceof StarField){
+            return new FieldSeq(fst, rest);
         }else
-            Assertions.UNREACHABLE("Field must be categorized in None, Seq, or Op: " + rest);
+            Assertions.UNREACHABLE("Field must be categorized in None, Seq, or Op. F: " + fst + "[ " + fst.getClass().getName() + " ]\tR: " + rest +"[ " + rest.getClass().getName() + " ]");
 
         return null;
     }
@@ -55,8 +59,8 @@ public class FieldSeq implements Field {
             rf = fs.getRest();
         }
 
-        FieldSeq ff = null;
-        ff = (FieldSeq) FieldSeq.make(fl.pop(), NoneField.getInstance());
+        Field ff = null;
+        ff = SingleField.make(fl.pop().toString());
 
         while(!fl.isEmpty()){
             ff = (FieldSeq) FieldSeq.make(fl.pop(), ff);
@@ -65,35 +69,46 @@ public class FieldSeq implements Field {
         return Pair.make(ff, rf);
     }
 
-    private static Field makeConsiderReg(Field f, Field r){
+    private static FieldSeq makeConsiderReg(Field f, Field r){
         List<String> fl = new ArrayList<>();
         List<String> ll = new ArrayList<>();
-        //f: obj  r: data.$
+        //f: a  r: a.$
         fl.addAll(f.toSimpleList());
         ll.addAll(r.toSimpleList());
-        //fl: [obj]
-        //ll: [data, $]
+        //fl: [a]
+        //ll: [a, $]
 
         for(int i=0; i < Math.min(fl.size(), ll.size()); i++){
             int marker = 0;
             for(int j=0; j < fl.size(); j++){
-                if(ll.get(j).equals("*")) { // data != *
+                if(ll.get(j).equals("*")) { // a == *
                     marker = -2;
                     break;
                 }
-                else if(!ll.get(j).equals(fl.get(j))) { // data != obj
+                else if(!ll.get(j).equals(fl.get(j))) { // a != a
                     marker = -1;
                     break;
                 }
             }
 
             if(marker == -2){ // no match case
+                if(DDD){
+                    System.out.println("NO MATCH!: " + new FieldSeq(f, r));
+                }
                 return new FieldSeq(f, r);
             }else if(marker == -1){ // further search  thiscase
                 fl.add(ll.get(0)); // fl: [obj, data]
                 ll = ll.subList(1, ll.size()); //ll: [$]
+                if(DDD){
+                    System.out.println("FUTHERFUTHER! FL: " + fl + "\t LL: " + ll);
+                }
             }else if(marker == 0 && ll.size() != 0){ // match case
                 Pair<Field, Field> p = split(r, fl.size());
+                if(DDD){
+                    System.out.println("MATCHMATCH! SQ: " + new FieldSeq(StarField.make(p.fst), p.snd));
+                    System.out.println("\tF: " + f + "\t R: " + r);
+                    System.out.println("\tFL: " + fl + "\t LL: " + ll);
+                }
                 return new FieldSeq(StarField.make(p.fst), p.snd);
             }
         }
@@ -159,6 +174,8 @@ public class FieldSeq implements Field {
     }
 
     private FieldSeq(Field fst, Field rest){
+        if(rest instanceof SingleField)
+            Assertions.UNREACHABLE("Rest field must be either None or Seq field: " + rest + " [ " + rest.getClass().getName() + "]");
         this.fst = fst;
         this.rest = rest;
     }

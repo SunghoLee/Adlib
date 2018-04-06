@@ -441,7 +441,7 @@ public class CallGraphBuilderForHybridSDK {
 
                 //if method name is constant string value, only one method is the target.
                 InstanceKey ik = iKey[0];
-                if (ik != null) {
+                if (ik != null && ik instanceof ConstantKey) {
                     if (methodName != null) {
                         for (IMethod m : ((IClass) ((ConstantKey) ik).getValue()).getDeclaredMethods()) {
                             if (m.getName().toString().equals(methodName)) {

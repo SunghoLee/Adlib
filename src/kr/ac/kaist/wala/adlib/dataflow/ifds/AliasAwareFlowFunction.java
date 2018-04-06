@@ -276,6 +276,8 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         return res;
     }
 
+    public static boolean DDD = false;
+
     @Override
     public Set<DataFact> visitPut(CGNode n, SSAPutInstruction instruction, DataFact fact) {
         Set<DataFact> res = new HashSet<>();
@@ -285,6 +287,8 @@ public class AliasAwareFlowFunction implements IFlowFunction {
 //        if(instruction.toString().contains("putfield 1.< Primordial, Ljava/lang/Thread, target, <Primordial,Ljava/lang/Runnable> > = 2") && fact.getField().toString().equals("url.$"))
 //            debug = true;
 
+        if(instruction.toString().contains("putfield 1.< Application, Lcom/suyduu/guzqhq288899/VpaidLayout$VPaidWebView$a$5$1, a, <Application,Lcom/suyduu/guzqhq288899/VpaidLayout$VPaidWebView$a$5> > = 2"))
+            DDD = true;
         if(fact instanceof LocalDataFact &&
                 ((LocalDataFact) fact).getVar() == instruction.getVal()) {
 
@@ -300,7 +304,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 }
             }
         }
-
+        DDD = false;
         return res;
     }
 

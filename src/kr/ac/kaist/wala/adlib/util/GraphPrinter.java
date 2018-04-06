@@ -36,6 +36,9 @@ public class GraphPrinter {
         for(PropagationPoint n : path){
             if(pre != null)
                 vis.fromAtoB(n, pre);
+            if(n.getBlock().isEntryBlock() || n.getBlock().isExitBlock())
+                vis.setColor(n, Visualizer.BoxColor.BLUE);
+
             pre = n;
         }
 

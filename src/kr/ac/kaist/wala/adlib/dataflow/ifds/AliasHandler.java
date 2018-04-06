@@ -137,7 +137,12 @@ public class AliasHandler {
             Set<InstanceKey> realTargets = new HashSet<>();
             Set<Field> newFields = new HashSet<>();
             if(field.isMatched("this$0")){
-                newFields.addAll(field.pop("this$0"));
+                Set<Field> fff = field.pop("this$0");
+                for(Field fffff : fff){
+                    if(fffff instanceof SingleField)
+                        Assertions.UNREACHABLE("In this point!!!");
+                }
+                newFields.addAll(fff);
                 for(Object target : targets){
                     Iterator<Object> iSucc = hg.getSuccNodes(target);
                     while(iSucc.hasNext()){

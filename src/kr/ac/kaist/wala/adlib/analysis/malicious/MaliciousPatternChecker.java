@@ -23,10 +23,9 @@ import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
-import kr.ac.kaist.wala.adlib.util.GraphPrinter;
-import kr.ac.kaist.wala.adlib.util.GraphUtil;
-import kr.ac.kaist.wala.adlib.util.PathOptimizer;
+import kr.ac.kaist.wala.adlib.util.PathFinder;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -237,21 +236,36 @@ public class MaliciousPatternChecker {
 
                 warn.add("======");
                 warn.add("SEED: " + n + " [ " + var + " ]");
-                for(Pair<MaliciousPattern, Set<PathEdge>> mp : findPatterns(res)){
-                    warn.add("[Found] " + mp.fst);
-                    Set<PathEdge> reaches = mp.snd;
-                    int i = 1;
+                PathFinder pf = new PathFinder(cg, icfg, cha, graph);
 
-                    for(PathEdge<BasicBlockInContext, DataFact> reach : reaches) {
-                        PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
-                        for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
-                            String fn = mp.fst.patternName+ "_I_" + index + "(" + (i++) + ")";
-                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path));
-                            String svgF = GraphUtil.convertDotToSvg(dotF);
-                            warn.add("\t - The flows are printed in " + svgF);
+                PropagationPoint seedPP = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], ((var == IFlowFunction.ANY)? DataFact.DEFAULT_FACT : new LocalDataFact(n, var, NoneField.getInstance())));
+                for(MaliciousPattern mp : mps) {
+                    Set<List<PropagationPoint>> paths = pf.findPaths(seedPP, mp);
+                    if (paths.size() != 0) {
+                        System.out.println("FFFFF!!! : " + mp.patternName);
+                        try {
+                            System.in.read();
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 }
+
+//                for(Pair<MaliciousPattern, Set<PathEdge>> mp : findPatterns(res)){
+//                    warn.add("[Found] " + mp.fst);
+//                    Set<PathEdge> reaches = mp.snd;
+//                    int i = 1;
+//
+//                    for(PathEdge<BasicBlockInContext, DataFact> reach : reaches) {
+//                        PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
+//                        for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
+//                            String fn = mp.fst.patternName+ "_I_" + index + "(" + (i++) + ")";
+//                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path));
+//                            String svgF = GraphUtil.convertDotToSvg(dotF);
+//                            warn.add("\t - The flows are printed in " + svgF);
+//                        }
+//                    }
+//                }
                 warn.add("======");
                 //TODO: should we clear?
                 ifds.clearPE();
