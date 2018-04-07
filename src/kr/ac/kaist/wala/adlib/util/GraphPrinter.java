@@ -38,6 +38,8 @@ public class GraphPrinter {
                 vis.fromAtoB(n, pre);
             if(n.getBlock().isEntryBlock() || n.getBlock().isExitBlock())
                 vis.setColor(n, Visualizer.BoxColor.BLUE);
+            if(n.isTarget())
+                vis.setColor(n, Visualizer.BoxColor.RED);
 
             pre = n;
         }

@@ -27,6 +27,9 @@ public class FieldSeq implements Field {
         if(fst.length() + rest.length() > LTHRESH)
             return TopField.getInstance();
 
+        if(rest instanceof SingleField) // only for the split case.
+            return new FieldSeq(fst, rest);
+
         if(rest instanceof NoneField)
             return new FieldSeq(fst, rest);
         else if(fst instanceof SingleField && rest instanceof FieldSeq){
@@ -174,8 +177,6 @@ public class FieldSeq implements Field {
     }
 
     private FieldSeq(Field fst, Field rest){
-        if(rest instanceof SingleField)
-            Assertions.UNREACHABLE("Rest field must be either None or Seq field: " + rest + " [ " + rest.getClass().getName() + "]");
         this.fst = fst;
         this.rest = rest;
     }

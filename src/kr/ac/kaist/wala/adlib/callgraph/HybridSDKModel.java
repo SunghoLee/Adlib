@@ -31,8 +31,9 @@ public class HybridSDKModel {
 
 
     //Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS . vibrate(Ljava/lang/String;)V
-    public static boolean TEST_MODE = true;
-    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("storePicture(Ljava/lang/String;)V"));
+    public static boolean TEST_MODE = false;
+//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("storePicture(Ljava/lang/String;)V"));
+        public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("open(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("shouldEnableCloseRegion(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("setPageSize(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge"), Selector.make("deleteFile(Ljava/lang/String;)V"));

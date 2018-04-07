@@ -1,11 +1,9 @@
-package kr.ac.kaist.wala.adlib.dataflow.ifds.model.collection;
+package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.model.ClassFlowModel;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.model.MethodFlowModel;
 
 /**
  * Created by leesh on 11/10/2017.

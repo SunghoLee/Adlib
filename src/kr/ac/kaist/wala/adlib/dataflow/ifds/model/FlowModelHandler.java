@@ -55,24 +55,26 @@ public class FlowModelHandler {
         return false;
     }
 
-    private MethodFlowModel getMethodModel(CGNode n){
+    private Set<MethodFlowModel> getMethodModel(CGNode n){
+        Set<MethodFlowModel> mfms = new HashSet<>();
+
         for(ClassFlowModel cfm : models){
             IClass sc = cha.lookupClass(cfm.getReference());
             boolean futher = (sc != null ) && cha.isSubclassOf(n.getMethod().getDeclaringClass(), sc) && SUB_CLASS_FLAG;
             for(MethodFlowModel mfm : cfm.getMethods())
                 if(mfm.getReference().equals(n.getMethod().getReference())) {
-                    return mfm;
+                    mfms.add(mfm);
                 }else if(futher && n.getMethod().getSelector().equals(mfm.getReference().getSelector())){
-                    return mfm;
+                    mfms.add(mfm);
                 }
         }
-        return null;
+        return mfms;
     }
 
     public Set<DataFact> matchDataFact(CGNode curNode, CGNode target, SSAAbstractInvokeInstruction invokeInst, DataFact dfact){
         //TODO: improve the matching performance
         Set<DataFact> res = new HashSet<>();
-        MethodFlowModel mfm = getMethodModel(target);
+        Set<MethodFlowModel> mfms = getMethodModel(target);
 
         res.add(dfact);
 
@@ -89,66 +91,74 @@ public class FlowModelHandler {
                 }
             }
 
+//            if(invokeInst.toString().contains("invokespecial < Application, Landroid/content/Intent, <init>(Ljava/lang/String;Landroid/net/Uri;)V > 6,7,5 @12 exception:8")){
+//                System.out.println("MATCH!: " + index + " \t : " + mfm.matchFlow(index).length);
+//                System.out.println("MFM FROM!: " + index + " \t " + mfm.getFrom()[0]);
+//                System.out.println("MFM TO!: " + index + " \t " + mfm.getTo()[0]);
+//            }
             // if the fact is not used in this invoke instruction, just pass none.
             // it is possible, when this instruction is at a return site.
             if (index == -100)
                 return Collections.emptySet();
 
-            for (int i : mfm.matchFlow(index)) {
-                if(DEBUG) {
-                    System.out.println("=== ");
-                    System.out.println("MODEL: " + mfm);
-                    System.out.println("INST: " + invokeInst);
-                    System.out.println("FROM: " + invokeInst.getUse(index));
-                    System.out.println("I: " + i);
-                    System.out.println("TO: " + ((i == MethodFlowModel.RETV) ? invokeInst.getDef() : invokeInst.getUse(i)));
-                    System.out.println("=== ");
-                }
-                Field f = fact.getField();
-                Set<Field> newFs = mfm.matchField(f);
-
-                // intentionally cut infeasible paths at this point!
-                if(newFs.isEmpty())
-                    return Collections.emptySet();
-
-                if (i == MethodFlowModel.RETV) {
-                    if(mfm.getReference().getReturnType().isArrayType()) {
-                        for(Field newF : newFs)
-                            res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
-                    }else {
-                        for(Field newF : newFs)
-                            res.add(new LocalDataFact(curNode, invokeInst.getDef(), newF));
+            for(MethodFlowModel mfm : mfms) {
+                for (int i : mfm.matchFlow(index)) {
+                    if (DEBUG) {
+                        System.out.println("=== ");
+                        System.out.println("MODEL: " + mfm);
+                        System.out.println("INST: " + invokeInst);
+                        System.out.println("FROM: " + invokeInst.getUse(index));
+                        System.out.println("I: " + i);
+                        System.out.println("TO: " + ((i == MethodFlowModel.RETV) ? invokeInst.getDef() : invokeInst.getUse(i)));
+                        System.out.println("=== ");
                     }
-                }
-                else if (i == MethodFlowModel.RECEIVERV) {
-                    for(Field newF : newFs)
-                        res.add(new LocalDataFact(curNode, invokeInst.getUse(0), newF));
-                }else {
-                    for(Field newF : newFs)
-                        res.add(new LocalDataFact(curNode, invokeInst.getUse(i), newF));
+                    Field f = fact.getField();
+                    Set<Field> newFs = mfm.matchField(f);
+
+                    // intentionally cut infeasible paths at this point!
+                    if (newFs.isEmpty())
+                        return Collections.emptySet();
+
+                    if (i == MethodFlowModel.RETV) {
+                        if (mfm.getReference().getReturnType().isArrayType()) {
+                            for (Field newF : newFs)
+                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
+                        } else {
+                            for (Field newF : newFs)
+                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), newF));
+                        }
+                    } else if (i == MethodFlowModel.RECEIVERV) {
+                        for (Field newF : newFs)
+                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), newF));
+                    } else {
+                        for (Field newF : newFs)
+                            res.add(new LocalDataFact(curNode, invokeInst.getUse(i), newF));
+                    }
                 }
             }
         }else if(dfact instanceof DefaultDataFact){
-            if(isIn(mfm.getFrom(), MethodFlowModel.ANY)) {
+            for(MethodFlowModel mfm : mfms) {
+                if (isIn(mfm.getFrom(), MethodFlowModel.ANY)) {
 
-                Field f = dfact.getField();
-                Set<Field> newFs = mfm.matchField(f);
+                    Field f = dfact.getField();
+                    Set<Field> newFs = mfm.matchField(f);
 
-                // intentionally cut infeasible paths at this point!
-                if(newFs.isEmpty())
-                    return Collections.emptySet();
+                    // intentionally cut infeasible paths at this point!
+                    if (newFs.isEmpty())
+                        return Collections.emptySet();
 
-                for (int i : mfm.getTo()) {
-                    if (i == MethodFlowModel.RETV) {
-                        if (mfm.getReference().getReturnType().isArrayType()) {
-                            for(Field newF : newFs)
-                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
-                        }else
-                            res.add(new LocalDataFact(curNode, invokeInst.getDef(), NoneField.getInstance()));
-                    } else if (i == MethodFlowModel.RECEIVERV)
-                        res.add(new LocalDataFact(curNode, invokeInst.getUse(0), NoneField.getInstance()));
-                    else
-                        res.add(new LocalDataFact(curNode, invokeInst.getUse(i), NoneField.getInstance()));
+                    for (int i : mfm.getTo()) {
+                        if (i == MethodFlowModel.RETV) {
+                            if (mfm.getReference().getReturnType().isArrayType()) {
+                                for (Field newF : newFs)
+                                    res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
+                            } else
+                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), NoneField.getInstance()));
+                        } else if (i == MethodFlowModel.RECEIVERV)
+                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), NoneField.getInstance()));
+                        else
+                            res.add(new LocalDataFact(curNode, invokeInst.getUse(i), NoneField.getInstance()));
+                    }
                 }
             }
         }else

@@ -23,9 +23,11 @@ import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
+import kr.ac.kaist.wala.adlib.util.GraphPrinter;
+import kr.ac.kaist.wala.adlib.util.GraphUtil;
 import kr.ac.kaist.wala.adlib.util.PathFinder;
+import kr.ac.kaist.wala.adlib.util.PathOptimizer;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -240,13 +242,15 @@ public class MaliciousPatternChecker {
 
                 PropagationPoint seedPP = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], ((var == IFlowFunction.ANY)? DataFact.DEFAULT_FACT : new LocalDataFact(n, var, NoneField.getInstance())));
                 for(MaliciousPattern mp : mps) {
-                    Set<List<PropagationPoint>> paths = pf.findPaths(seedPP, mp);
+                    Set<PathFinder.Path> paths = pf.findPaths(seedPP, mp);
                     if (paths.size() != 0) {
-                        System.out.println("FFFFF!!! : " + mp.patternName);
-                        try {
-                            System.in.read();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        for(PathFinder.Path path : paths) {
+                            boolean isMatched = path.isMatched();
+
+                            String fn = mp.patternName + "_I_" + (index++);
+                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
+                            String svgF = GraphUtil.convertDotToSvg(dotF);
+                            warn.add("\t - The flows are printed in " + svgF + "\t( " + isMatched + " )");
                         }
                     }
                 }
@@ -385,6 +389,14 @@ public class MaliciousPatternChecker {
         @Override
         public String toString(){
             return "[MaliciousPattern] " + this.patternName;
+        }
+        public String toStringAll(){
+            String res = toString() + "\n";
+            for(MaliciousPoint p : pattern){
+                res += "\t" + p.toString()+"\n";
+            }
+
+            return res;
         }
 
         @Override

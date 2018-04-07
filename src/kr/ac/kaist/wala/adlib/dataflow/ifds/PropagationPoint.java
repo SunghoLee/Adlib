@@ -19,6 +19,7 @@ public class PropagationPoint implements INodeWithNumber {
 
     private final BasicBlockInContext bb;
     private final DataFact fact;
+    private boolean isTarget = false;
 
     public static PropagationPoint make(BasicBlockInContext bb, DataFact fact){
         if(points.containsKey(bb)){
@@ -59,6 +60,18 @@ public class PropagationPoint implements INodeWithNumber {
 
     public BasicBlockInContext getBlock(){
         return this.bb;
+    }
+
+    public boolean isTarget(){
+        return isTarget;
+    }
+
+    public void setTarget(){
+        isTarget = true;
+    }
+
+    public void unsetTarget(){
+        isTarget = false;
     }
 
     @Override
