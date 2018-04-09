@@ -1,12 +1,10 @@
 package kr.ac.kaist.wala.adlib;
 
-import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
-import com.ibm.wala.ipa.callgraph.Context;
 import com.ibm.wala.ipa.callgraph.impl.Everywhere;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
@@ -16,8 +14,6 @@ import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAOptions;
 import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.Selector;
-import com.ibm.wala.types.TypeName;
 import kr.ac.kaist.wala.adlib.analysis.APITarget;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternRepo;
@@ -26,14 +22,15 @@ import kr.ac.kaist.wala.adlib.callgraph.HybridSDKModel;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethod;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
-import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.model.ARModeling;
 import kr.ac.kaist.wala.hybridroid.util.debug.PointerAnalysisCommandlineDebugger;
 import kr.ac.kaist.wala.hybridroid.util.print.IRPrinter;
 import org.json.simple.parser.ParseException;
-import sun.jvm.hotspot.tools.StackTrace;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -156,8 +153,6 @@ public class Main {
         mpc.addMaliciousPatterns(maliciousPatterns);
 
         for(IMethod entry : HybridSDKModel.getBridgeEntries()) {
-            Context x;
-
             CGNode entryNode = cg.getNode(entry, new FirstMethodContextSelector.FirstMethodContextPair(new FirstMethod(entry), Everywhere.EVERYWHERE));
 //                if(!entryNode.toString().contains("vibration"))
 //                    continue;
@@ -169,13 +164,8 @@ public class Main {
                 System.out.println("# SEED_MATCH: " + entryNode + " [ " + (i+1) + " ]");
                 mpc.addSeed(entryNode, (i+1));
             }
-//                    if (n.getMethod().getReference().toString().contains("< Application, Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge, deleteFile(Ljava/lang/String;)V >")) {
-//                        System.out.println("# SEED_MATCH: " + n);
-//                        mpc.addSeed(n, 2);
-
-//                    }
         }
-
+        System.out.println("SEED: " + mpc.getSeeds().size());
         mpc.checkPatterns();
         /*
         // Malicious Pattern Checking

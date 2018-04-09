@@ -55,6 +55,7 @@ public class PathFinder {
                     BFSPathFinder<PropagationPoint> pf = new BFSPathFinder<>(pg, prev, pp);
                     List<PropagationPoint> path = pf.find();
                     if(path != null){
+                        System.out.println("#DDD: " + pp);
                         pp.setTarget();
                         System.out.println();
                         List<PropagationPoint> nPath = copy(path);

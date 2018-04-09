@@ -48,6 +48,10 @@ public class ModelClass extends SyntheticClass{
         fields.put(name, f);
     }
 
+    public Collection<IMethod> getModeledMethods(){
+        return methods.values();
+    }
+
     public void setSuperClass(IClass c){
         this.superClass = c;
     }
@@ -85,17 +89,20 @@ public class ModelClass extends SyntheticClass{
     public IMethod getMethod(Selector selector) {
         if(methods.containsKey(selector)) {
             return methods.get(selector);
-        } else {
-            return base.getMethod(selector);
         }
+        return null;
+//        else {
+//            return base.getMethod(selector);
+//        }
     }
 
     @Override
     public IField getField(Atom name) {
         if(fields.containsKey(name))
             return fields.get(name);
-        else
-            return base.getField(name);
+        return null;
+//        else
+//            return base.getField(name);
     }
 
     @Override

@@ -63,6 +63,9 @@ public class MaliciousPatternChecker {
         }
     }
 
+    public Set<Pair<CGNode, Integer>> getSeeds(){
+        return this.seeds;
+    }
     /**
      * Add a point at where this analysis starts and a variable tracked by this analysis
      * @param n A point at where this analysis starts

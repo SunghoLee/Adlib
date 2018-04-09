@@ -1,5 +1,6 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
+import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
@@ -7,6 +8,7 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
+import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.ClassLoaderReference;
@@ -18,7 +20,6 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.model.BuiltinFlowPropagationModel;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
@@ -120,7 +121,7 @@ public class GraphDataFlowManager {
             }
             res.add(Pair.make(callee, calleeDataFact));
         }
-        
+
         return res;
     }
 

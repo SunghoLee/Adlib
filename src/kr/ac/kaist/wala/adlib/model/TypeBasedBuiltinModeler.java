@@ -20,7 +20,6 @@ import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -41,10 +40,8 @@ public class TypeBasedBuiltinModeler{
     public IClassHierarchy model(IClassHierarchy cha) {
         Iterator<IClass> iKlass = cha.iterator();
         List<ModelClass> newKlasses = new ArrayList<>();
-//        test(cha);
         while(iKlass.hasNext()){
             IClass klass = iKlass.next();
-
             model(cha, klass, newKlasses);
         }
 
@@ -52,7 +49,7 @@ public class TypeBasedBuiltinModeler{
             classMap.put(newKlass.getReference(), newKlass);
         }
 
-        File f = new File("model.log");
+
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter("model.log"));
             for(String s : logs){

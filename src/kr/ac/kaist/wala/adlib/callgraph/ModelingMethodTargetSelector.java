@@ -31,6 +31,7 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
     }
 
     private void init(IClassHierarchy cha){
+        modeler.model(cha);
         models = new ModelClass[]{
                 AndroidContextWrapperModelClass.getInstance(cha),
                 AndroidAlertDialogBuilderModelClass.getInstance(cha),
@@ -49,20 +50,19 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
 //                JavaStringBufferModelClass.getInstance(cha),
 //                JavaStringBuilderModelClass.getInstance(cha),
         };
-        modeler.model(cha);
     }
 
     @Override
     public IMethod getCalleeTarget(CGNode caller, CallSiteReference site, IClass receiver) {
         Selector ss = site.getDeclaredTarget().getSelector();
         IMethod baseM = base.getCalleeTarget(caller, site, receiver);
+
         if(baseM != null) {
             boolean isStatic = baseM.isStatic();
-
             for (ModelClass c : models) {
                 if (isStatic) {
                     if (baseM.getDeclaringClass().getName().equals(c.getName())) {
-                        for (IMethod m : c.getAllMethods()) {
+                        for (IMethod m : c.getModeledMethods()) {
                             if (m.getSelector().equals(baseM.getSelector()) && m.isStatic()) {
                                 return m;
                             }
@@ -70,7 +70,7 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                     }
                 } else {
                     if (baseM.getDeclaringClass().getName().equals(c.getName()))
-                        for (IMethod m : c.getAllMethods()) {
+                        for (IMethod m : c.getModeledMethods()) {
                             if (m.getSelector().equals(baseM.getSelector())) {
                                 return m;
                             }
@@ -81,7 +81,15 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
             if(receiver != null){
                 ModelClass modelClass = modeler.getClass(receiver);
                 if(modelClass != null) {
-                    return modelClass.getMethod(site.getDeclaredTarget().getSelector());
+                    IMethod m = modelClass.getMethod(site.getDeclaredTarget().getSelector());
+
+                    while(m == null && modelClass != null && modelClass.getSuperclass() != null) {
+                        modelClass = modeler.getClass(modelClass.getSuperclass());
+                        m = modelClass.getMethod(site.getDeclaredTarget().getSelector());
+                    }
+
+                    if(m != null)
+                        return modelClass.getMethod(site.getDeclaredTarget().getSelector());
                 }
             }else if(isStatic){
                 IClass staticKlass = cha.lookupClass(site.getDeclaredTarget().getDeclaringClass());
