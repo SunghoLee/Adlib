@@ -18,6 +18,7 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.model.BuiltinFlowPropagationModel;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Queue;
@@ -101,7 +102,6 @@ public class GraphDataFlowManager {
             throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
         for(BasicBlockInContext callee : getCalleeSuccessors(node)) {
-
             // cut flows to modeled methods
             if(modelHandler.isModeled(callee.getNode())) {
                 continue;
@@ -120,7 +120,7 @@ public class GraphDataFlowManager {
             }
             res.add(Pair.make(callee, calleeDataFact));
         }
-
+        
         return res;
     }
 

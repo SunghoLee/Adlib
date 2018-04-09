@@ -15,8 +15,6 @@ import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
 import kr.ac.kaist.wala.adlib.model.thread.*;
 
-import java.io.IOException;
-
 /**
  * Created by leesh on 20/03/2018.
  */
@@ -46,6 +44,7 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                 JavaExecutorModelClass.getInstance(cha),
                 AndroidViewModelClass.getInstance(cha),
                 AndroidMessageModelClass.getInstance(cha),
+                AndroidActivityModelClass.getInstance(cha),
 //                JavaStringModelClass.getInstance(cha),
 //                JavaStringBufferModelClass.getInstance(cha),
 //                JavaStringBuilderModelClass.getInstance(cha),

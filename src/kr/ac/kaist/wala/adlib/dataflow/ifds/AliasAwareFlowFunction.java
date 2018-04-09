@@ -1,13 +1,10 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.analysis.pointers.HeapGraph;
-import com.ibm.wala.classLoader.IClass;
-import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
-import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
@@ -26,59 +23,18 @@ public class AliasAwareFlowFunction implements IFlowFunction {
     private final PointerAnalysis<InstanceKey> pa;
     private final HeapGraph<InstanceKey> hg;
     private final AliasHandler aliasHandler;
+    private final FieldCompatibilityPolicy fcHandler;
 
     public AliasAwareFlowFunction(ICFGSupergraph supergraph, PointerAnalysis<InstanceKey> pa){
         this.supergraph = supergraph;
         this.pa = pa;
         this.hg = pa.getHeapGraph();
+        this.fcHandler = new FieldCompatibilityPolicy(supergraph.getClassHierarchy());
         aliasHandler = new AliasHandler(supergraph, pa);
     }
 
     public boolean isCompatible(Field field, TypeReference tr){
-        if(field.equals(NoneField.getInstance()) || field.equals(TopField.getInstance()))
-            return true;
-
-        IClassHierarchy cha = supergraph.getClassHierarchy();
-        boolean isInterface = false;
-
-        // for the class corresponding to tr.
-        if(!tr.isArrayType()) {
-            IClass c = cha.lookupClass(tr);
-            if(!(isInterface = c.isInterface())) {
-                for (IField f : c.getAllInstanceFields()) {
-                    if (field.isMatched(f.getName().toString())) {
-                        return true;
-                    }
-                }
-            }
-
-        }
-
-        // for all sub classes of tr.
-        if(isInterface){
-            for (IClass sc : cha.getImplementors(tr)) {
-                if (!sc.isArrayClass()) {
-                    for (IField f : sc.getDeclaredInstanceFields()) {
-                        if (field.isMatched(f.getName().toString())) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }else {
-            for (IClass sc : cha.computeSubClasses(tr)) {
-                if (!sc.isArrayClass()) {
-                    for (IField f : sc.getDeclaredInstanceFields()) {
-                        if (field.isMatched(f.getName().toString())) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-
-        return false;
+        return fcHandler.isCompatible(field, tr);
     }
 
     @Override

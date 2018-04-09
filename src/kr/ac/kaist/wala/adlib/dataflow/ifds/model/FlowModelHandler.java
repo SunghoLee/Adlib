@@ -44,12 +44,15 @@ public class FlowModelHandler {
                 IteratorFlowModel.getInstance(cha),
                 CollectionFlowModel.getInstance(cha),
                 UriFlowModel.getInstance(),
+                JSONTokenerFlowModel.getInstance(cha),
+                JSONObjectFlowModel.getInstance(cha),
+                JSONArrayFlowModel.getInstance(cha),
         };
     }
 
     public boolean isModeled(CGNode target){
         //TODO: improve the matching performance
-        if(getMethodModel(target) != null)
+        if(getMethodModel(target).size() != 0)
             return true;
 
         return false;
@@ -60,14 +63,17 @@ public class FlowModelHandler {
 
         for(ClassFlowModel cfm : models){
             IClass sc = cha.lookupClass(cfm.getReference());
-            boolean futher = (sc != null ) && cha.isSubclassOf(n.getMethod().getDeclaringClass(), sc) && SUB_CLASS_FLAG;
-            for(MethodFlowModel mfm : cfm.getMethods())
-                if(mfm.getReference().equals(n.getMethod().getReference())) {
+            boolean further = (sc != null ) && cha.isSubclassOf(n.getMethod().getDeclaringClass(), sc) && SUB_CLASS_FLAG;
+
+            for(MethodFlowModel mfm : cfm.getMethods()) {
+                if (mfm.getReference().equals(n.getMethod().getReference())) {
                     mfms.add(mfm);
-                }else if(futher && n.getMethod().getSelector().equals(mfm.getReference().getSelector())){
+                } else if (further && n.getMethod().getSelector().equals(mfm.getReference().getSelector())) {
                     mfms.add(mfm);
                 }
+            }
         }
+
         return mfms;
     }
 
@@ -91,11 +97,6 @@ public class FlowModelHandler {
                 }
             }
 
-//            if(invokeInst.toString().contains("invokespecial < Application, Landroid/content/Intent, <init>(Ljava/lang/String;Landroid/net/Uri;)V > 6,7,5 @12 exception:8")){
-//                System.out.println("MATCH!: " + index + " \t : " + mfm.matchFlow(index).length);
-//                System.out.println("MFM FROM!: " + index + " \t " + mfm.getFrom()[0]);
-//                System.out.println("MFM TO!: " + index + " \t " + mfm.getTo()[0]);
-//            }
             // if the fact is not used in this invoke instruction, just pass none.
             // it is possible, when this instruction is at a return site.
             if (index == -100)

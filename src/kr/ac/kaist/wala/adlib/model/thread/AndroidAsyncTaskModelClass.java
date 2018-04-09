@@ -32,6 +32,7 @@ public class AndroidAsyncTaskModelClass extends ModelClass {
     public static final Selector RUN_SELECTOR = Selector.make("run()V");
     public static final Selector EXECUTE_SELECTOR1 = Selector.make("execute([Ljava/lang/Object;)Landroid/os/AsyncTask;");
     public static final Selector EXECUTE_SELECTOR2 = Selector.make("execute(Ljava/lang/Runnable;)V");
+    public static final Selector EXECUTE_ON_EXECUTOR_SELECTOR = Selector.make("executeOnExecutor(Ljava/util/concurrent/Executor;[Ljava/lang/Object;)Landroid/os/AsyncTask;");
     public static final Selector ON_PRE_EXECUTE_SELECTOR = Selector.make("onPreExecute()V");
     public static final Selector ON_POST_EXECUTE_SELECTOR = Selector.make("onPostExecute(Ljava/lang/Object;)V");
     public static final Selector DO_IN_BACKGROUND_SELECTOR = Selector.make("doInBackground([Ljava/lang/Object;)Ljava/lang/Object;");
@@ -61,6 +62,36 @@ public class AndroidAsyncTaskModelClass extends ModelClass {
     private void initMethodsForThread(){
         this.addMethod(this.execute2(EXECUTE_SELECTOR2));
         this.addMethod(this.execute1(EXECUTE_SELECTOR1));
+        this.addMethod(this.executeOnExecutor(EXECUTE_ON_EXECUTOR_SELECTOR));
+    }
+
+    private SummarizedMethod executeOnExecutor(Selector s) {
+        final MethodReference execRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary exec = new VolatileMethodSummary(new MethodSummary(execRef));
+        exec.setStatic(false);
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        int ssaNo = 1;
+        final SSAValue thisV = new SSAValue(ssaNo++, ANDROID_ASYNC_TASK_MODEL_CLASS, execRef);
+        final SSAValue paramV = new SSAValue(ssaNo++, TypeReference.findOrCreate(ClassLoaderReference.Primordial, OBJECT_ARR_TYPE_NAME), execRef);
+
+        //call execute
+        final SSAValue defV = new SSAValue(ssaNo++, ANDROID_ASYNC_TASK_MODEL_CLASS, execRef);
+        final int prePC = exec.getNextProgramCounter();
+        final MethodReference preMR = MethodReference.findOrCreate(ANDROID_ASYNC_TASK_MODEL_CLASS, EXECUTE_SELECTOR1);
+        final List<SSAValue> preParams = new ArrayList<SSAValue>();
+        preParams.add(thisV);
+        preParams.add(paramV);
+        final SSAValue preException = new SSAValue(ssaNo++, TypeReference.JavaLangException, execRef);
+        final CallSiteReference preSite = CallSiteReference.make(prePC, preMR, IInvokeInstruction.Dispatch.VIRTUAL);
+        final SSAInstruction preCall = instructionFactory.InvokeInstruction(prePC, defV, preParams, preException, preSite);
+        exec.addStatement(preCall);
+
+        final int pc_ret = exec.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, thisV);
+        exec.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(execRef, exec, this);
     }
 
     /**
@@ -117,7 +148,7 @@ public class AndroidAsyncTaskModelClass extends ModelClass {
         exec.addStatement(postCall);
 
         final int pc_ret = exec.getNextProgramCounter();
-        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret);
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(pc_ret, thisV);
         exec.addStatement(retInst);
 
         return new SummarizedMethodWithNames(execRef, exec, this);
