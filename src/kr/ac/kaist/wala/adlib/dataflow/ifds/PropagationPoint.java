@@ -40,8 +40,7 @@ public class PropagationPoint implements INodeWithNumber {
     private PropagationPoint(BasicBlockInContext bb, DataFact fact){
         this.bb = bb;
         this.fact = fact;
-        this.id = ID;
-        ID++;
+        this.id = ID++;
     }
 
     @Override

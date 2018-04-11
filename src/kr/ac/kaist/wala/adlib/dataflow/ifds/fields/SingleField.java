@@ -32,6 +32,11 @@ public class SingleField implements Field {
     }
 
     @Override
+    public boolean isArrayType() {
+        return f.equals("[");
+    }
+
+    @Override
     public List<String> toSimpleList() {
         return Collections.singletonList(f);
     }

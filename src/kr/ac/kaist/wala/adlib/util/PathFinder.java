@@ -8,10 +8,7 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
-import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.Selector;
-import com.ibm.wala.types.TypeName;
-import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.types.*;
 import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.traverse.BFSPathFinder;
@@ -19,7 +16,10 @@ import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.MethodFlowModel;
 
 import java.util.*;
 
@@ -45,27 +45,29 @@ public class PathFinder {
         List<PropagationPoint> initPath = new ArrayList<>();
         initPath.add(seed);
         res.add(initPath);
-
         for(MaliciousPatternChecker.MaliciousPoint mmp : mp.getPoints()){
             Set<List<PropagationPoint>> newS = new HashSet<>();
             for(List<PropagationPoint> prevPath : res){
                 for(PropagationPoint pp : convertMPtoPPs(mmp)){
                     PropagationPoint prev = prevPath.get(0);
-
                     BFSPathFinder<PropagationPoint> pf = new BFSPathFinder<>(pg, prev, pp);
                     List<PropagationPoint> path = pf.find();
+//                    List<PropagationPoint> path = find(prev, pp);
                     if(path != null){
-                        System.out.println("#DDD: " + pp);
                         pp.setTarget();
-                        System.out.println();
                         List<PropagationPoint> nPath = copy(path);
+                        nPath.remove(nPath.size()-1);
                         nPath.addAll(prevPath);
                         newS.add(nPath);
                     }
                 }
             }
             res.clear();
-            res.addAll(newS);
+
+            if(newS.size() == 0)
+                break;
+            else
+                res.addAll(newS);
         }
 
         Set<Path> resPath = new HashSet<>();
@@ -89,6 +91,23 @@ public class PathFinder {
         List<PropagationPoint> newL = new ArrayList<>();
         newL.addAll(old);
         return newL;
+    }
+
+    private boolean isArrayType(MethodReference mr, int index){
+        if(index == MethodFlowModel.RETV)
+            return mr.getReturnType().isArrayType();
+        else{
+            IClass k = cha.lookupClass(mr.getDeclaringClass());
+            IMethod m = k.getMethod(mr.getSelector());
+            if(m.isStatic()){
+                return mr.getParameterType(index).isArrayType();
+            }else{
+                if(index == 0)
+                    return false;
+                else
+                    return mr.getParameterType(index-1).isArrayType();
+            }
+        }
     }
 
     private Set<PropagationPoint> convertMPtoPPs(MaliciousPatternChecker.MaliciousPoint mp){
@@ -140,7 +159,10 @@ public class PathFinder {
                         Assertions.UNREACHABLE("How come the variable index of 'from' at a malicious point is terminate? " + mp);
                         break;
                     default:
-                        fact = new LocalDataFact(pred.getNode(), invokeInst.getUse(inVarIndex-1), NoneField.getInstance());
+                        if(isArrayType(target.getMethod().getReference(), inVarIndex-1))
+                            fact = new LocalDataFact(pred.getNode(), invokeInst.getUse(inVarIndex-1), FieldSeq.make(SingleField.make("["), NoneField.getInstance()));
+                        else
+                            fact = new LocalDataFact(pred.getNode(), invokeInst.getUse(inVarIndex-1), NoneField.getInstance());
                         break;
                 }
 

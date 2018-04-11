@@ -43,6 +43,11 @@ public class TopField implements Field {
     }
 
     @Override
+    public boolean isArrayType() {
+        return true;
+    }
+
+    @Override
     public int hashCode(){
         return 124923;
     }

@@ -239,8 +239,6 @@ public class MaliciousPatternChecker {
                 }
                 PropagationGraph graph = ifds.getPropagationGraph();
 
-                warn.add("======");
-                warn.add("SEED: " + n + " [ " + var + " ]");
                 PathFinder pf = new PathFinder(cg, icfg, cha, graph);
 
                 PropagationPoint seedPP = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], ((var == IFlowFunction.ANY)? DataFact.DEFAULT_FACT : new LocalDataFact(n, var, NoneField.getInstance())));
@@ -249,11 +247,13 @@ public class MaliciousPatternChecker {
                     if (paths.size() != 0) {
                         for(PathFinder.Path path : paths) {
                             boolean isMatched = path.isMatched();
-
+                            warn.add("======");
+                            warn.add("SEED: " + n + " [ " + var + " ]");
                             String fn = mp.patternName + "_I_" + (index++);
                             String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
                             String svgF = GraphUtil.convertDotToSvg(dotF);
                             warn.add("\t - The flows are printed in " + svgF + "\t( " + isMatched + " )");
+                            warn.add("======");
                         }
                     }
                 }
@@ -273,7 +273,6 @@ public class MaliciousPatternChecker {
 //                        }
 //                    }
 //                }
-                warn.add("======");
                 //TODO: should we clear?
                 ifds.clearPE();
             } catch (InfeasiblePathException e) {
@@ -387,6 +386,10 @@ public class MaliciousPatternChecker {
                 return true;
             }
             return false;
+        }
+
+        public String getName(){
+            return this.patternName;
         }
 
         @Override

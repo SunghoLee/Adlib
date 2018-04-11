@@ -121,12 +121,15 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
                     PointerKey fKey = getPointerKeyForStaticField(f);
                     /// Lee: begin
                     Context ctxt = node.getContext();
+
                     if(ctxt.get(FirstMethodContextSelector.FIRST_METHOD) instanceof FirstMethod) {
                         final IMethod path = ((FirstMethod)ctxt.get(FirstMethodContextSelector.FIRST_METHOD)).getMethod();
 
-                        if(path != null) {
+                        if(path != null) { // if the object is created in a not dummy method, check whether the object can be assigned to another method or not.
                             PropagationCallGraphBuilder.FilterOperator pathFilter = new PathSeparationFilter(path);
                             system.newStatement(system.findOrCreatePointsToSet(def), pathFilter, system.findOrCreatePointsToSet(fKey), true, true);
+                        }else{ // if the object is created in a dummy method, bypass it.
+                            system.newConstraint(def, assignOperator, fKey);
                         }
                     }
                     /// Lee: end

@@ -1,16 +1,18 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 
 import com.ibm.wala.classLoader.IClass;
+import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
+import com.ibm.wala.types.MethodReference;
+import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.DataFact;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.DefaultDataFact;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.LocalDataFact;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.collection.*;
 
@@ -77,6 +79,23 @@ public class FlowModelHandler {
         return mfms;
     }
 
+    private boolean isArrayType(MethodReference mr, int index){
+        if(index == MethodFlowModel.RETV)
+            return mr.getReturnType().isArrayType();
+        else{
+            IClass k = cha.lookupClass(mr.getDeclaringClass());
+            IMethod m = k.getMethod(mr.getSelector());
+            if(m.isStatic()){
+                return mr.getParameterType(index).isArrayType();
+            }else{
+                if(index == 0)
+                    return false;
+                else
+                    return mr.getParameterType(index-1).isArrayType();
+            }
+        }
+    }
+
     public Set<DataFact> matchDataFact(CGNode curNode, CGNode target, SSAAbstractInvokeInstruction invokeInst, DataFact dfact){
         //TODO: improve the matching performance
         Set<DataFact> res = new HashSet<>();
@@ -115,26 +134,42 @@ public class FlowModelHandler {
                     }
                     Field f = fact.getField();
                     Set<Field> newFs = mfm.matchField(f);
-
                     // intentionally cut infeasible paths at this point!
                     if (newFs.isEmpty())
                         return Collections.emptySet();
 
-                    if (i == MethodFlowModel.RETV) {
-                        if (mfm.getReference().getReturnType().isArrayType()) {
-                            for (Field newF : newFs)
-                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
-                        } else {
-                            for (Field newF : newFs)
-                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), newF));
-                        }
-                    } else if (i == MethodFlowModel.RECEIVERV) {
-                        for (Field newF : newFs)
-                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), newF));
-                    } else {
-                        for (Field newF : newFs)
-                            res.add(new LocalDataFact(curNode, invokeInst.getUse(i), newF));
+                    int var = -100;
+
+                    if(i == MethodFlowModel.RETV)
+                        var = invokeInst.getDef();
+                    else if(i == MethodFlowModel.RECEIVERV)
+                        var = invokeInst.getUse(0);
+                    else
+                        var = invokeInst.getUse(i);
+
+                    for(Field newF : handleField(mfm.getReference(), i, newFs)) {
+                        res.add(new LocalDataFact(curNode, var, newF));
                     }
+//                    if (i == MethodFlowModel.RETV) {
+//                        if (isArrayType(mfm.getReference(), i)) {
+//                            for (Field newF : newFs)
+//                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
+//                        } else {
+//                            for (Field newF : newFs)
+//                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), newF));
+//                        }
+//                    } else if (i == MethodFlowModel.RECEIVERV) {
+//                        for (Field newF : newFs)
+//                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), newF));
+//                    } else {
+//                        if (isArrayType(mfm.getReference(), i)) {
+//                            for (Field newF : newFs)
+//                                res.add(new LocalDataFact(curNode, invokeInst.getUse(i), FieldSeq.make(SingleField.make("["), newF)));
+//                        }else{
+//                            for (Field newF : newFs)
+//                                res.add(new LocalDataFact(curNode, invokeInst.getUse(i), newF));
+//                        }
+//                    }
                 }
             }
         }else if(dfact instanceof DefaultDataFact){
@@ -149,21 +184,130 @@ public class FlowModelHandler {
                         return Collections.emptySet();
 
                     for (int i : mfm.getTo()) {
-                        if (i == MethodFlowModel.RETV) {
-                            if (mfm.getReference().getReturnType().isArrayType()) {
-                                for (Field newF : newFs)
-                                    res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
-                            } else
-                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), NoneField.getInstance()));
-                        } else if (i == MethodFlowModel.RECEIVERV)
-                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), NoneField.getInstance()));
+                        int var = -100;
+
+                        if(i == MethodFlowModel.RETV)
+                            var = invokeInst.getDef();
+                        else if(i == MethodFlowModel.RECEIVERV)
+                            var = invokeInst.getUse(0);
                         else
-                            res.add(new LocalDataFact(curNode, invokeInst.getUse(i), NoneField.getInstance()));
+                            var = invokeInst.getUse(i);
+
+                        for(Field newF : handleField(mfm.getReference(), i, newFs)) {
+                            res.add(new LocalDataFact(curNode, var, newF));
+                        }
+
+//                        if (i == MethodFlowModel.RETV) {
+//                            if (isArrayType(mfm.getReference(), i)) {
+//                                for (Field newF : newFs)
+//                                    res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
+//                            } else
+//                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), NoneField.getInstance()));
+//                        } else if (i == MethodFlowModel.RECEIVERV)
+//                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), NoneField.getInstance()));
+//                        else {
+//                            if (isArrayType(mfm.getReference(), i)) {
+//                                for (Field newF : newFs)
+//                                    res.add(new LocalDataFact(curNode, invokeInst.getUse(i), FieldSeq.make(SingleField.make("["), newF)));
+//                            }else{
+//                                res.add(new LocalDataFact(curNode, invokeInst.getUse(i), NoneField.getInstance()));
+//                            }
+//                        }
                     }
                 }
             }
         }else
             Assertions.UNREACHABLE("Local or Default data facts are only possible to match with modeling flows: " + dfact);
+        return res;
+    }
+
+    private IClass collection;
+    private IClass iter;
+    private IClass jarray;
+    private IClass jtoken;
+    private IClass jobj;
+    private IClass map;
+
+    private String getSpecialF(MethodReference mr, int index){
+        TypeReference tr = null;
+        if(index == MethodFlowModel.RETV)
+            tr = mr.getReturnType();
+        else{
+            IClass k = cha.lookupClass(mr.getDeclaringClass());
+            IMethod m = k.getMethod(mr.getSelector());
+            if(m.isStatic()){
+                tr = mr.getParameterType(index);
+            }else{
+                if(index == 0)
+                    return null;
+                else
+                    tr = mr.getParameterType(index-1);
+            }
+        }
+
+        if(tr.isPrimitiveType())
+            return null;
+
+        IClass c = cha.lookupClass(tr);
+
+        if(collection == null)
+            this.collection = cha.lookupClass(CollectionFlowModel.getInstance(cha).getReference());
+        if(iter == null)
+            this.iter = cha.lookupClass(IteratorFlowModel.getInstance(cha).getReference());
+        if(jarray == null)
+            this.jarray = cha.lookupClass(JSONArrayFlowModel.getInstance(cha).getReference());
+        if(jtoken == null)
+            this.jtoken = cha.lookupClass(JSONTokenerFlowModel.getInstance(cha).getReference());
+        if(jobj == null)
+            this.jobj = cha.lookupClass(JSONObjectFlowModel.getInstance(cha).getReference());
+        if(map == null)
+            this.map = cha.lookupClass(MapFlowModel.getInstance(cha).getReference());
+
+        if(c.equals(collection) || cha.implementsInterface(c, collection)){
+            return CollectionFlowModel.COLLECTION_GET;
+        }else if(c.equals(iter) || cha.implementsInterface(c, iter)){
+            return IteratorFlowModel.ITER_NEXT;
+        }else if(c.equals(jarray) || cha.isSubclassOf(c, jarray)){
+            return JSONArrayFlowModel.JSON_ARRAY_GET;
+        }else if(c.equals(map) || cha.implementsInterface(c, map)){
+            return MapFlowModel.MAP_GET;
+        }else if(c.equals(jtoken) || cha.isSubclassOf(c, jtoken)){
+            return JSONTokenerFlowModel.JSON_TOKEN_NEXT;
+        }else if(c.equals(jobj) || cha.isSubclassOf(c, jobj)){
+            return JSONObjectFlowModel.JSON_OBJ_GET;
+        }
+
+        return null;
+    }
+
+    private Set<Field> handleField(MethodReference mr, int index, Set<Field> fs){
+        Set<Field> res = new HashSet<>();
+
+        for(Field f : fs){
+            if (isArrayType(mr, index)) {
+                if(f.isArrayType()){
+                    res.add(f);
+                }else{
+                    res.add(FieldSeq.make(SingleField.make("["), f));
+                }
+            } else {
+                String spF = getSpecialF(mr, index);
+                if(spF == null) {
+                    if (f.isArrayType()) {
+                        for (Field nnF : f.pop("["))
+                            res.add(nnF);
+                    } else {
+                        res.add(f);
+                    }
+                }else{
+                    if(f.isMatched(spF)){
+                        res.add(f);
+                    }else{
+                        res.add(FieldSeq.make(SingleField.make(spF), f));
+                    }
+                }
+            }
+        }
         return res;
     }
 

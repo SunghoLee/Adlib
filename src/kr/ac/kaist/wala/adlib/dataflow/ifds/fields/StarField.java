@@ -55,6 +55,11 @@ public class StarField implements Field {
     }
 
     @Override
+    public boolean isArrayType() {
+        return f.isArrayType();
+    }
+
+    @Override
     public List<String> toSimpleList() {
         List<String> l = new ArrayList<>();
         l.add("*");

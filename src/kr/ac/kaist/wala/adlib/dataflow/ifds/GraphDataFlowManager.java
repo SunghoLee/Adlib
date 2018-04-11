@@ -185,7 +185,8 @@ public class GraphDataFlowManager {
             }else if(fact instanceof GlobalDataFact){
                 res.add(Pair.make(retSite, fact));
             }else{
-                Assertions.UNREACHABLE("Only Local and Global data facts are considered in exit nodes: " + fact);
+                // no-op
+//                Assertions.UNREACHABLE("Only Local and Global data facts are considered in exit nodes: " + fact);
             }
         }
         return res;
@@ -206,6 +207,12 @@ public class GraphDataFlowManager {
                 res.add(Pair.make(callerBlock, new LocalDataFact(callerBlock.getNode(), useV, ldf.getField())));
             }
 
+        }else if(fact instanceof DefaultDataFact){
+            while(iCallerBlock.hasNext()){
+                BasicBlockInContext callerBlock = iCallerBlock.next();
+                SSAAbstractInvokeInstruction invokeInst = (SSAAbstractInvokeInstruction) callerBlock.getLastInstruction();
+                res.add(Pair.make(callerBlock, DefaultDataFact.DEFAULT_FACT));
+            }
         }
         return res;
     }

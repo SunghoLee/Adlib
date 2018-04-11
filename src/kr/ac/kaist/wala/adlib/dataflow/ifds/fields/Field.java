@@ -14,4 +14,5 @@ public interface Field {
     public Set<Field> pop(String f);
     public List<String> toSimpleList();
     public int length();
+    public boolean isArrayType();
 }

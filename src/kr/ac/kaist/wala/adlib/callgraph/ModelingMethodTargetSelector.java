@@ -79,7 +79,8 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
             }
 
             if(receiver != null){
-                ModelClass modelClass = modeler.getClass(receiver);
+                ModelClass modelClass = modeler.getClass(baseM.getDeclaringClass());
+
                 if(modelClass != null) {
                     IMethod m = modelClass.getMethod(site.getDeclaredTarget().getSelector());
 
@@ -88,8 +89,9 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                         m = modelClass.getMethod(site.getDeclaredTarget().getSelector());
                     }
 
-                    if(m != null)
+                    if(m != null) {
                         return modelClass.getMethod(site.getDeclaredTarget().getSelector());
+                    }
                 }
             }else if(isStatic){
                 IClass staticKlass = cha.lookupClass(site.getDeclaredTarget().getDeclaringClass());

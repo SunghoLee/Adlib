@@ -2,6 +2,7 @@ package kr.ac.kaist.wala.adlib.analysis.malicious;
 
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeName;
+import com.ibm.wala.types.TypeReference;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 
@@ -23,6 +24,8 @@ public class MaliciousPatternRepo {
         patternSet.addAll(Arrays.stream(maker.make("LaunchingActivity1",
                 new MaliciousPatternChecker.MaliciousPoint[][]{
                         new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("getIntentOld(Ljava/lang/String;)Landroid/content/Intent;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("parseUri(Ljava/lang/String;I)Landroid/content/Intent;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("<init>(Ljava/lang/String;Landroid/net/Uri;)V"), PropagateFlowFunction.getInstance(2, 1)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Intent"), Selector.make("<init>(Ljava/lang/String;Landroid/net/Uri;Landroid/content/Context;Ljava/lang/Class;)V"), PropagateFlowFunction.getInstance(2, 1)),
@@ -103,28 +106,117 @@ public class MaliciousPatternRepo {
                 }
         )).collect(Collectors.toSet()));
 
-        patternSet.addAll(Arrays.stream(maker.make("MaliciousFileDownload",
+        patternSet.addAll(Arrays.stream(maker.make("MaliciousFileDownload1",
                 new MaliciousPatternChecker.MaliciousPoint[][]{
                         new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V"), PropagateFlowFunction.getInstance(5, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(4, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/StringI;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(5, 1)),
+
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/net/URL;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/net/URL;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(3, 1)),
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection(Ljava/net/Proxy;)Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
-                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("connect()V"), PropagateFlowFunction.getInstance(1, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URLConnection"), Selector.make("getInputStream()Ljava/io/InputStream;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
-                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/HttpURLConnection"), Selector.make("getInputStream()Ljava/io/InputStream;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
-                        },
-                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read()I"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([BII)I"), PropagateFlowFunction.getInstance(1, 2)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([B)I"), PropagateFlowFunction.getInstance(1, 2)),
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([B)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([BII)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write(I)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
                         },
                 }
         )).collect(Collectors.toSet()));
+
+        patternSet.addAll(Arrays.stream(maker.make("MaliciousFileDownload2",
+                new MaliciousPatternChecker.MaliciousPoint[][]{
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)V"), PropagateFlowFunction.getInstance(5, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(4, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/StringI;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(5, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, 1)),
+
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/net/URL;Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("<init>(Ljava/net/URL;Ljava/lang/String;Ljava/net/URLStreamHandler;)V"), PropagateFlowFunction.getInstance(3, 1)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection()Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URL"), Selector.make("openConnection(Ljava/net/Proxy;)Ljava/net/URLConnection;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/net/URLConnection"), Selector.make("getInputStream()Ljava/io/InputStream;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read()I"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([BII)I"), PropagateFlowFunction.getInstance(1, 2)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([B)I"), PropagateFlowFunction.getInstance(1, 2)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayOutputStream"), Selector.make("write([BII)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayOutputStream"), Selector.make("write(I)V"), PropagateFlowFunction.getInstance(2, 1)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayOutputStream"), Selector.make("toByteArray()[B"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayInputStream"), Selector.make("<init>([BII)V"), PropagateFlowFunction.getInstance(2, 1)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayInputStream"), Selector.make("<init>([B)V"), PropagateFlowFunction.getInstance(2, 1)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayInputStream"), Selector.make("read([BII)I"), PropagateFlowFunction.getInstance(1, 2)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/ByteArrayInputStream"), Selector.make("read()I"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([B)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write([BII)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/FileOutputStream"), Selector.make("write(I)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                        },
+                }
+        )).collect(Collectors.toSet()));
+
+        patternSet.addAll(Arrays.stream(maker.make("MaliciousFileDownload3",
+                new MaliciousPatternChecker.MaliciousPoint[][]{
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/net/Uri"), Selector.make("create(Ljava/lang/String;)Landroid/net/Uri;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/net/Uri"), Selector.make("parse(Ljava/lang/String;)Landroid/net/Uri;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/net/Uri"), Selector.make("resolve(Ljava/lang/String;)Landroid/net/Uri;"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/app/DownloadManager$Request"), Selector.make("<init>(Landroid/net/Uri;)V"), PropagateFlowFunction.getInstance(2, 1)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/app/DownloadManager"), Selector.make("enqueue(Landroid/app/DownloadManager$Request;)J"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                        },
+                }
+        )).collect(Collectors.toSet()));
+
 
         patternSet.addAll(Arrays.stream(maker.make("HttpRequest1",
                 new MaliciousPatternChecker.MaliciousPoint[][]{
@@ -176,8 +268,8 @@ public class MaliciousPatternRepo {
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read()I"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE)),
-                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([bII)V"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE)),
-                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([b)V"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([BII)I"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Ljava/io/InputStream"), Selector.make("read([B)I"), PropagateFlowFunction.getInstance(1, IFlowFunction.TERMINATE)),
                         },
                 }
         )).collect(Collectors.toSet()));
@@ -196,13 +288,34 @@ public class MaliciousPatternRepo {
                 }
         )).collect(Collectors.toSet()));
 
-        patternSet.addAll(Arrays.stream(maker.make("GetAppInfo",
+        patternSet.addAll(Arrays.stream(maker.make("GetAppInfo1",
                 new MaliciousPatternChecker.MaliciousPoint[][]{
                         new MaliciousPatternChecker.MaliciousPoint[]{
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getApplicationInfo(Ljava/lang/String;II)Landroid/content/pm/ApplicationInfo;"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledApplications(I)Ljava/util/List;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledPackages(I)Ljava/util/List;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledPackages(II)Ljava/util/List;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("loadUrl(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                        },
+                }
+        )).collect(Collectors.toSet()));
+
+        patternSet.addAll(Arrays.stream(maker.make("GetAppInfo2",
+                new MaliciousPatternChecker.MaliciousPoint[][]{
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getApplicationInfo(Ljava/lang/String;II)Landroid/content/pm/ApplicationInfo;"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledApplications(I)Ljava/util/List;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledPackages(I)Ljava/util/List;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/pm/PackageManager"), Selector.make("getInstalledPackages(II)Ljava/util/List;"), PropagateFlowFunction.getInstance(IFlowFunction.ANY, IFlowFunction.RETURN_VARIABLE)),
+                        },
+                        new MaliciousPatternChecker.MaliciousPoint[]{
+                                new MaliciousPatternChecker.MaliciousPoint(TypeReference.JavaLangString.getName(), Selector.make("equals(Ljava/lang/Object;)Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeReference.JavaLangString.getName(), Selector.make("equals(Ljava/lang/Object;)Z"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeReference.JavaLangString.getName(), Selector.make("equalsIgnoreCase(Ljava/lang/String;)Z"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeReference.JavaLangString.getName(), Selector.make("equalsIgnoreCase(Ljava/lang/String;)Z"), PropagateFlowFunction.getInstance(2, IFlowFunction.RETURN_VARIABLE)),
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("loadUrl(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),

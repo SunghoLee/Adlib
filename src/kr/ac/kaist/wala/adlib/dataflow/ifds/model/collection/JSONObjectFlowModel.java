@@ -38,7 +38,7 @@ public class JSONObjectFlowModel extends ClassFlowModel{
             Selector.make("getInt(Ljava/lang/String;)I"), // 8
             Selector.make("getJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;"), // 9
             Selector.make("getJSONObject(Ljava/lang/String;)Lorg/json/JSONObject;"), // 10
-            Selector.make("getLong(Ljava/lang/String;)S"), // 11
+            Selector.make("getLong(Ljava/lang/String;)J"), // 11
             Selector.make("getString(Ljava/lang/String;)Ljava/lang/String;"), // 12
             Selector.make("has(Ljava/lang/String;)Z"), // 13
             Selector.make("isNull(Ljava/lang/String;)Z"), // 14
@@ -55,14 +55,14 @@ public class JSONObjectFlowModel extends ClassFlowModel{
             Selector.make("optInt(Ljava/lang/String;)I"), // 25
             Selector.make("optJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;"), // 26
             Selector.make("optJSONObject(Ljava/lang/String;)Lorg/json/JSONObject;"), // 27
-            Selector.make("optLong(Ljava/lang/String;S)S"), // 28
-            Selector.make("optLong(Ljava/lang/String;)S"), // 29
+            Selector.make("optLong(Ljava/lang/String;J)J"), // 28
+            Selector.make("optLong(Ljava/lang/String;)J"), // 29
             Selector.make("optString(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"), // 30
             Selector.make("optString(Ljava/lang/String;)Ljava/lang/String;"), // 31
             Selector.make("put(Ljava/lang/String;D)Lorg/json/JSONObject;"), // 32
             Selector.make("put(Ljava/lang/String;Z)Lorg/json/JSONObject;"), // 33
             Selector.make("put(Ljava/lang/String;I)Lorg/json/JSONObject;"), // 34
-            Selector.make("put(Ljava/lang/String;S)Lorg/json/JSONObject;"), // 35
+            Selector.make("put(Ljava/lang/String;J)Lorg/json/JSONObject;"), // 35
             Selector.make("put(Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;"), // 36
             Selector.make("putOpt(Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;"), // 37
             Selector.make("quote(Ljava/lang/String;)Ljava/lang/String;"), // 38

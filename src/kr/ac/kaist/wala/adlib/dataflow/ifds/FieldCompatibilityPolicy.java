@@ -34,6 +34,24 @@ public class FieldCompatibilityPolicy {
             return true;
         IClass c = cha.lookupClass(tr);
 
+        // handle array field
+        if(tr.isArrayType()) {
+            if (field instanceof FieldSeq) {
+                FieldSeq fs = (FieldSeq) field;
+                Field fst = fs.getFirst();
+
+                if (fst instanceof SingleField) {
+                    SingleField sf = (SingleField) fst;
+                    if(sf.toString().equals("["))
+                        return true;
+                } else if (fst instanceof StarField) {
+                    StarField stf = (StarField) fst;
+                    if(stf.isMatched("["))
+                            return true;
+                }
+            }
+        }
+
         // handle special field for modeling collections
         if(c.equals(collection) || cha.implementsInterface(c, collection)){
             if(field.isMatched(CollectionFlowModel.COLLECTION_GET))

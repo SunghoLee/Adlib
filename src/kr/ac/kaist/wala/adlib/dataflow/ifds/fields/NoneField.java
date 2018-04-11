@@ -34,6 +34,11 @@ public class NoneField implements Field {
     }
 
     @Override
+    public boolean isArrayType() {
+        return false;
+    }
+
+    @Override
     public boolean isMatched(Field f){
         return false;
     }

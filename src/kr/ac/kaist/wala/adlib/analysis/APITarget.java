@@ -58,41 +58,47 @@ public final class APITarget {
 
     @Override
     public boolean equals(Object o){
-        if(o instanceof APITarget){
-            APITarget t = (APITarget) o;
-            if(t.s.equals(s)){
-                TypeReference tr1 = TypeReference.find(ClassLoaderReference.Primordial, this.getTypeName());
-                if(tr1 == null)
-                    tr1 = TypeReference.find(ClassLoaderReference.Application, this.getTypeName());
+        try {
+            if (o instanceof APITarget) {
+                APITarget t = (APITarget) o;
+                if (t.s.equals(s)) {
+                    TypeReference tr1 = TypeReference.find(ClassLoaderReference.Primordial, this.getTypeName());
+                    if (tr1 == null)
+                        tr1 = TypeReference.find(ClassLoaderReference.Application, this.getTypeName());
 
-                TypeReference tr2 = TypeReference.find(ClassLoaderReference.Primordial, t.getTypeName());
-                if(tr2 == null)
-                    tr2 = TypeReference.find(ClassLoaderReference.Application, t.getTypeName());
+                    TypeReference tr2 = TypeReference.find(ClassLoaderReference.Primordial, t.getTypeName());
+                    if (tr2 == null)
+                        tr2 = TypeReference.find(ClassLoaderReference.Application, t.getTypeName());
 
-                if(tr1 == null || tr2 == null)
-                    return this.tn.equals(t.tn);
+                    if (tr1 == null || tr2 == null)
+                        return this.tn.equals(t.tn);
 
-                IClass c1 = cha.lookupClass(tr1);
-                IClass c2 = cha.lookupClass(tr2);
+                    IClass c1 = cha.lookupClass(tr1);
+                    IClass c2 = cha.lookupClass(tr2);
 
-                if(c1 == null){
-                    if(tr1.getClassLoader().equals(ClassLoaderReference.Primordial))
-                        c1 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Application, this.getTypeName()));
-                    else
-                        c1 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Primordial, this.getTypeName()));
+                    if (c1 == null) {
+                        if (tr1.getClassLoader().equals(ClassLoaderReference.Primordial))
+                            c1 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Application, this.getTypeName()));
+                        else
+                            c1 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Primordial, this.getTypeName()));
+                    }
+
+                    if (c2 == null) {
+                        if (tr2.getClassLoader().equals(ClassLoaderReference.Primordial))
+                            c2 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Application, t.getTypeName()));
+                        else
+                            c2 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Primordial, t.getTypeName()));
+                    }
+
+                    if (t.tn.equals(tn) || (c1 != null && c2 != null && cha.isSubclassOf(c2, c1)))
+                        return true;
                 }
-
-                if(c2 == null){
-                    if(tr2.getClassLoader().equals(ClassLoaderReference.Primordial))
-                        c2 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Application, t.getTypeName()));
-                    else
-                        c2 = cha.lookupClass(TypeReference.find(ClassLoaderReference.Primordial, t.getTypeName()));
-                }
-
-                if(t.tn.equals(tn) || (c1 != null && c2 != null && cha.isSubclassOf(c2, c1)))
-                    return true;
-            }
 //            return t.tn.equals(tn) && t.s.equals(s);
+            }
+        }catch(Exception e){
+            System.err.println("ERROR THIS: "+ this);
+            System.err.println("ERROR O: "+ o);
+            e.printStackTrace();
         }
         return false;
     }

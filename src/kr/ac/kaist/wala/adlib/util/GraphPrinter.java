@@ -29,6 +29,7 @@ public class GraphPrinter {
 
     public static String print(String name, List<PropagationPoint> path){
         Visualizer vis = Visualizer.getInstance();
+        vis.clear();
         vis.setType(Visualizer.GraphType.Digraph);
 
         PropagationPoint pre = null;
@@ -38,8 +39,10 @@ public class GraphPrinter {
                 vis.fromAtoB(n, pre);
             if(n.getBlock().isEntryBlock() || n.getBlock().isExitBlock())
                 vis.setColor(n, Visualizer.BoxColor.BLUE);
-            if(n.isTarget())
+            else if(n.isTarget())
                 vis.setColor(n, Visualizer.BoxColor.RED);
+            else
+                vis.setColor(n, Visualizer.BoxColor.BLACK);
 
             pre = n;
         }

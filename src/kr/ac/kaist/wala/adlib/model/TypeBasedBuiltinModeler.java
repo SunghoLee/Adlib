@@ -104,18 +104,27 @@ public class TypeBasedBuiltinModeler{
         return null;
     }
 
+    // for special mappings
+    private TypeReference urlConnectionTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/net/URLConnection");
+    private TypeReference httpURLConnectionImplTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Lcom/android/okhttp/internal/http/HttpURLConnectionImpl");
+//    private TypeReference httpsURLConnectionTR = TypeReference.findOrCreate(ClassLoaderReference.Application, "Ljavax/net/ssl/HttpsURLConnection");
+
     private TypeReference findConcreteSubClass(IClassHierarchy cha, TypeReference sc){
         if(sc.isPrimitiveType())
             return sc;
 
         IClass c = cha.lookupClass(sc);
 
+        if(sc.equals(urlConnectionTR)){
+            return httpURLConnectionImplTR;
+        }
+
         if(c == null){
             logs.add("The class does not exist: " + sc);
             return null;
         }
 
-        if(c.isAbstract()){
+        if(c.isAbstract() && !c.isInterface()){
             // TODO: should we consider all subclasses? currently, just pickup the first concrete subclass.
             for(IClass sub : cha.computeSubClasses(sc)){
                 if(sub.getReference().equals(sc))

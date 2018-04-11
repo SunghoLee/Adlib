@@ -20,6 +20,11 @@ public class FieldSeq implements Field {
         return fst.length() + rest.length();
     }
 
+    @Override
+    public boolean isArrayType() {
+        return fst.isArrayType();
+    }
+
     public static Field make(Field fst, Field rest){
         if(fst instanceof NoneField)
             Assertions.UNREACHABLE("NoneField cannot be the first field of this sequence:  " + rest);

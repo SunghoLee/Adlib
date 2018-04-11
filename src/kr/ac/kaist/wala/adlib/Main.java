@@ -43,17 +43,6 @@ public class Main {
 
     private static Set<APITarget> targetAPIs = new HashSet<>();
 
-    private final static MaliciousPatternChecker.MaliciousPattern[] maliciousPatterns = MaliciousPatternRepo.patterns;
-
-    static{
-        for(int i=0; i<maliciousPatterns.length; i++){
-            MaliciousPatternChecker.MaliciousPattern p = maliciousPatterns[i];
-            for(MaliciousPatternChecker.MaliciousPoint mp : p.getPoints()){
-                targetAPIs.add(new APITarget(mp.getTypeName(), mp.getSelector()));
-            }
-        }
-    }
-
 //runOnUiThread(Runnable action) android.app.Activity
     public static void main(String[] args) throws CallGraphBuilderCancelException, ClassHierarchyException, ParseException, IOException {
 //        printMP();
@@ -147,6 +136,17 @@ public class Main {
 //System.exit(-1);
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
 //            padebugger.debug();
+        }
+
+        APITarget.set(cg.getClassHierarchy());
+
+        MaliciousPatternChecker.MaliciousPattern[] maliciousPatterns = MaliciousPatternRepo.patterns;
+
+        for(int i=0; i<maliciousPatterns.length; i++){
+            MaliciousPatternChecker.MaliciousPattern p = maliciousPatterns[i];
+            for(MaliciousPatternChecker.MaliciousPoint mp : p.getPoints()){
+                targetAPIs.add(new APITarget(mp.getTypeName(), mp.getSelector()));
+            }
         }
 
         MaliciousPatternChecker mpc = new MaliciousPatternChecker(cg, pa);
@@ -366,11 +366,5 @@ public class Main {
         }
 
         return ir;
-    }
-
-    private static void printMP(){
-        for(MaliciousPatternChecker.MaliciousPattern mp : maliciousPatterns){
-            System.out.println(mp.toStringAll());
-        }
     }
 }

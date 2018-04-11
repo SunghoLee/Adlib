@@ -196,6 +196,8 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 res.add(new LocalDataFact(n, def, f));
             }
             return res;
+        }else if(factField instanceof NoneField){
+            return Collections.singleton(new LocalDataFact(n, def, factField));
         }
         // it is possible if the data fact is the receiver object.
 //        Assertions.UNREACHABLE("Cannot reach here!");

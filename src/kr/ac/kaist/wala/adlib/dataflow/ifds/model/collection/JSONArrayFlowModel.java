@@ -38,7 +38,7 @@ public class JSONArrayFlowModel extends ClassFlowModel{
             Selector.make("getInt(I)I"), // 8
             Selector.make("getJSONArray(I)Lorg/json/JSONArray;"), // 9
             Selector.make("getJSONObject(I)Lorg/json/JSONObject;"), // 10
-            Selector.make("getLong(I)S"), // 11
+            Selector.make("getLong(I)J"), // 11
             Selector.make("getString(I)Ljava/lang/String;"), // 12
             Selector.make("hashCode()I"), // 13
             Selector.make("isNull(I)Z"), // 14
@@ -53,20 +53,20 @@ public class JSONArrayFlowModel extends ClassFlowModel{
             Selector.make("optInt(I)I"), // 23
             Selector.make("optJSONArray(I)Lorg/json/JSONArray;"), // 24
             Selector.make("optJSONObject(I)Lorg/json/JSONObject;"), // 25
-            Selector.make("optLong(IS)S"), // 26
-            Selector.make("optLong(I)S"), // 27
+            Selector.make("optLong(IJ)J"), // 26
+            Selector.make("optLong(I)J"), // 27
             Selector.make("optString(ILjava/lang/String;)Ljava/lang/String;"), // 28
             Selector.make("optString(I)Ljava/lang/String;"), // 29
             Selector.make("put(I)Lorg/json/JSONArray;"), // 30
-            Selector.make("put(S)Lorg/json/JSONArray;"), // 31
+            Selector.make("put(J)Lorg/json/JSONArray;"), // 31
             Selector.make("put(IZ)Lorg/json/JSONArray;"), // 32
             Selector.make("put(D)Lorg/json/JSONArray;"), // 33
             Selector.make("put(ILjava/lang/Object;)Lorg/json/JSONArray;"), // 34
-            Selector.make("put(IS)Lorg/json/JSONArray;"), // 35
+            Selector.make("put(IJ)Lorg/json/JSONArray;"), // 35
             Selector.make("put(II)Lorg/json/JSONArray;"), // 36
             Selector.make("put(Z)Lorg/json/JSONArray;"), // 37
             Selector.make("put(ID)Lorg/json/JSONArray;"), // 38
-            Selector.make("put(IS)Lorg/json/JSONArray;"), // 39
+            Selector.make("put(IJ)Lorg/json/JSONArray;"), // 39
             Selector.make("put(Ljava/lang/Object;)Lorg/json/JSONArray;"), // 40
             Selector.make("remove(I)Ljava/lang/Object;"), // 41
             Selector.make("toJSONObject(Lorg/json/JSONArray;)Lorg/json/JSONObject;"), // 42
