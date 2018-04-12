@@ -121,7 +121,7 @@ public class TypeBasedBuiltinModeler{
 
         if(c == null){
             logs.add("The class does not exist: " + sc);
-            return null;
+            return sc;
         }
 
         if(c.isAbstract() && !c.isInterface()){
@@ -183,6 +183,7 @@ public class TypeBasedBuiltinModeler{
             final int newElePC = newM.getNextProgramCounter();
             final SSAValue newEleV = new SSAValue(ssaNo++, m.getReturnType().getArrayElementType(), mRef);
             final NewSiteReference eleNSR = NewSiteReference.make(newElePC, findConcreteSubClass(cha, m.getReturnType().getArrayElementType()));
+
             final SSAInstruction newEleInst = instructionFactory.NewInstruction(newElePC, newEleV, eleNSR);
             newM.addStatement(newEleInst);
 

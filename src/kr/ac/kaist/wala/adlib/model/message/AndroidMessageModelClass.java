@@ -59,7 +59,7 @@ public class AndroidMessageModelClass extends ModelClass {
         initField();
         addMethod(this.clinit());
 
-        cha.remove(ANDROID_MESSAGE_MODEL_CLASS);
+//        cha.remove(ANDROID_MESSAGE_MODEL_CLASS);
         this.setSuperClass(oriClass.getSuperclass());
         cha.addClass(this);
     }

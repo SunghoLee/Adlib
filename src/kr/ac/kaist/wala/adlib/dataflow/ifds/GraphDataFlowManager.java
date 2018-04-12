@@ -54,7 +54,7 @@ public class GraphDataFlowManager {
         this.seManager = seManager;
         this.pa = pa;
         flowFun = new AliasAwareFlowFunction(supergraph, pa);
-        modelHandler = new FlowModelHandler(pa.getClassHierarchy());
+        modelHandler = new FlowModelHandler(pa.getClassHierarchy(), flowFun.getAliasHandler());
         builtinPolicy = new BuiltinFlowPropagationModel();
     }
 

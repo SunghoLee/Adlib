@@ -8,6 +8,7 @@ import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.AliasHandler;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.ClassFlowModel;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.MethodFlowModel;
@@ -20,8 +21,8 @@ import java.util.*;
 public class MaliciousFlowModelHandler extends FlowModelHandler {
     private static TypeReference ModelingClassTR = TypeReference.findOrCreateClass(ClassLoaderReference.Application, "Lmodel/malicious/flow","MaliciousFlowModel");
 
-    public MaliciousFlowModelHandler(Set<MaliciousPatternChecker.MaliciousPattern> mps, IClassHierarchy cha) {
-        super(cha);
+    public MaliciousFlowModelHandler(Set<MaliciousPatternChecker.MaliciousPattern> mps, IClassHierarchy cha, AliasHandler aliasHandler) {
+        super(cha, aliasHandler);
         List<ClassFlowModel> pModels =  Arrays.asList(super.models);
         List<ClassFlowModel> nModels = new ArrayList<>();
         nModels.addAll(pModels);

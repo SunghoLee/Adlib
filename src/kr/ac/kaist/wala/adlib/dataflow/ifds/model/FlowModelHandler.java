@@ -8,6 +8,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.AliasHandler;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.DataFact;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.DefaultDataFact;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.LocalDataFact;
@@ -28,10 +29,12 @@ public class FlowModelHandler {
     protected ClassFlowModel[] models;
     private static boolean SUB_CLASS_FLAG = true;
     private final IClassHierarchy cha;
+    private final AliasHandler aliasHandler;
 
-    public FlowModelHandler(IClassHierarchy cha){
+    public FlowModelHandler(IClassHierarchy cha, AliasHandler aliasHandler){
         init(cha);
         this.cha = cha;
+        this.aliasHandler = aliasHandler;
     }
 
     private void init(IClassHierarchy cha){
@@ -148,28 +151,13 @@ public class FlowModelHandler {
                         var = invokeInst.getUse(i);
 
                     for(Field newF : handleField(mfm.getReference(), i, newFs)) {
-                        res.add(new LocalDataFact(curNode, var, newF));
+                        DataFact newFact = new LocalDataFact(curNode, var, newF);
+                        res.add(newFact);
+
+                        if(mfm.isMutable() && i == MethodFlowModel.RECEIVERV){
+                            res.addAll(aliasHandler.findAlias(curNode, newFact));
+                        }
                     }
-//                    if (i == MethodFlowModel.RETV) {
-//                        if (isArrayType(mfm.getReference(), i)) {
-//                            for (Field newF : newFs)
-//                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
-//                        } else {
-//                            for (Field newF : newFs)
-//                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), newF));
-//                        }
-//                    } else if (i == MethodFlowModel.RECEIVERV) {
-//                        for (Field newF : newFs)
-//                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), newF));
-//                    } else {
-//                        if (isArrayType(mfm.getReference(), i)) {
-//                            for (Field newF : newFs)
-//                                res.add(new LocalDataFact(curNode, invokeInst.getUse(i), FieldSeq.make(SingleField.make("["), newF)));
-//                        }else{
-//                            for (Field newF : newFs)
-//                                res.add(new LocalDataFact(curNode, invokeInst.getUse(i), newF));
-//                        }
-//                    }
                 }
             }
         }else if(dfact instanceof DefaultDataFact){
@@ -194,25 +182,13 @@ public class FlowModelHandler {
                             var = invokeInst.getUse(i);
 
                         for(Field newF : handleField(mfm.getReference(), i, newFs)) {
-                            res.add(new LocalDataFact(curNode, var, newF));
-                        }
+                            DataFact newFact = new LocalDataFact(curNode, var, newF);
+                            res.add(newFact);
 
-//                        if (i == MethodFlowModel.RETV) {
-//                            if (isArrayType(mfm.getReference(), i)) {
-//                                for (Field newF : newFs)
-//                                    res.add(new LocalDataFact(curNode, invokeInst.getDef(), FieldSeq.make(SingleField.make("["), newF)));
-//                            } else
-//                                res.add(new LocalDataFact(curNode, invokeInst.getDef(), NoneField.getInstance()));
-//                        } else if (i == MethodFlowModel.RECEIVERV)
-//                            res.add(new LocalDataFact(curNode, invokeInst.getUse(0), NoneField.getInstance()));
-//                        else {
-//                            if (isArrayType(mfm.getReference(), i)) {
-//                                for (Field newF : newFs)
-//                                    res.add(new LocalDataFact(curNode, invokeInst.getUse(i), FieldSeq.make(SingleField.make("["), newF)));
-//                            }else{
-//                                res.add(new LocalDataFact(curNode, invokeInst.getUse(i), NoneField.getInstance()));
-//                            }
-//                        }
+                            if(mfm.isMutable() && i == MethodFlowModel.RECEIVERV){
+                                res.addAll(aliasHandler.findAlias(curNode, newFact));
+                            }
+                        }
                     }
                 }
             }

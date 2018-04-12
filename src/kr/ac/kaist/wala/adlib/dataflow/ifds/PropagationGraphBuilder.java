@@ -23,7 +23,7 @@ public class PropagationGraphBuilder {
         PropagationPoint prePP = PropagationPoint.make(pre.getToNode(), pre.getToFact());
         PropagationPoint postPP = PropagationPoint.make(to.getToNode(), to.getToFact());
 
-        if(pre.toString().contains("ExplodedBlock[236](original:BB(Handler)[SSA]94 - com.supersonicads.sdk.precache.DownloadManager$FileWorkerThread.downloadContent(Ljava/lang/String;I)Lcom/supersonicads/sdk/precache/DownloadManager$Result;) [ Node: < Application, Lcom/supersonicads/sdk/precache/DownloadManager$FileWorkerThread, downloadContent(Ljava/lang/String;I)Lcom/supersonicads/sdk/precache/DownloadManager$Result; > Context: FirstMethodContextPair: [First: < Application, Lcom/supersonicads/sdk/controller/SupersonicWebView$JSInterface, saveFile(Ljava/lang/String;)V >] : Everywhere [ 38 ] F( [.$ ) ] at I: null")){
+        if(pre.toString().contains("qwdvszef")){
             System.out.println("#FROM: " + prePP);
             System.out.println("#TO: " + postPP);
             try {

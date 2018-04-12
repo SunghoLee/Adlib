@@ -168,6 +168,15 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
                     SymbolTable symTab = node.getIR().getSymbolTable();
                     IField f = getClassHierarchy().resolveField(field);
 
+                    if(f == null){
+                        ClassHierarchy c;
+                        System.out.println("#C: " + cha.lookupClass(field.getDeclaringClass()));
+                        for(IField ff : cha.lookupClass(field.getDeclaringClass()).getAllFields()){
+                            System.out.println("\t#F: " + ff + "\t" + cha.resolveField(ff.getReference()));
+                        }
+                        Assertions.UNREACHABLE("The field does not exist: " + field);
+                    }
+
                     if(symTab.isIntegerConstant(rval)) {
                         if(node.getMethod().getDeclaringClass().getClassLoader().equals(ClassLoaderReference.Application)) {
                             if (isStatic) {

@@ -37,6 +37,10 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         return fcHandler.isCompatible(field, tr);
     }
 
+    public AliasHandler getAliasHandler(){
+        return this.aliasHandler;
+    }
+
     @Override
     public Set<DataFact> visitGoto(CGNode n, SSAGotoInstruction instruction, DataFact fact) {
         return Collections.singleton(fact);

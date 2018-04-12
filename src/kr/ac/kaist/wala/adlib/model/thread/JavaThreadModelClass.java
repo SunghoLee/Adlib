@@ -55,7 +55,7 @@ public class JavaThreadModelClass extends ModelClass {
         this.addMethod(this.clinit());
 
         //TODO: Solve the subclass problem: all subclasses must point to this new Thread class as their super class.
-        cha.remove(JAVA_THREAD_MODEL_CLASS);
+//        cha.remove(JAVA_THREAD_MODEL_CLASS);
         cha.addClass(this);
     }
 

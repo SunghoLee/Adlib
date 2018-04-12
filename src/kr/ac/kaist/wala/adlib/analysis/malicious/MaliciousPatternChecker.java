@@ -43,9 +43,11 @@ public class MaliciousPatternChecker {
     private final IFDSAnalyzer ifds;
     private final Set<Pair<CGNode, Integer>> seeds = new HashSet<>();
     private final CallGraph cg;
+    private final PointerAnalysis<InstanceKey> pa;
 
     public MaliciousPatternChecker(CallGraph cg, PointerAnalysis<InstanceKey> pa){
         this.cg = cg;
+        this.pa = pa;
         icfg = ICFGSupergraph.make(cg, new AnalysisCache());
         ifds = new IFDSAnalyzer(icfg, pa);
         cha = cg.getClassHierarchy();
@@ -216,7 +218,7 @@ public class MaliciousPatternChecker {
      * @return possible malicious patterns that exist in the super graph
      */
     public Set<MaliciousPatternWarning> checkPatterns(){
-        MaliciousFlowModelHandler mfmh = new MaliciousFlowModelHandler(mps, cha);
+        MaliciousFlowModelHandler mfmh = new MaliciousFlowModelHandler(mps, cha, new AliasHandler(icfg, pa));
         List<String> warn = new ArrayList<>();
 
         ifds.setModelHandler(mfmh);
@@ -241,19 +243,26 @@ public class MaliciousPatternChecker {
 
                 PathFinder pf = new PathFinder(cg, icfg, cha, graph);
 
-                PropagationPoint seedPP = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], ((var == IFlowFunction.ANY)? DataFact.DEFAULT_FACT : new LocalDataFact(n, var, NoneField.getInstance())));
+                PropagationPoint[] seedPPs = new PropagationPoint[((var == IFlowFunction.ANY)? 1 : 2)];
+                seedPPs[0] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], DataFact.DEFAULT_FACT);
+
+                if(var != IFlowFunction.ANY)
+                    seedPPs[1] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], new LocalDataFact(n, var, NoneField.getInstance()));
+
                 for(MaliciousPattern mp : mps) {
-                    Set<PathFinder.Path> paths = pf.findPaths(seedPP, mp);
-                    if (paths.size() != 0) {
-                        for(PathFinder.Path path : paths) {
-                            boolean isMatched = path.isMatched();
-                            warn.add("======");
-                            warn.add("SEED: " + n + " [ " + var + " ]");
-                            String fn = mp.patternName + "_I_" + (index++);
-                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
-                            String svgF = GraphUtil.convertDotToSvg(dotF);
-                            warn.add("\t - The flows are printed in " + svgF + "\t( " + isMatched + " )");
-                            warn.add("======");
+                    for(PropagationPoint seedPP : seedPPs) {
+                        Set<PathFinder.Path> paths = pf.findPaths(seedPP, mp);
+                        if (paths.size() != 0) {
+                            for (PathFinder.Path path : paths) {
+                                boolean isMatched = path.isMatched();
+                                warn.add("======");
+                                warn.add("SEED: " + n + " [ " + var + " ]");
+                                String fn = mp.patternName + "_I_" + (index++);
+                                String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
+                                String svgF = GraphUtil.convertDotToSvg(dotF);
+                                warn.add("\t - The flows are printed in " + svgF + "\t( " + isMatched + " )");
+                                warn.add("======");
+                            }
                         }
                     }
                 }
@@ -309,7 +318,7 @@ public class MaliciousPatternChecker {
 
         @Override
         public String toString(){
-            return tn.toString() + " . " + s.toString();
+            return tn.toString() + " . " + s.toString() + "\t" + f;
         }
 
         public boolean isSame(APICallNode n, IClassHierarchy cha){

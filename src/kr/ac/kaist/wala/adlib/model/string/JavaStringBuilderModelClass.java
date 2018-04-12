@@ -104,17 +104,35 @@ public class JavaStringBuilderModelClass extends ModelClass {
         initMethodsForHandler();
 
         this.addMethod(this.clinit());
-        cha.remove(JAVA_STRINGBUILDER_MODEL_CLASS);
+//        cha.remove(JAVA_STRINGBUILDER_MODEL_CLASS);
         cha.addClass(this);
     }
 
     private void initMethodsForHandler(){
         for(Selector s : mSelectors){
             if(s.getDescriptor().getReturnType().equals(JAVA_STRINGBUILDER_MODEL_CLASS.getName())) {
-
-                addMethod(unconditionalRetNewString(s));
+                if(s.toString().startsWith("insert") || s.toString().startsWith("append"))
+                    addMethod(retThisString(s));
+                else
+                    addMethod(unconditionalRetNewString(s));
             }
         }
+    }
+
+    private SummarizedMethod retThisString(Selector s) {
+        final MethodReference newStrRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary newStr = new VolatileMethodSummary(new MethodSummary(newStrRef));
+        newStr.setStatic(false);
+
+        final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
+
+        final SSAValue strV = new SSAValue(1, JAVA_STRINGBUILDER_MODEL_CLASS, newStrRef);
+
+        final int retPC = newStr.getNextProgramCounter();
+        final SSAInstruction retInst = instructionFactory.ReturnInstruction(retPC, strV);
+        newStr.addStatement(retInst);
+
+        return new SummarizedMethodWithNames(newStrRef, newStr, this);
     }
 
     private SummarizedMethod unconditionalRetNewString(Selector s) {

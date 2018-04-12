@@ -115,7 +115,7 @@ public class JavaStringModelClass extends ModelClass {
         initMethodsForHandler();
 
         this.addMethod(this.clinit());
-        cha.remove(JAVA_STRING_MODEL_CLASS);
+//        cha.remove(JAVA_STRING_MODEL_CLASS);
         cha.addClass(this);
     }
 

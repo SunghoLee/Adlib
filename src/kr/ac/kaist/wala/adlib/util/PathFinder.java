@@ -11,7 +11,6 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.types.*;
 import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.debug.Assertions;
-import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
@@ -39,21 +38,28 @@ public class PathFinder {
         this.pg = pg;
     }
 
+    boolean debug = false;
+    boolean pd = false;
     public Set<Path> findPaths(PropagationPoint seed, MaliciousPatternChecker.MaliciousPattern mp){
         Set<List<PropagationPoint>> res = new HashSet<>();
-
         List<PropagationPoint> initPath = new ArrayList<>();
         initPath.add(seed);
         res.add(initPath);
         for(MaliciousPatternChecker.MaliciousPoint mmp : mp.getPoints()){
+            if(debug)
+                System.out.println("#TRY? " + mmp);
             Set<List<PropagationPoint>> newS = new HashSet<>();
             for(List<PropagationPoint> prevPath : res){
                 for(PropagationPoint pp : convertMPtoPPs(mmp)){
                     PropagationPoint prev = prevPath.get(0);
-                    BFSPathFinder<PropagationPoint> pf = new BFSPathFinder<>(pg, prev, pp);
-                    List<PropagationPoint> path = pf.find();
-//                    List<PropagationPoint> path = find(prev, pp);
+//                    BFSPathFinder<PropagationPoint> pf = new BFSPathFinder<>(pg, prev, pp);
+//                    List<PropagationPoint> path = pf.find();
+                    List<PropagationPoint> path = find(prev, pp);
                     if(path != null){
+                        if(debug){
+                            System.out.println("\t\t#MATCH!!! : " + pp);
+                            System.out.println("\t\t\tFrom : " + prev);
+                        }
                         pp.setTarget();
                         List<PropagationPoint> nPath = copy(path);
                         nPath.remove(nPath.size()-1);
@@ -75,7 +81,8 @@ public class PathFinder {
         for(List<PropagationPoint> path : res){
             resPath.add(new Path(path));
         }
-
+        pd = false;
+        debug = false;
         return resPath;
     }
 
@@ -258,6 +265,11 @@ public class PathFinder {
             while (children.hasNext()) {
                 PropagationPoint c = children.next();
                 if (!history.containsKey(c)) {
+                    if(pd){
+                        System.out.println("#FROM: \n\t" + N);
+                        System.out.println("#TO: \n\t" + c);
+                        System.out.println();
+                    }
                     Q.addLast(c);
                     history.put(c, N);
                 }

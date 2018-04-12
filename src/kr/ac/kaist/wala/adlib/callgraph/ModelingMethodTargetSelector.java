@@ -13,6 +13,8 @@ import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelCla
 import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
+import kr.ac.kaist.wala.adlib.model.string.JavaAbstractStringBuilderModelClass;
+import kr.ac.kaist.wala.adlib.model.string.JavaStringBuilderModelClass;
 import kr.ac.kaist.wala.adlib.model.thread.*;
 
 /**
@@ -48,7 +50,8 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                 AndroidActivityModelClass.getInstance(cha),
 //                JavaStringModelClass.getInstance(cha),
 //                JavaStringBufferModelClass.getInstance(cha),
-//                JavaStringBuilderModelClass.getInstance(cha),
+                JavaStringBuilderModelClass.getInstance(cha),
+                JavaAbstractStringBuilderModelClass.getInstance(cha),
         };
     }
 
@@ -69,18 +72,18 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                         }
                     }
                 } else {
-                    if (baseM.getDeclaringClass().getName().equals(c.getName()))
+                    if (baseM.getDeclaringClass().getName().equals(c.getName())) {
                         for (IMethod m : c.getModeledMethods()) {
                             if (m.getSelector().equals(baseM.getSelector())) {
                                 return m;
                             }
                         }
+                    }
                 }
             }
 
             if(receiver != null){
                 ModelClass modelClass = modeler.getClass(baseM.getDeclaringClass());
-
                 if(modelClass != null) {
                     IMethod m = modelClass.getMethod(site.getDeclaredTarget().getSelector());
 
@@ -96,7 +99,6 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
             }else if(isStatic){
                 IClass staticKlass = cha.lookupClass(site.getDeclaredTarget().getDeclaringClass());
                 ModelClass mc = modeler.getClass(staticKlass);
-
                 if(mc != null) {
                     for (IMethod m : mc.getDeclaredMethods()) {
                         if (m.isStatic() && m.getSelector().equals(site.getDeclaredTarget().getSelector())) {

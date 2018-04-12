@@ -20,6 +20,7 @@ public class MethodFlowModel {
     private final int[] from;
     private final int[] to;
     private final MethodReference ref;
+    private boolean isMutable = false;
 
     // 0 is for receivers, and other positive number represents indexes of arguments.
     public static MethodFlowModel make(MethodReference ref, int[] from, int[] to){
@@ -33,10 +34,38 @@ public class MethodFlowModel {
         return new MethodFlowModel(ref, from, to);
     }
 
+    // 0 is for receivers, and other positive number represents indexes of arguments.
+    public static MethodFlowModel make(MethodReference ref, int[] from, int[] to, boolean isMutable){
+        for(int f : from)
+            if(ref.getNumberOfParameters() < f)
+                Assertions.UNREACHABLE("Unexpected flow FROM argument number: " + f + " in " + ref);
+        for(int t : to)
+            if(ref.getNumberOfParameters() < t)
+                Assertions.UNREACHABLE("Unexpected flow FROM argument number: " + t + " in " + ref);
+
+        if(isMutable) {
+            boolean hasReceiver = false;
+
+            for (int f : to) {
+                if (f == 0)
+                    hasReceiver = true;
+            }
+            if(!hasReceiver){
+                Assertions.UNREACHABLE("Mutable method model must have a receiver as to : " + ref);
+            }
+        }
+        return new MethodFlowModel(ref, from, to, isMutable);
+    }
+
     MethodFlowModel(MethodReference ref, int[] from, int[] to){
         this.ref = ref;
         this.from = from;
         this.to = to;
+    }
+
+    MethodFlowModel(MethodReference ref, int[] from, int[] to, boolean isMutable){
+        this(ref, from, to);
+        this.isMutable = isMutable;
     }
 
     public MethodReference getReference(){
@@ -81,5 +110,9 @@ public class MethodFlowModel {
     @Override
     public String toString(){
         return "[FlowModel] " + ref;
+    }
+
+    public boolean isMutable(){
+        return this.isMutable;
     }
 }

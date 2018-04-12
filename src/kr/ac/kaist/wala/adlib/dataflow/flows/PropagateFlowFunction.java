@@ -44,4 +44,9 @@ public class PropagateFlowFunction extends IdentityFlowFunction {
             return to;
         return super.match(inst, v);
     }
+
+    @Override
+    public String toString(){
+        return "( " + from + " -> " + to + " )";
+    }
 }
