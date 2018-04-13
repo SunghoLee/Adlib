@@ -52,6 +52,7 @@ public class FlowModelHandler {
                 JSONTokenerFlowModel.getInstance(cha),
                 JSONObjectFlowModel.getInstance(cha),
                 JSONArrayFlowModel.getInstance(cha),
+                ArraysFlowModel.getInstance(cha),
         };
     }
 

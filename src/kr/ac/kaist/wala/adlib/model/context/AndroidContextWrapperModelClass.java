@@ -274,7 +274,7 @@ public class AndroidContextWrapperModelClass extends ModelClass {
                     ssV = new SSAValue(ssaNo++, uiTR, getSSRef);
                     break;
                 case VIBRATOR_SERVICE_MANAGER:
-                    final TypeReference vibratorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/os/Vibrator");
+                    final TypeReference vibratorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/os/SystemVibrator");
                     ssNewSiteRef = NewSiteReference.make(newPC, vibratorTR);
                     ssV = new SSAValue(ssaNo++, vibratorTR, getSSRef);
                     break;

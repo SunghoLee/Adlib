@@ -81,8 +81,10 @@ public class CallGraphBuilderForHybridSDK {
 //
 //        while(iC.hasNext()){
 //            IClass k = iC.next();
-//            if(k.toString().contains("Stub")){
+//            if(k.toString().contains("Vibrator")){
 //                System.out.println("K: " + k);
+//                for(IClass sub : cha.computeSubClasses(k.getReference()))
+//                    System.out.println("\tS: " + sub + "\t" + sub.isAbstract());
 //            }
 //        }
 //        System.exit(-1);
@@ -250,7 +252,7 @@ public class CallGraphBuilderForHybridSDK {
         public InstanceKey getInstanceKeyForAllocation(CGNode node, NewSiteReference allocation) {
             if (options.getClassTargetSelector() == null)
                 Assertions.UNREACHABLE("Must set a ClassTargetSelector to use SelectiveClassBasedInstanceKey");
-
+            
             IClass klass = options.getClassTargetSelector().getAllocatedTarget(node, allocation);
 
             if (klass != null) {

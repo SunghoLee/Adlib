@@ -183,7 +183,7 @@ public class JSONObjectFlowModel extends ClassFlowModel{
             }else if(s.equals(selectors[40])){ // toJSONArray(Lorg/json/JSONArray;)Lorg/json/JSONArray;
                 mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_OBJ_GET + "." + JSONArrayFlowModel.JSON_ARRAY_GET));
             }else if(s.equals(selectors[41])){ // toString()Ljava/lang/String;
-                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_OBJ_GET));
+                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-*"));
             }else if(s.equals(selectors[42])){ // wrap(Ljava/lang/Object;)Ljava/lang/Object;
                 mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}));
             }

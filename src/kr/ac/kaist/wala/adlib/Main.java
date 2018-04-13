@@ -13,6 +13,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ssa.IR;
 import com.ibm.wala.ssa.SSAInstruction;
 import com.ibm.wala.ssa.SSAOptions;
+import com.ibm.wala.ssa.SSAPhiInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
 import kr.ac.kaist.wala.adlib.analysis.APITarget;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
@@ -99,6 +100,17 @@ public class Main {
 //        } catch (InfeasiblePathException e) {
 //            e.printStackTrace();
 //        }
+//        for(CGNode n : cg){
+//            if(n.toString().contains("Node: < Application, Lcom/millennialmedia/internal/JSBridge, invokeCallback(Ljava/lang/String;[Ljava/lang/Object;)V > Context: FirstMethodContextPair: [First: < Application, Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS, location(Ljava/lang/String;)V >] : Everywhere")){
+//                Iterator<SSAPhiInstruction> iInst = (Iterator<SSAPhiInstruction>) n.getIR().iteratePhis();
+//                System.out.println("#HN?: " + iInst.hasNext());
+//                while(iInst.hasNext()){
+//                    System.out.println("#Phi: " + iInst.next());
+//                }
+//            }
+//        }
+//
+//        System.in.read();
 
         if(DEBUG) {
             String name = "ir_test";
@@ -135,7 +147,7 @@ public class Main {
             }
 //System.exit(-1);
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
-//            padebugger.debug();
+//	                padebugger.debug();
         }
 
         APITarget.set(cg.getClassHierarchy());

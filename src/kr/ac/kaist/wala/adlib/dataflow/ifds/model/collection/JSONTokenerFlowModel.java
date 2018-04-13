@@ -99,7 +99,7 @@ public class JSONTokenerFlowModel extends ClassFlowModel{
             }else if(s.equals(selectors[13])){ // syntaxError(Ljava/lang/String;)Lorg/json/JSONException;
                 mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{}));
             }else if(s.equals(selectors[14])){ // toString()Ljava/lang/String;
-                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_TOKEN_NEXT));
+                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-*"));
             }
         }
 

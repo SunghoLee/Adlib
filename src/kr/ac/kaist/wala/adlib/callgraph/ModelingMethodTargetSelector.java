@@ -39,6 +39,7 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                 AndroidAlertDialogBuilderModelClass.getInstance(cha),
                 AndroidHandlerModelClass.getInstance(cha),
                 JavaReferenceModelClass.getInstance(cha),
+                JavaWeakReferenceModelClass.getInstance(cha),
                 JavaTimerModelClass.getInstance(cha),
                 JavaThreadModelClass.getInstance(cha),
                 JavaThreadPoolExecutorModelClass.getInstance(cha),

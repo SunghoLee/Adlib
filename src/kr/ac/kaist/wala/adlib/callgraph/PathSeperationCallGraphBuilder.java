@@ -27,6 +27,7 @@ import com.ibm.wala.util.warnings.Warnings;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethod;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

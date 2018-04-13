@@ -4,6 +4,7 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.debug.Assertions;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 
 import java.util.HashSet;
@@ -51,7 +52,9 @@ public final class FineGrainedMethodFlowModel extends MethodFlowModel {
                     newField = newField.substring(1);
                     if (newF.isMatched(newField)) {
                         nexts.addAll(newF.pop(newField));
-                    } else {
+                    } else if(newField.equals("*")){
+                        nexts.add(NoneField.getInstance());
+                    } else{
                         // no-op: this field is not possible to be matched with the model's field.
 //                    Assertions.UNREACHABLE("The field is not matched with this F: \n\t @ Field: " + newF + "\n\t @ minField: " + field);
 //                        return null;

@@ -132,7 +132,7 @@ public class JSONArrayFlowModel extends ClassFlowModel{
             }else if(s.equals(selectors[14])){ // isNull(I)Z
                 mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{}));
             }else if(s.equals(selectors[15])){ // join(Ljava/lang/String;)Ljava/lang/String;
-                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_ARRAY_GET));
+                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-*"));
             }else if(s.equals(selectors[16])){ // length()I
                 mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{}));
             }else if(s.equals(selectors[17])){ // opt(I)Ljava/lang/Object;
@@ -188,9 +188,9 @@ public class JSONArrayFlowModel extends ClassFlowModel{
             }else if(s.equals(selectors[42])){ // toJSONObject(Lorg/json/JSONArray;)Lorg/json/JSONObject;
                 mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_ARRAY_GET + "." + JSONObjectFlowModel.JSON_OBJ_GET));
             }else if(s.equals(selectors[43])){ // toString()Ljava/lang/String;
-                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_ARRAY_GET));
+                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-*"));
             }else if(s.equals(selectors[44])){ // toString(I)Ljava/lang/String;
-                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-" + JSON_ARRAY_GET));
+                mList.add(FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(c.getReference(), s), new int[]{0}, new int[]{MethodFlowModel.RETV}, "-*"));
             }
         }
 
