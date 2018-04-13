@@ -615,11 +615,9 @@ public abstract class SSAPropagationCallGraphBuilder extends PropagationCallGrap
     protected boolean hasNoInterestingUses(int vn) {
       return getBuilder().hasNoInterestingUses(node, vn, du);
     }
-
     protected boolean isRootType(IClass klass) {
       return getBuilder().isRootType(klass);
     }
-
     /*
      * @see com.ibm.wala.ssa.SSAInstruction.Visitor#visitArrayLoad(com.ibm.wala.ssa.SSAArrayLoadInstruction)
      */
@@ -952,6 +950,7 @@ public abstract class SSAPropagationCallGraphBuilder extends PropagationCallGrap
       assert !f.getFieldTypeReference().isPrimitiveType();
       PointerKey refKey = getPointerKeyForLocal(ref);
       PointerKey rvalKey = getPointerKeyForLocal(rval);
+
       // if (!supportFullPointerFlowGraph &&
       // contentsAreInvariant(rval)) {
       if (contentsAreInvariant(symbolTable, du, rval)) {
@@ -1700,7 +1699,6 @@ public abstract class SSAPropagationCallGraphBuilder extends PropagationCallGrap
       // did evaluating the dispatch operation add a new possible target
       // to the call site?
       final MutableBoolean addedNewTarget = new MutableBoolean();
-
       final MutableIntSet receiverVals;
       if (constParams != null && constParams[0] != null) {
         receiverVals = IntSetUtil.make();

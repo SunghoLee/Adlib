@@ -98,7 +98,7 @@ public class Shell {
 				System.out.println("## " + targetPath);
 				File analysisfile = new File(targetPath);
 				URL url = analysisfile.toURI().toURL();
-				// Setting WALA analyzer
+				// Setting WALA analysis
 				CAstRhinoTranslatorFactory translatorFactory = new CAstRhinoTranslatorFactory();
 				JSCallGraphUtil.setTranslatorFactory(translatorFactory);
 				// make actual file name and directory

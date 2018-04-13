@@ -150,6 +150,8 @@ public abstract class SSANewInstruction extends SSAInstruction {
   public int getUse(int j) {
     assert params != null : "expected params but got null in " + this.toString();
     assert params.length > j : "found too few parameters";
+    if(params == null)
+      System.out.println("\t\t=>" + this);
     return params[j];
   }
 

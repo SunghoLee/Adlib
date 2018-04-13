@@ -127,6 +127,7 @@ public class Visualizer {
 		fromTo.clear();
 		shapeMap.clear();
 		edgeLabelMap.clear();
+		colorMap.clear();
 		type = null;
 		nodeIndex = 1;
 	}

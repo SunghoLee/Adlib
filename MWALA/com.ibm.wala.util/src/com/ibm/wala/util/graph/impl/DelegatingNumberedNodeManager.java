@@ -10,12 +10,12 @@
  *******************************************************************************/
 package com.ibm.wala.util.graph.impl;
 
-import java.util.Iterator;
-
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.INodeWithNumber;
 import com.ibm.wala.util.graph.NumberedNodeManager;
 import com.ibm.wala.util.intset.IntSet;
+
+import java.util.Iterator;
 
 /**
  * Basic implementation of a numbered graph -- this implementation relies on nodes that carry numbers and edges.
