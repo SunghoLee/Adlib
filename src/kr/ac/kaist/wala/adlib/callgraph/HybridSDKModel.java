@@ -3,6 +3,7 @@ package kr.ac.kaist.wala.adlib.callgraph;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dalvik.ipa.callgraph.impl.AndroidEntryPoint;
+import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.types.*;
@@ -31,15 +32,15 @@ public class HybridSDKModel {
 
 
     //Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS . vibrate(Ljava/lang/String;)V
-    public static boolean TEST_MODE = true;
-//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("storePicture(Ljava/lang/String;)V"));
-//        public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("open(Ljava/lang/String;)V"));
+    public static boolean TEST_MODE = false;
+    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("storePicture(Ljava/lang/String;)V"));
+//        public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/suyduu/guzqhq288899/VpaidLayout$VPaidWebView$a"), Selector.make("eventReceived(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("shouldEnableCloseRegion(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/nativex/monetization/mraid/JSIAdToDevice"), Selector.make("setPageSize(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lkr/ac/kaist/wala/hybridroid/branchsample/JSBridge"), Selector.make("deleteFile(Ljava/lang/String;)V"));
 //    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/smaato/soma/internal/connector/OrmmaBridge"), Selector.make("storePicture(Ljava/lang/String;)V"));
 //public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/inmobi/rendering/a"), Selector.make("saveContent(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"));
-    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS"), Selector.make("vibrate(Ljava/lang/String;)V"));
+//    public static MethodReference TEST_BRIDGE_METHOD = MethodReference.findOrCreate(TypeReference.findOrCreate(ClassLoaderReference.Application, "Lcom/millennialmedia/internal/JSBridge$JSBridgeMMJS"), Selector.make("vibrate(Ljava/lang/String;)V"));
     //Lcom/tapjoy/mraid/controller/Assets
     /**
      * Find entry points in a SDK. The entry points consists of init instructions, Activity lifecycles, and bridge methdos.
@@ -54,7 +55,7 @@ public class HybridSDKModel {
         Thread t;
         HybriDroidDriver driver = new HybriDroidDriver(prop, cha);
         Set<BridgeClass> bridges = driver.getBridgeClassesViaAnn();
-
+        ConstantKey a;
         // attach bridge methods invocation to entry model
         for(BridgeClass bridge : bridges){
                 for(BridgeClass.BridgeMethod m : bridge.getAccessibleMethods()){

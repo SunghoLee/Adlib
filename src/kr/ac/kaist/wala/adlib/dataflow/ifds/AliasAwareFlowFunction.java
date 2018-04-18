@@ -54,7 +54,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             }
             return res;
         }
-        Assertions.UNREACHABLE("Cannot reach here! : " + factField);
+        //Assertions.UNREACHABLE("Cannot reach here! : " + factField);
         return Collections.emptySet();
     }
 
@@ -74,10 +74,14 @@ public class AliasAwareFlowFunction implements IFlowFunction {
          * 2-1. the instruction is a static get, and
          * 2-2. the get instruction has a same field reference with the data fact.
          */
-        if(fact instanceof LocalDataFact &&
-                ((LocalDataFact) fact).getVar() == instruction.getArrayRef()) {
-            res.addAll(getField(n, "[", fact.getField(), instruction.getDef()));
-
+        if(fact instanceof LocalDataFact){
+            if(((LocalDataFact) fact).getVar() == instruction.getArrayRef()){
+                Set<DataFact> s = getField(n, "[", fact.getField(), instruction.getDef());
+                res.addAll(s);
+            }
+            else if(((LocalDataFact)fact).getVar() == instruction.getIndex() && fact.getField().equals(NoneField.getInstance())) {
+                res.add(new LocalDataFact(n, instruction.getDef(), fact.getField()));
+            }
         }else if(fact instanceof GlobalDataFact)
             return res;
 
@@ -92,6 +96,10 @@ public class AliasAwareFlowFunction implements IFlowFunction {
 
         if(fact instanceof LocalDataFact &&
             ((LocalDataFact) fact).getVar() == instruction.getValue()) {
+
+            // cut spurious path!
+            if(!isCompatible(fact.getField(), instruction.getElementType()))
+                return Collections.emptySet();
 
             //TODO: handle aliases
             DataFact newFact = new LocalDataFact(n, instruction.getArrayRef(), FieldSeq.make(SingleField.make("["), fact.getField()));
@@ -154,7 +162,6 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             // this case is for return-sites
             if(instruction.getUse(0) != ldf.getVar())
                 return Collections.singleton(fact);
-//                Assertions.UNREACHABLE("A local data fact flowed to a conversion operation must be used in the instruction.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
 
             Set<DataFact> res = new HashSet<>();
             res.add(fact);
@@ -227,6 +234,11 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         if(fact instanceof LocalDataFact &&
             !instruction.isStatic() &&
             ((LocalDataFact) fact).getVar() == instruction.getRef()) {
+            FieldReference df = instruction.getDeclaredField();
+
+            // cut spurious path!
+            if(!isCompatible(fact.getField(), df.getDeclaringClass()))
+                return Collections.emptySet();
 
             res.addAll(getField(n, instruction.getDeclaredField(), fact.getField(), instruction.getDef()));
         }else if(fact instanceof GlobalDataFact &&
@@ -238,8 +250,6 @@ public class AliasAwareFlowFunction implements IFlowFunction {
         return res;
     }
 
-    public static boolean DDD = false;
-
     @Override
     public Set<DataFact> visitPut(CGNode n, SSAPutInstruction instruction, DataFact fact) {
         Set<DataFact> res = new HashSet<>();
@@ -249,10 +259,12 @@ public class AliasAwareFlowFunction implements IFlowFunction {
 //        if(instruction.toString().contains("putfield 1.< Primordial, Ljava/lang/Thread, target, <Primordial,Ljava/lang/Runnable> > = 2") && fact.getField().toString().equals("url.$"))
 //            debug = true;
 
-        if(instruction.toString().contains("putfield 1.< Application, Lcom/suyduu/guzqhq288899/VpaidLayout$VPaidWebView$a$5$1, a, <Application,Lcom/suyduu/guzqhq288899/VpaidLayout$VPaidWebView$a$5> > = 2"))
-            DDD = true;
         if(fact instanceof LocalDataFact &&
                 ((LocalDataFact) fact).getVar() == instruction.getVal()) {
+
+            // cut spurious path!
+            if(!isCompatible(fact.getField(), instruction.getDeclaredFieldType()))
+                return Collections.emptySet();
 
             if(instruction.isStatic()){
                 res.add(new GlobalDataFact(instruction.getDeclaredField(), fact.getField()));
@@ -266,7 +278,7 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 }
             }
         }
-        DDD = false;
+
         return res;
     }
 
@@ -327,12 +339,25 @@ public class AliasAwareFlowFunction implements IFlowFunction {
                 }
 
                 //cut this spurious flow!
-                if (!isCompatible)
+                if (!isCompatible) {
                     return Collections.emptySet();
+                }
+            }else{
+                boolean isCompatible = false;
+                for (TypeReference tr : instruction.getDeclaredResultTypes()) {
+                    if(!tr.isArrayType())
+                        isCompatible = true;
+                }
+
+                if (!isCompatible) {
+                    return Collections.emptySet();
+                }
             }
+
+
             Set<DataFact> res = new HashSet<>();
             res.add(fact);
-            res.add(new LocalDataFact(n, instruction.getDef(), fact.getField()));
+            res.add(new LocalDataFact(n, instruction.getDef(), field));
             return res;
         }
 

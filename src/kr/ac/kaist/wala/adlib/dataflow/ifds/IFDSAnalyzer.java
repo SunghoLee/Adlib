@@ -14,7 +14,7 @@ import java.util.Set;
  * Created by leesh on 22/02/2018.
  */
 public class IFDSAnalyzer {
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
 
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
@@ -36,7 +36,6 @@ public class IFDSAnalyzer {
         this.graphManager = new GraphDataFlowManager(supergraph, pa, seManager);
     }
 
-
     public void setModelHandler(FlowModelHandler handler){
         graphManager.setModelHandler(handler);
     }
@@ -45,7 +44,7 @@ public class IFDSAnalyzer {
         if(DEBUG){
 //            if((pe.getFromFact() instanceof DefaultDataFact) == false)
                 System.out.println("\t=> " + pe);
-        }
+	}
         if(!peManager.contains(pe)){
             peManager.propagate(pe);
             workList.put(pe);

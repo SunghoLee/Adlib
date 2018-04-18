@@ -9,6 +9,7 @@ import com.ibm.wala.dalvik.ipa.callgraph.impl.AndroidEntryPoint;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.*;
 import com.ibm.wala.ipa.callgraph.propagation.*;
+import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFAContextSelector;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
@@ -32,13 +33,7 @@ import com.ibm.wala.util.functions.Function;
 import com.ibm.wala.util.strings.Atom;
 import kr.ac.kaist.wala.adlib.InitInstsParser;
 import kr.ac.kaist.wala.adlib.callgraph.context.FirstMethodContextSelector;
-import kr.ac.kaist.wala.adlib.model.TypeBasedBuiltinModeler;
-import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelClass;
-import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
-import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 import kr.ac.kaist.wala.adlib.model.entries.RecursiveParamDefFakeRootMethod;
-import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
-import kr.ac.kaist.wala.adlib.model.thread.*;
 import kr.ac.kaist.wala.hybridroid.models.AndroidHybridAppModel;
 import kr.ac.kaist.wala.hybridroid.utils.LocalFileReader;
 
@@ -191,7 +186,7 @@ public class CallGraphBuilderForHybridSDK {
             }
         };
 
-//        builder.setContextSelector(new FirstMethodContextSelector(new nCFAContextSelector(2, new DefaultContextSelector(options, cha))));
+//        builder.setContextSelector(new FirstMethodContextSelector(new nCFAContextSelector(1, new DefaultContextSelector(options, cha))));
         builder.setContextSelector(new FirstMethodContextSelector(new DefaultContextSelector(options, cha)));
         Set<TypeReference> entryClasses = new HashSet<TypeReference>();
         for (Entrypoint e : entries) {
@@ -252,15 +247,20 @@ public class CallGraphBuilderForHybridSDK {
         public InstanceKey getInstanceKeyForAllocation(CGNode node, NewSiteReference allocation) {
             if (options.getClassTargetSelector() == null)
                 Assertions.UNREACHABLE("Must set a ClassTargetSelector to use SelectiveClassBasedInstanceKey");
-            
+
             IClass klass = options.getClassTargetSelector().getAllocatedTarget(node, allocation);
 
             if (klass != null) {
                 TypeReference allocationType = options.getClassTargetSelector().getAllocatedTarget(node, allocation).getReference();
                 if (instanceTypes.contains(allocationType))
                     return classBased.getInstanceKeyForAllocation(node, allocation);
-                else
-                    return siteBased.getInstanceKeyForAllocation(node, allocation);
+                else {
+                    try {
+                        return siteBased.getInstanceKeyForAllocation(node, allocation);
+                    }catch(NullPointerException e){
+                        return null;
+                    }
+                }
             } else
                 return siteBased.getInstanceKeyForAllocation(node, allocation);
         }

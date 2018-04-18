@@ -22,9 +22,11 @@ import kr.ac.kaist.wala.adlib.analysis.APICallNode;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 import kr.ac.kaist.wala.adlib.util.GraphPrinter;
-import kr.ac.kaist.wala.adlib.util.GraphUtil;
 import kr.ac.kaist.wala.adlib.util.PathFinder;
 import kr.ac.kaist.wala.adlib.util.PathOptimizer;
 
@@ -233,11 +235,19 @@ public class MaliciousPatternChecker {
 
             try {
                 BasicBlockInContext entry = icfg.getEntriesForProcedure(n)[0];
-
+		boolean isArray = false;
                 if(var == kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction.ANY) {
                     res.addAll(ifds.analyze(entry, null));
                 }else{
-                    res.addAll(ifds.analyze(entry, new LocalDataFact(n, var, NoneField.getInstance())));
+		    Field f = NoneField.getInstance();
+                    if(var > 1) {
+                        if(entry.getNode().getMethod().getParameterType(var - 1).isArrayType()){
+                            isArray = true;
+                            f = FieldSeq.make(SingleField.make("["), f);
+		        }
+                    }
+
+                    res.addAll(ifds.analyze(entry, new LocalDataFact(n, var, f)));
                 }
                 PropagationGraph graph = ifds.getPropagationGraph();
 
@@ -247,7 +257,7 @@ public class MaliciousPatternChecker {
                 seedPPs[0] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], DataFact.DEFAULT_FACT);
 
                 if(var != IFlowFunction.ANY)
-                    seedPPs[1] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], new LocalDataFact(n, var, NoneField.getInstance()));
+                    seedPPs[1] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], new LocalDataFact(n, var, ((isArray)? FieldSeq.make(SingleField.make("["), NoneField.getInstance()) : NoneField.getInstance())));
 
                 for(MaliciousPattern mp : mps) {
                     for(PropagationPoint seedPP : seedPPs) {
@@ -259,7 +269,8 @@ public class MaliciousPatternChecker {
                                 warn.add("SEED: " + n + " [ " + var + " ]");
                                 String fn = mp.patternName + "_I_" + (index++);
                                 String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
-                                String svgF = GraphUtil.convertDotToSvg(dotF);
+                                //String svgF = GraphUtil.convertDotToSvg(dotF);
+				                String svgF = fn;
                                 warn.add("\t - The flows are printed in " + svgF + "\t( " + isMatched + " )");
                                 warn.add("======");
                             }

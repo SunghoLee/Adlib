@@ -3,7 +3,6 @@ package kr.ac.kaist.wala.adlib.dataflow.ifds.model;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.Selector;
 import com.ibm.wala.types.TypeReference;
-
 /**
  * Created by leesh on 11/10/2017.
  */
@@ -23,9 +22,11 @@ public class StringFlowModel extends ClassFlowModel{
     @Override
     protected void init() {
         ref = TypeReference.JavaLangString;
-
+        
         methods = new MethodFlowModel[]{
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("<init>()V")), new int[]{}, new int[]{}),
+                MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("<init>([BLjava/lang/String;)V")), new int[]{2}, new int[]{MethodFlowModel.RECEIVERV}),
+                FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("<init>([BLjava/lang/String;)V")), new int[]{1}, new int[]{MethodFlowModel.RECEIVERV},"-["),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("<init>([Z)V")), new int[]{1}, new int[]{MethodFlowModel.RECEIVERV}),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("<init>([ZLjava/nio/charset/Charset;)V")), new int[]{1}, new int[]{MethodFlowModel.RECEIVERV}),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("<init>([ZI)V")), new int[]{1}, new int[]{MethodFlowModel.RECEIVERV}),
@@ -57,6 +58,7 @@ public class StringFlowModel extends ClassFlowModel{
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("equalsIgnoreCase(Ljava/lang/String;)Z")), new int[]{1}, new int[]{}),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("format(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;")), new int[]{2,3}, new int[]{MethodFlowModel.RETV}),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("format(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;")), new int[]{1,2}, new int[]{MethodFlowModel.RETV}),
+                FineGrainedMethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("getBytes()[B")), new int[]{MethodFlowModel.RECEIVERV}, new int[]{MethodFlowModel.RETV},"["),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("getBytes()[Z")), new int[]{MethodFlowModel.RECEIVERV}, new int[]{MethodFlowModel.RETV}),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("getBytes(Ljava/nio/charset/Charset;)[Z")), new int[]{MethodFlowModel.RECEIVERV}, new int[]{MethodFlowModel.RETV}),
                 MethodFlowModel.make(MethodReference.findOrCreate(ref, Selector.make("getBytes(II[ZI)V")), new int[]{MethodFlowModel.RECEIVERV}, new int[]{3}),

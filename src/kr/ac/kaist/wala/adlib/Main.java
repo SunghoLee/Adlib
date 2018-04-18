@@ -147,7 +147,7 @@ public class Main {
             }
 //System.exit(-1);
             PointerAnalysisCommandlineDebugger padebugger = new PointerAnalysisCommandlineDebugger(cg, pa);
-//	                padebugger.debug();
+	                padebugger.debug();
         }
 
         APITarget.set(cg.getClassHierarchy());

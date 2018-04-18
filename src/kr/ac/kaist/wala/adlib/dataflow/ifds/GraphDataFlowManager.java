@@ -1,6 +1,7 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.classLoader.IClass;
+import com.ibm.wala.dalvik.dex.instructions.Constant;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
@@ -11,9 +12,12 @@ import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
 import com.ibm.wala.ssa.*;
+import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import com.ibm.wala.util.intset.OrdinalSet;
+import kr.ac.kaist.wala.adlib.callgraph.IntConstantKey;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.BuiltinFlowPropagationModel;
@@ -21,6 +25,7 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 import nu.validator.htmlparser.annotation.Local;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -85,9 +90,9 @@ public class GraphDataFlowManager {
       }
 
       return res;
-    }else
-      Assertions.UNREACHABLE("Phi is handled by only LocalDataFact: " + df);
-    return null;
+    }//else
+      //Assertions.UNREACHABLE("Phi is handled by only LocalDataFact: " + df);
+    return Collections.emptySet();
   }
 
   private Set<LocalDataFact> allPhi(CGNode n, LocalDataFact ldf){
@@ -143,11 +148,13 @@ public class GraphDataFlowManager {
         // TODO: do we need to consider the dense propagation or only sparse one?
         SSAInstruction inst = node.getLastInstruction();
         Set<DataFact> nextFacts = new HashSet<>();
-
+	
         if (inst == null) {
           nextFacts.add(fact);
         } else {
-          nextFacts.addAll(flowFun.visit(node.getNode(), inst, fact));
+          Set<DataFact> r = flowFun.visit(node.getNode(), inst, fact);
+          if(r != null)
+            nextFacts.addAll(r);
         }
 
         for (DataFact nextFact : nextFacts) {
@@ -188,7 +195,7 @@ public class GraphDataFlowManager {
       throw new InfeasiblePathException("Call node must have an instruction: " + node);
 
     for (BasicBlockInContext callee : getCalleeSuccessors(node)) {
-      // cut flows to modeled methods
+	    // cut flows to modeled methods
       if (modelHandler.isModeled(callee.getNode())) {
         continue;
       }
@@ -324,9 +331,9 @@ public class GraphDataFlowManager {
 
         for(LocalDataFact lldf : df) {
           if(lldf.getVar() <= invokeInst.getNumberOfUses()) {
-            int useV = invokeInst.getUse(ldf.getVar() - 1);
+            int useV = invokeInst.getUse(lldf.getVar() - 1);
             res.add(
-                    Pair.make(callerBlock, new LocalDataFact(callerBlock.getNode(), useV, ldf.getField())));
+                    Pair.make(callerBlock, new LocalDataFact(callerBlock.getNode(), useV, lldf.getField())));
           }
         }
       }
@@ -485,6 +492,35 @@ public class GraphDataFlowManager {
               + df.getClass().getName());
   }
 
+  private Set<InstanceKey> calcFeasibleIntSet(OrdinalSet<InstanceKey> iks, BasicBlockInContext curBlock){
+    Set<InstanceKey> res = new HashSet<>();
+    for (InstanceKey ik : iks){
+      if(ik instanceof IntConstantKey){
+        IntConstantKey ick = (IntConstantKey) ik;
+        BFSPathFinder pathFinder = new BFSPathFinder(supergraph, supergraph.getEntriesForProcedure(ick.getNode())[0], curBlock);
+        List<BasicBlockInContext> l = pathFinder.find();
+        if(debug){
+          System.out.println(ik + " \t => \t " + (l != null));
+          if( l != null ){
+            for(BasicBlockInContext bb : l){
+              System.out.println(bb);
+            }
+          }
+        }
+        if(l != null)
+          res.add(ick);
+      }else
+        res.add(ik);
+    }
+    if(debug)
+      try {
+        System.in.read();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    return res;
+  }
+
   protected Set<BasicBlockInContext> getNormalSuccessors(BasicBlockInContext bb)
       throws InfeasiblePathException {
     Set<BasicBlockInContext> res = new HashSet<>();
@@ -501,15 +537,18 @@ public class GraphDataFlowManager {
       else if (bb.getLastInstruction() instanceof SSASwitchInstruction) {
         isSwitch = true;
         SSASwitchInstruction switchInst = (SSASwitchInstruction) bb.getLastInstruction();
+        if(switchInst.toString().contains("switch 9 [1000->12,1001->18,1002->22,1003->28,1004->34,1005->40,1006->46,1007->50,1008->56,1009->60,1010->66,1011->72,1012->78,1013->122,1014->84,1015->90,1016->94,1017->100,1018->106,1019->112,1020->118]"))
+          debug  = true;
         int[] caseLabels = switchInst.getCasesAndLabels();
         int condV = switchInst.getUse(0);
         PointerKey condPK = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV);
         OrdinalSet<InstanceKey> ikSet = pa.getPointsToSet(condPK);
         if (ikSet.size() == 0) isSwitch = false;
         else {
-          possibleLabels = new int[ikSet.size()];
+          Set<InstanceKey> iks = calcFeasibleIntSet(ikSet, bb);
+          possibleLabels = new int[iks.size()];
           int index = 0;
-          for (InstanceKey ik : ikSet) {
+          for (InstanceKey ik : iks) {
             // we only handle switch statements when all possible condition values are constant.
             if (ik instanceof ConstantKey) {
               isSwitch = true;
@@ -537,9 +576,12 @@ public class GraphDataFlowManager {
           PointerKey condPK1 = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV1);
           PointerKey condPK2 = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV2);
 
-          for (InstanceKey condIK1 : pa.getPointsToSet(condPK1)) {
+          Set<InstanceKey> condIK1s = calcFeasibleIntSet(pa.getPointsToSet(condPK1), bb);
+          Set<InstanceKey> condIK2s = calcFeasibleIntSet(pa.getPointsToSet(condPK1), bb);
+
+          for (InstanceKey condIK1 : condIK1s) {
             boolean partialRes = true;
-            for (InstanceKey condIK2 : pa.getPointsToSet(condPK2)) {
+            for (InstanceKey condIK2 : condIK2s) {
               if (condIK1 instanceof ConstantKey && condIK2 instanceof ConstantKey) {
                 int condValue1 = (Integer) ((ConstantKey) condIK1).getValue();
                 int condValue2 = (Integer) ((ConstantKey) condIK2).getValue();
@@ -614,6 +656,7 @@ public class GraphDataFlowManager {
 
       if (normalPathFilter.accept(bb, succ)) res.add(succ);
     }
+    debug = false;
     return res;
   }
 

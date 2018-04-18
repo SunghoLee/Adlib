@@ -1,6 +1,7 @@
-package kr.ac.kaist.wala.adlib.model.thread;
+package kr.ac.kaist.wala.adlib.model.context;
 
 import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.JavaLanguage;
 import com.ibm.wala.classLoader.NewSiteReference;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.ipa.summaries.MethodSummary;
@@ -16,16 +17,15 @@ import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.ssa.SSAValue;
 import com.ibm.wala.util.ssa.TypeSafeInstructionFactory;
 import kr.ac.kaist.wala.adlib.model.ModelClass;
-import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A modeling class for Android built-in android/view/View.
- * Created by leesh on 14/01/2017.
+ * A modeling class for Android built-in android/content/ContextWrapper.
+ * Created by leesh on 16/01/2017.
  */
-public class AndroidActivityModelClass extends ModelClass {
+public class AndroidMockContextModelClass extends ModelClass {
     public enum SystemService{
         LOCATION_SERVICE_MANAGER("location"),
         WINDOW_SERVICE_MANAGER("window"),
@@ -73,72 +73,56 @@ public class AndroidActivityModelClass extends ModelClass {
         }
     }
 
+    public static final TypeReference ANDROID_MOCK_CONTEXT_MODEL_CLASS = TypeReference.findOrCreate(
+            ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/test/mock/MockContext"));
 
-    public static final TypeReference ANDROID_VIEW_MODEL_CLASS = TypeReference.findOrCreate(
-            ClassLoaderReference.Primordial, TypeName.string2TypeName("Landroid/app/Activity"));
-
-    public static final TypeName RUNNABLE_TYPE_NAME = TypeName.string2TypeName("Ljava/lang/Runnable");
-    public static final Selector RUN_ON_UI_THREAD_SELECTOR = Selector.make("runOnUiThread(Ljava/lang/Runnable;)V");
+    public static TypeName CONTEXT_TYPE = TypeName.findOrCreate("Landroid/content/Context");
     public static Selector GETSYSTEMSERVICE_SELECTOR = Selector.make("getSystemService(Ljava/lang/String;)Ljava/lang/Object;");
+    public static Selector GETAPPLICATIONCONTEXT_SELECTOR = Selector.make("getApplicationContext()Landroid/content/Context;");
 
     private IClassHierarchy cha;
 
-    private static AndroidActivityModelClass klass;
-
-    public static AndroidActivityModelClass getInstance(IClassHierarchy cha) {
+    private static AndroidMockContextModelClass klass;
+    public static AndroidMockContextModelClass getInstance(IClassHierarchy cha) {
         if(klass == null){
-            klass = new AndroidActivityModelClass(cha);
+            klass = new AndroidMockContextModelClass(cha);
+            return klass;
         }
+
         return klass;
     }
 
-    private AndroidActivityModelClass(IClassHierarchy cha) {
-        super(ANDROID_VIEW_MODEL_CLASS, cha);
+    private AndroidMockContextModelClass(IClassHierarchy cha) {
+        super(ANDROID_MOCK_CONTEXT_MODEL_CLASS, cha);
         this.cha = cha;
 
-        initMethodsForThread();
-        this.addMethod(this.getSystemService(GETSYSTEMSERVICE_SELECTOR));
-        this.addMethod(this.clinit());
+        initMethods();
+        addMethod(this.clinit());
     }
 
-    private void initMethodsForThread(){
-        this.addMethod(this.runOfRunnable(RUN_ON_UI_THREAD_SELECTOR));
+    private void initMethods(){
+        addMethod(getSystemService(GETSYSTEMSERVICE_SELECTOR));
+        addMethod(getApplicationContext(GETAPPLICATIONCONTEXT_SELECTOR));
     }
 
-    /**
-     *  Generate run of Thread for AndroidThreadModelClass.
-     *
-     *  run call Runnable's run method
-     */
-    private SummarizedMethod runOfRunnable(Selector s) {
-        final MethodReference runRef = MethodReference.findOrCreate(this.getReference(), s);
-        final VolatileMethodSummary run = new VolatileMethodSummary(new MethodSummary(runRef));
-        run.setStatic(false);
+    private SummarizedMethod getApplicationContext(Selector s){
+        final MethodReference getACRef = MethodReference.findOrCreate(this.getReference(), s);
+        final VolatileMethodSummary getAC = new VolatileMethodSummary(new MethodSummary(getACRef));
+        getAC.setStatic(false);
         final TypeSafeInstructionFactory instructionFactory = new TypeSafeInstructionFactory(cha);
 
-        int ssaNo = 2;
+        //TODO: can we finally change TypeSafeInstructionFactory with JavaInstructionFactory?
+        //this instruction factory is only for type cast
+        final JavaLanguage.JavaInstructionFactory jvInstructionFactory = new JavaLanguage.JavaInstructionFactory();
 
-        TypeReference runnalbeTR = TypeReference.findOrCreate(ClassLoaderReference.Application, RUNNABLE_TYPE_NAME);
+        SSAValue receiverActV = new SSAValue(1, TypeReference.find(ClassLoaderReference.Primordial, "Landroid/app/Application"), getACRef);
+//        SSAValue castedV = new SSAValue(2, TypeReference.find(ClassLoaderReference.Primordial, "Landroid/content/Context"), getACRef);
+//        SSAInstruction castInst = jvInstructionFactory.ConversionInstruction(getAC.getNextProgramCounter(), 2, 1, TypeReference.find(ClassLoaderReference.Primordial, "Landroid/content/ContextWrapper"), TypeReference.find(ClassLoaderReference.Primordial, "Landroid/content/Context"), false);
+//        getAC.addStatement(castInst);
+        SSAInstruction returnInst = instructionFactory.ReturnInstruction(getAC.getNextProgramCounter(), receiverActV);
+        getAC.addStatement(returnInst);
 
-        final SSAValue runnalbeV = new SSAValue(ssaNo++, runnalbeTR, runRef);
-        final int pc = run.getNextProgramCounter();
-        final MethodReference runMR = MethodReference.findOrCreate(runnalbeTR, Selector.make("run()V"));
-        final List<SSAValue> params = new ArrayList<SSAValue>();
-        params.add(runnalbeV);
-        final SSAValue exception = new SSAValue(ssaNo++, TypeReference.JavaLangException, runRef);
-        final CallSiteReference site = CallSiteReference.make(pc, runMR, IInvokeInstruction.Dispatch.VIRTUAL);
-        final SSAInstruction runCall = instructionFactory.InvokeInstruction(pc, params, exception, site);
-        run.addStatement(runCall);
-
-        return new SummarizedMethodWithNames(runRef, run, this);
-    }
-
-    private SummarizedMethod clinit() {
-        final MethodReference clinitRef = MethodReference.findOrCreate(this.getReference(), MethodReference.clinitSelector);
-        final VolatileMethodSummary clinit = new VolatileMethodSummary(new MethodSummary(clinitRef));
-        clinit.setStatic(true);
-
-        return new SummarizedMethodWithNames(clinitRef, clinit, this);
+        return new SummarizedMethodWithNames(getACRef, getAC, this);
     }
 
     private SummarizedMethod getSystemService(Selector s){
@@ -171,6 +155,7 @@ public class AndroidActivityModelClass extends ModelClass {
         v21 : "netstats" (constant)
         v22 : "input_method" (constant)
         v23 : "hardware_properties" (constant)
+	v24 : "sensor" (constant)
          */
         int ssaNo = 4;
         final SSAValue paramStringV = new SSAValue(2, TypeReference.JavaLangString, getSSRef);
@@ -178,14 +163,14 @@ public class AndroidActivityModelClass extends ModelClass {
         getSS.addConstant(3, new ConstantValue(Boolean.TRUE));
         //for conditional branch about equals that compare the input parameter with service name
 
-        for(AndroidContextWrapperModelClass.SystemService service : AndroidContextWrapperModelClass.SystemService.values()){
+        for(SystemService service : SystemService.values()){
             service.setSSA(ssaNo);
             getSS.addConstant(ssaNo++, new ConstantValue(service.getName()));
         }
 
-        int CBTargetPC = AndroidContextWrapperModelClass.SystemService.values().length * 2;
+        int CBTargetPC = SystemService.values().length * 2;
 //        List<SSAInstruction> insts = new ArrayList<>();
-        for(AndroidContextWrapperModelClass.SystemService service : AndroidContextWrapperModelClass.SystemService.values()){
+        for(SystemService service : SystemService.values()){
             final SSAValue serviceStringV = new SSAValue(service.getSSA(), TypeReference.JavaLangString, getSSRef);
             final SSAValue equalsRetV = new SSAValue(ssaNo++, TypeReference.Boolean, getSSRef);
             final SSAValue exception = new SSAValue(ssaNo++, TypeReference.JavaLangException, getSSRef);
@@ -204,7 +189,7 @@ public class AndroidActivityModelClass extends ModelClass {
             CBTargetPC += 2;
         }
 
-        for(AndroidContextWrapperModelClass.SystemService service : AndroidContextWrapperModelClass.SystemService.values()){
+        for(SystemService service : SystemService.values()){
             //TODO: mapping from string constant to creation of service manager.
             NewSiteReference ssNewSiteRef = null;
             SSAValue ssV = null;
@@ -291,7 +276,7 @@ public class AndroidActivityModelClass extends ModelClass {
                     ssV = new SSAValue(ssaNo++, uiTR, getSSRef);
                     break;
                 case VIBRATOR_SERVICE_MANAGER:
-                    final TypeReference vibratorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/os/Vibrator");
+                    final TypeReference vibratorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/os/SystemVibrator");
                     ssNewSiteRef = NewSiteReference.make(newPC, vibratorTR);
                     ssV = new SSAValue(ssaNo++, vibratorTR, getSSRef);
                     break;
@@ -305,18 +290,19 @@ public class AndroidActivityModelClass extends ModelClass {
                     ssNewSiteRef = NewSiteReference.make(newPC, wifiTR);
                     ssV = new SSAValue(ssaNo++, wifiTR, getSSRef);
                     break;
+		case SENSOR_MANAGER:
+		    final TypeReference sensorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/hardware/SystemSensorManager");
+    		    ssNewSiteRef = NewSiteReference.make(newPC, sensorTR);
+		    ssV = new SSAValue(ssaNo++, sensorTR, getSSRef);
+                    break;
                 case WINDOW_SERVICE_MANAGER:
                     final TypeReference windowTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/view/WindowManager");
                     ssNewSiteRef = NewSiteReference.make(newPC, windowTR);
                     ssV = new SSAValue(ssaNo++, windowTR, getSSRef);
                     break;
-		case SENSOR_MANAGER:
-		    final TypeReference sensorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/hardware/SystemSensorManager");
-		    ssNewSiteRef = NewSiteReference.make(newPC, sensorTR);
-		    ssV = new SSAValue(ssaNo++, sensorTR, getSSRef);
-		    break;
                 default:
                     Assertions.UNREACHABLE("The system service is not supported: " + service);
+		    break;
             }
             SSAInstruction newInst = instructionFactory.NewInstruction(newPC, ssV, ssNewSiteRef);
             getSS.addStatement(newInst);
@@ -324,7 +310,14 @@ public class AndroidActivityModelClass extends ModelClass {
             SSAInstruction returnInst = instructionFactory.ReturnInstruction(getSS.getNextProgramCounter(), ssV);
             getSS.addStatement(returnInst);
         }
-
         return new SummarizedMethodWithNames(getSSRef, getSS, this);
+    }
+
+    private SummarizedMethod clinit() {
+        final MethodReference clinitRef = MethodReference.findOrCreate(this.getReference(), MethodReference.clinitSelector);
+        final VolatileMethodSummary clinit = new VolatileMethodSummary(new MethodSummary(clinitRef));
+        clinit.setStatic(true);
+
+        return new SummarizedMethodWithNames(clinitRef, clinit, this);
     }
 }

@@ -1,6 +1,8 @@
 package kr.ac.kaist.wala.adlib.callgraph;
 
 import com.ibm.wala.analysis.typeInference.JavaPrimitiveType;
+import com.ibm.wala.cfg.ControlFlowGraph;
+import com.ibm.wala.cfg.IBasicBlock;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IField;
 import com.ibm.wala.classLoader.IMethod;
@@ -11,11 +13,12 @@ import com.ibm.wala.ipa.callgraph.propagation.*;
 import com.ibm.wala.ipa.callgraph.propagation.cfa.nCFABuilder;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.IClassHierarchy;
-import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
-import com.ibm.wala.ssa.SymbolTable;
+import com.ibm.wala.ssa.*;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
+import com.ibm.wala.util.CancelException;
+import com.ibm.wala.util.MonitorUtil;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.intset.IntIterator;
@@ -54,6 +57,105 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
         return result;
     }
 
+    /**
+     * Add pointer flow constraints based on instructions in a given node
+     *
+     * @throws CancelException
+     */
+    @Override
+    protected void addNodeInstructionConstraints(CGNode node, MonitorUtil.IProgressMonitor monitor)
+            throws CancelException {
+
+        PathSeparationConstraintVisitor v = new PathSeparationConstraintVisitor(this, node);
+
+        IR ir = v.ir;
+        ControlFlowGraph<SSAInstruction, ISSABasicBlock> cfg = ir.getControlFlowGraph();
+        for (Iterator<ISSABasicBlock> x = cfg.iterator(); x.hasNext(); ) {
+            SSACFG.BasicBlock b = (SSACFG.BasicBlock) x.next();
+            addBlockInstructionConstraints(node, cfg, b, v, monitor);
+            if (wasChanged(node)) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Add constraints for a particular basic block.
+     *
+     * @throws CancelException
+     */
+    protected void addBlockInstructionConstraints(
+            CGNode node,
+            ControlFlowGraph<SSAInstruction, ISSABasicBlock> cfg,
+            SSACFG.BasicBlock b,
+            PathSeparationConstraintVisitor v,
+            MonitorUtil.IProgressMonitor monitor)
+            throws CancelException {
+        this.monitor = monitor;
+        v.setBasicBlock(b);
+
+        // visit each instruction in the basic block.
+        for (Iterator<SSAInstruction> it = b.iterator(); it.hasNext(); ) {
+            MonitorUtil.throwExceptionIfCanceled(monitor);
+            SSAInstruction s = it.next();
+            if (s != null) {
+                s.visit(v);
+                if (wasChanged(node)) {
+                    return;
+                }
+            }
+        }
+
+        addPhiConstraints(node, cfg, b, v);
+    }
+
+    private void addPhiConstraints(
+            CGNode node,
+            ControlFlowGraph<SSAInstruction, ISSABasicBlock> cfg,
+            SSACFG.BasicBlock b,
+            PathSeparationConstraintVisitor v) {
+        // visit each phi instruction in each successor block
+        for (Iterator sbs = cfg.getSuccNodes(b); sbs.hasNext(); ) {
+            SSACFG.BasicBlock sb = (SSACFG.BasicBlock) sbs.next();
+            if (!sb.hasPhi()) {
+                continue;
+            }
+            int n = 0;
+            for (Iterator<? extends IBasicBlock> back = cfg.getPredNodes(sb); back.hasNext(); n++) {
+                if (back.next() == b) {
+                    break;
+                }
+            }
+            assert n < cfg.getPredNodeCount(sb);
+            for (Iterator<? extends SSAInstruction> phis = sb.iteratePhis(); phis.hasNext(); ) {
+                SSAPhiInstruction phi = (SSAPhiInstruction) phis.next();
+                if (phi == null) {
+                    continue;
+                }
+                PointerKey def = getPointerKeyForLocal(node, phi.getDef());
+                if (hasNoInterestingUses(node, phi.getDef(), v.du)) {
+                    system.recordImplicitPointsToSet(def);
+                } else {
+                    // the following test restricts the constraints to reachable
+                    // paths, according to verification constraints
+                    if (phi.getUse(n) > 0) {
+                        PointerKey use = getPointerKeyForLocal(node, phi.getUse(n));
+                        if (contentsAreInvariant(v.symbolTable, v.du, phi.getUse(n))) {
+                            system.recordImplicitPointsToSet(use);
+                            InstanceKey[] ik =
+                                    getInvariantContents(v.symbolTable, v.du, node, phi.getUse(n), this);
+                            for (int i = 0; i < ik.length; i++) {
+                                system.newConstraint(def, ik[i]);
+                            }
+                        } else {
+                            system.newConstraint(def, assignOperator, use);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     protected ConstraintVisitor makeVisitor(CGNode node) {
         return new PathSeparationConstraintVisitor(this, node);
@@ -61,10 +163,16 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
 
     protected class PathSeparationConstraintVisitor extends ConstraintVisitor {
         private final ExplicitCallGraph callGraph;
+        private final IR ir;
+        private final SymbolTable symbolTable;
+        private final DefUse du;
 
         public PathSeparationConstraintVisitor(SSAPropagationCallGraphBuilder builder, CGNode node) {
             super(builder, node);
             this.callGraph = builder.getCallGraph();
+            this.ir = node.getIR();
+            this.symbolTable = ir.getSymbolTable();
+            this.du = node.getDU();
         }
 
         @Override
@@ -170,12 +278,10 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
                     IField f = getClassHierarchy().resolveField(field);
 
                     if(f == null){
-                        ClassHierarchy c;
-                        System.out.println("#C: " + cha.lookupClass(field.getDeclaringClass()));
-                        for(IField ff : cha.lookupClass(field.getDeclaringClass()).getAllFields()){
-                            System.out.println("\t#F: " + ff + "\t" + cha.resolveField(ff.getReference()));
-                        }
-                        Assertions.UNREACHABLE("The field does not exist: " + field);
+                        System.out.println("The field does not exist: " + field);
+
+                        return;
+//                        Assertions.UNREACHABLE("The field does not exist: " + field);
                     }
 
                     if(symTab.isIntegerConstant(rval)) {
@@ -185,7 +291,9 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
                             } else {
                                 PointerKey refKey = getPointerKeyForLocal(ref);
                                 InstanceKey ik = getBuilder().getInstanceKeyForConstant(TypeReference.JavaLangInteger, symTab.getConstantValue(rval));
-
+                                if(ik instanceof ConstantKey){
+                                    ik = new IntConstantKey((ConstantKey)ik, node);
+                                }
                                 if (!system.isImplicit(refKey)) {
                                     system.newSideEffect(getBuilder().new InstancePutFieldOperator(f, ik), refKey);
                                 }
@@ -290,7 +398,7 @@ public class PathSeperationCallGraphBuilder extends nCFABuilder {
                 int useVar = instruction.getUse(i);
                 if(caller.getIR().getSymbolTable().isIntegerConstant(useVar) && caller.getMethod().getDeclaringClass().getClassLoader().getReference().equals(ClassLoaderReference.Application)){
                     int intValue = caller.getIR().getSymbolTable().getIntValue(useVar);
-                    system.newConstraint(formal, new ConstantKey<Integer>(intValue, cha.lookupClass(TypeReference.JavaLangInteger)));
+                    system.newConstraint(formal, new IntConstantKey(new ConstantKey<Integer>(intValue, cha.lookupClass(TypeReference.JavaLangInteger)), caller));
                 }else{
                     PointerKey actual = getPointerKeyForLocal(caller, useVar);
                     if (formal instanceof FilteredPointerKey) {

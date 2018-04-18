@@ -6,6 +6,7 @@ import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
+import com.ibm.wala.ssa.IR;
 import com.ibm.wala.util.strings.Atom;
 
 import java.io.BufferedReader;
@@ -66,6 +67,12 @@ public class PointerAnalysisCommandlineDebugger {
                             System.out.println("\tPK: " + pk);
 
                             if (command.getFieldName() == null) {
+                                IR ir = target.getIR();
+                                if(ir != null){
+                                    if(ir.getSymbolTable().isConstant(command.getValueNumber())){
+                                        System.out.println("\t\tCONST: " + ir.getSymbolTable().getConstantValue(command.getValueNumber()));
+                                    }
+                                }
                                 for (InstanceKey ik : pa.getPointsToSet(pk))
                                     System.out.println("\t\tIK: " + ik);
                             } else {

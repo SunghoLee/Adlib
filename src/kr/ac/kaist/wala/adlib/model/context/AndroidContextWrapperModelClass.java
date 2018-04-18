@@ -46,6 +46,7 @@ public class AndroidContextWrapperModelClass extends ModelClass {
         JOB_SCHEDULER_SERVICE_MANAGER("taskmanager"),
         NETWORK_STATS_SERVICE_MANAGER("netstats"),
         INPUT_METHOD_SERVICE_MANAGER("input_method"),
+	SENSOR_MANAGER("sensor"),
         HARDWARE_PROPERTIES_SERVICE_MANAGER("hardware_properties");
 
         private final String name;
@@ -154,6 +155,7 @@ public class AndroidContextWrapperModelClass extends ModelClass {
         v21 : "netstats" (constant)
         v22 : "input_method" (constant)
         v23 : "hardware_properties" (constant)
+	v24 : "sensor" (constant)
          */
         int ssaNo = 4;
         final SSAValue paramStringV = new SSAValue(2, TypeReference.JavaLangString, getSSRef);
@@ -288,6 +290,11 @@ public class AndroidContextWrapperModelClass extends ModelClass {
                     ssNewSiteRef = NewSiteReference.make(newPC, wifiTR);
                     ssV = new SSAValue(ssaNo++, wifiTR, getSSRef);
                     break;
+		case SENSOR_MANAGER:
+		    final TypeReference sensorTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/hardware/SystemSensorManager");
+    		    ssNewSiteRef = NewSiteReference.make(newPC, sensorTR);
+		    ssV = new SSAValue(ssaNo++, sensorTR, getSSRef);
+                    break;
                 case WINDOW_SERVICE_MANAGER:
                     final TypeReference windowTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Landroid/view/WindowManager");
                     ssNewSiteRef = NewSiteReference.make(newPC, windowTR);
@@ -295,6 +302,7 @@ public class AndroidContextWrapperModelClass extends ModelClass {
                     break;
                 default:
                     Assertions.UNREACHABLE("The system service is not supported: " + service);
+		    break;
             }
             SSAInstruction newInst = instructionFactory.NewInstruction(newPC, ssV, ssNewSiteRef);
             getSS.addStatement(newInst);
@@ -302,7 +310,6 @@ public class AndroidContextWrapperModelClass extends ModelClass {
             SSAInstruction returnInst = instructionFactory.ReturnInstruction(getSS.getNextProgramCounter(), ssV);
             getSS.addStatement(returnInst);
         }
-
         return new SummarizedMethodWithNames(getSSRef, getSS, this);
     }
 

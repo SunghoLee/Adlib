@@ -107,6 +107,7 @@ public class TypeBasedBuiltinModeler{
     // for special mappings
     private TypeReference urlConnectionTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Ljava/net/URLConnection");
     private TypeReference httpURLConnectionImplTR = TypeReference.findOrCreate(ClassLoaderReference.Primordial, "Lcom/android/okhttp/internal/http/HttpURLConnectionImpl");
+    
 //    private TypeReference httpsURLConnectionTR = TypeReference.findOrCreate(ClassLoaderReference.Application, "Ljavax/net/ssl/HttpsURLConnection");
 
     private TypeReference findConcreteSubClass(IClassHierarchy cha, TypeReference sc){

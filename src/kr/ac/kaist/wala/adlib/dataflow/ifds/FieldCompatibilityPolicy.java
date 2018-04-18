@@ -32,6 +32,8 @@ public class FieldCompatibilityPolicy {
     public boolean isCompatible(Field field, TypeReference tr){
         if(field.equals(NoneField.getInstance()) || field.equals(TopField.getInstance()))
             return true;
+	if(tr.isPrimitiveType())
+		return false;
         IClass c = cha.lookupClass(tr);
 
         // handle array field
@@ -50,6 +52,7 @@ public class FieldCompatibilityPolicy {
                             return true;
                 }
             }
+            return false;
         }
 
         // handle special field for modeling collections

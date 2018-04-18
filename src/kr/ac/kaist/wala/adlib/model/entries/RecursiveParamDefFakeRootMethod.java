@@ -17,6 +17,7 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.warnings.Warning;
 import com.ibm.wala.util.warnings.Warnings;
+import com.ibm.wala.types.ClassLoaderReference;
 
 import java.util.Arrays;
 
@@ -52,6 +53,8 @@ public class RecursiveParamDefFakeRootMethod extends FakeRootMethod {
         SSANewInstruction result = null;
 
         if (T.isReferenceType()) {
+            if(T.toString().contains("Landroid/content/Context"))
+                T = TypeReference.find(ClassLoaderReference.Primordial, "Landroid/test/mock/MockContext");
             NewSiteReference ref = NewSiteReference.make(statements.size(), T);
             if (T.isArrayType()) {
                 int[] sizes = new int[ArrayClass.getArrayTypeDimensionality(T)];

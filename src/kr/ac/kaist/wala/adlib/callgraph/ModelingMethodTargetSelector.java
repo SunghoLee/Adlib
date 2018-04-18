@@ -12,6 +12,7 @@ import kr.ac.kaist.wala.adlib.model.TypeBasedBuiltinModeler;
 import kr.ac.kaist.wala.adlib.model.components.AndroidAlertDialogBuilderModelClass;
 import kr.ac.kaist.wala.adlib.model.components.AndroidHandlerModelClass;
 import kr.ac.kaist.wala.adlib.model.context.AndroidContextWrapperModelClass;
+import kr.ac.kaist.wala.adlib.model.context.AndroidMockContextModelClass;
 import kr.ac.kaist.wala.adlib.model.message.AndroidMessageModelClass;
 import kr.ac.kaist.wala.adlib.model.string.JavaAbstractStringBuilderModelClass;
 import kr.ac.kaist.wala.adlib.model.string.JavaStringBuilderModelClass;
@@ -49,6 +50,7 @@ public class ModelingMethodTargetSelector implements MethodTargetSelector {
                 AndroidViewModelClass.getInstance(cha),
                 AndroidMessageModelClass.getInstance(cha),
                 AndroidActivityModelClass.getInstance(cha),
+		AndroidMockContextModelClass.getInstance(cha),
 //                JavaStringModelClass.getInstance(cha),
 //                JavaStringBufferModelClass.getInstance(cha),
                 JavaStringBuilderModelClass.getInstance(cha),
