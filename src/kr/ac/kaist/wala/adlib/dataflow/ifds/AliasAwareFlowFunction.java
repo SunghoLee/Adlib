@@ -5,15 +5,42 @@ import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
-import com.ibm.wala.ssa.*;
+import com.ibm.wala.ssa.SSAArrayLengthInstruction;
+import com.ibm.wala.ssa.SSAArrayLoadInstruction;
+import com.ibm.wala.ssa.SSAArrayStoreInstruction;
+import com.ibm.wala.ssa.SSABinaryOpInstruction;
+import com.ibm.wala.ssa.SSACheckCastInstruction;
+import com.ibm.wala.ssa.SSAComparisonInstruction;
+import com.ibm.wala.ssa.SSAConditionalBranchInstruction;
+import com.ibm.wala.ssa.SSAConversionInstruction;
+import com.ibm.wala.ssa.SSAGetCaughtExceptionInstruction;
+import com.ibm.wala.ssa.SSAGetInstruction;
+import com.ibm.wala.ssa.SSAGotoInstruction;
+import com.ibm.wala.ssa.SSAInstanceofInstruction;
+import com.ibm.wala.ssa.SSAInvokeInstruction;
+import com.ibm.wala.ssa.SSALoadMetadataInstruction;
+import com.ibm.wala.ssa.SSAMonitorInstruction;
+import com.ibm.wala.ssa.SSANewInstruction;
+import com.ibm.wala.ssa.SSAPhiInstruction;
+import com.ibm.wala.ssa.SSAPiInstruction;
+import com.ibm.wala.ssa.SSAPutInstruction;
+import com.ibm.wala.ssa.SSAReturnInstruction;
+import com.ibm.wala.ssa.SSASwitchInstruction;
+import com.ibm.wala.ssa.SSAThrowInstruction;
+import com.ibm.wala.ssa.SSAUnaryOpInstruction;
 import com.ibm.wala.types.FieldReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.debug.Assertions;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.*;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.TopField;
 
 /**
  * Created by leesh on 02/03/2018.
@@ -96,7 +123,6 @@ public class AliasAwareFlowFunction implements IFlowFunction {
 
         if(fact instanceof LocalDataFact &&
             ((LocalDataFact) fact).getVar() == instruction.getValue()) {
-
             // cut spurious path!
             if(!isCompatible(fact.getField(), instruction.getElementType()))
                 return Collections.emptySet();

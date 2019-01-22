@@ -4,24 +4,41 @@ import com.ibm.wala.analysis.pointers.HeapGraph;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
-import com.ibm.wala.ipa.callgraph.propagation.*;
+import com.ibm.wala.ipa.callgraph.propagation.ArrayContentsKey;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceFieldKey;
+import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
+import com.ibm.wala.ipa.callgraph.propagation.LocalPointerKey;
+import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
+import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
+import com.ibm.wala.ipa.callgraph.propagation.PropagationCallGraphBuilder;
+import com.ibm.wala.ipa.callgraph.propagation.ReturnValueKey;
+import com.ibm.wala.ipa.callgraph.propagation.StaticFieldKey;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.util.Predicate;
 import com.ibm.wala.util.debug.Assertions;
 import com.ibm.wala.util.graph.Graph;
 import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import com.ibm.wala.util.intset.OrdinalSet;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
-
-import java.util.*;
 
 /**
  * Created by leesh on 2018. 2. 19..
  */
 public class AliasHandler {
     private final static boolean DEBUG = false;
+    private final static boolean DO = false;
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
     private final HeapGraph<InstanceKey> hg;
@@ -120,6 +137,9 @@ public class AliasHandler {
 //    }
 
     public Set<DataFact> findAlias(CGNode n, DataFact fact){
+        if(DO == false)
+            return Collections.emptySet();
+
         Set<DataFact> res = new HashSet<>();
         FieldFilter filter = new FieldFilter();
 

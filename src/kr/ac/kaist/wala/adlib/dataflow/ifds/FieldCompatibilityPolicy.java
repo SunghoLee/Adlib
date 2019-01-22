@@ -32,8 +32,11 @@ public class FieldCompatibilityPolicy {
     public boolean isCompatible(Field field, TypeReference tr){
         if(field.equals(NoneField.getInstance()) || field.equals(TopField.getInstance()))
             return true;
-	if(tr.isPrimitiveType())
-		return false;
+        if(tr.equals(TypeReference.JavaLangObject))
+            return true;
+
+        if(tr.isPrimitiveType())
+		    return false;
         IClass c = cha.lookupClass(tr);
 
         // handle array field
@@ -56,23 +59,17 @@ public class FieldCompatibilityPolicy {
         }
 
         // handle special field for modeling collections
-        if(c.equals(collection) || cha.implementsInterface(c, collection)){
-            if(field.isMatched(CollectionFlowModel.COLLECTION_GET))
+        if((c.equals(collection) || cha.implementsInterface(c, collection)) && field.isMatched(CollectionFlowModel.COLLECTION_GET)){
                 return true;
-        }else if(c.equals(iter) || cha.implementsInterface(c, iter)){
-            if(field.isMatched(IteratorFlowModel.ITER_NEXT))
+        }else if((c.equals(iter) || cha.implementsInterface(c, iter)) && field.isMatched(IteratorFlowModel.ITER_NEXT)){
                 return true;
-        }else if(c.equals(jarray) || cha.isSubclassOf(c, jarray)){
-            if(field.isMatched(JSONArrayFlowModel.JSON_ARRAY_GET))
+        }else if((c.equals(jarray) || cha.isSubclassOf(jarray, c)) && field.isMatched(JSONArrayFlowModel.JSON_ARRAY_GET)){
                 return true;
-        }else if(c.equals(map) || cha.implementsInterface(c, map)){
-            if(field.isMatched(MapFlowModel.MAP_GET))
+        }else if((c.equals(map) || cha.implementsInterface(c, map)) && field.isMatched(MapFlowModel.MAP_GET)){
                 return true;
-        }else if(c.equals(jtoken) || cha.isSubclassOf(c, jtoken)){
-            if(field.isMatched(JSONTokenerFlowModel.JSON_TOKEN_NEXT))
+        }else if((c.equals(jtoken) || cha.isSubclassOf(jtoken, c)) && field.isMatched(JSONTokenerFlowModel.JSON_TOKEN_NEXT)){
                 return true;
-        }else if(c.equals(jobj) || cha.isSubclassOf(c, jobj)){
-            if(field.isMatched(JSONObjectFlowModel.JSON_OBJ_GET))
+        }else if((c.equals(jobj) || cha.isSubclassOf(jobj, c)) && field.isMatched(JSONObjectFlowModel.JSON_OBJ_GET)){
                 return true;
         }
 

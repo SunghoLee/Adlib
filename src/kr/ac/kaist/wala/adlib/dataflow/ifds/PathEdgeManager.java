@@ -1,6 +1,7 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
+import com.ibm.wala.util.collections.Pair;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,10 +11,11 @@ import java.util.Set;
  */
 public class PathEdgeManager {
     private final Set<PathEdge> pathSet = new HashSet<>();
-
+    private static Set<Pair> totalDF = new HashSet<>();
     public PathEdgeManager(){}
 
     public boolean propagate(PathEdge pe){
+        totalDF.add(Pair.make(pe.getToNode(), pe.getToFact()));
         return pathSet.add(pe);
     }
 
@@ -42,5 +44,9 @@ public class PathEdgeManager {
 
     public void clear(){
         pathSet.clear();
+    }
+
+    public Set<Pair> getTotalDF(){
+        return totalDF;
     }
 }

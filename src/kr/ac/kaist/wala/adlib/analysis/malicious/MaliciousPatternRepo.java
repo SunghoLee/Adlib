@@ -108,7 +108,7 @@ public class MaliciousPatternRepo {
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/location/Location"), Selector.make("getLongitude()D"), PropagateFlowFunction.getInstance(1, IFlowFunction.RETURN_VARIABLE)),
                         },
                         new MaliciousPatternChecker.MaliciousPoint[]{
-                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/content/Context"), Selector.make("startActivity(Landroid/content/Intent;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
+                                new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("loadUrl(Ljava/lang/String;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
                                 new MaliciousPatternChecker.MaliciousPoint(TypeName.findOrCreate("Landroid/webkit/WebView"), Selector.make("evaluateJavascript(Ljava/lang/String;Landroid/webkit/ValueCallback;)V"), PropagateFlowFunction.getInstance(2, IFlowFunction.TERMINATE)),
                         },
                 }

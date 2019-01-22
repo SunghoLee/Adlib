@@ -11,6 +11,7 @@ import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
 import com.ibm.wala.types.*;
 import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.debug.Assertions;
+import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import kr.ac.kaist.wala.adlib.analysis.malicious.MaliciousPatternChecker;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
@@ -45,16 +46,19 @@ public class PathFinder {
         List<PropagationPoint> initPath = new ArrayList<>();
         initPath.add(seed);
         res.add(initPath);
+
         for(MaliciousPatternChecker.MaliciousPoint mmp : mp.getPoints()){
             if(debug)
                 System.out.println("#TRY? " + mmp);
             Set<List<PropagationPoint>> newS = new HashSet<>();
             for(List<PropagationPoint> prevPath : res){
                 for(PropagationPoint pp : convertMPtoPPs(mmp)){
+                    if(debug)
+                        System.out.println("\t#PP? " + pp);
                     PropagationPoint prev = prevPath.get(0);
-//                    BFSPathFinder<PropagationPoint> pf = new BFSPathFinder<>(pg, prev, pp);
-//                    List<PropagationPoint> path = pf.find();
-                    List<PropagationPoint> path = find(prev, pp);
+                    BFSPathFinder<PropagationPoint> pf = new BFSPathFinder<>(pg, prev, pp);
+                    List<PropagationPoint> path = pf.find();
+//                    List<PropagationPoint> path = find(prev, pp);
                     if(path != null){
                         if(debug){
                             System.out.println("\t\t#MATCH!!! : " + pp);

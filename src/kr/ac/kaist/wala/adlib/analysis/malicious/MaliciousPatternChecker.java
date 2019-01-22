@@ -18,10 +18,27 @@ import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.debug.Assertions;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import kr.ac.kaist.wala.adlib.analysis.APICallNode;
 import kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction;
 import kr.ac.kaist.wala.adlib.dataflow.flows.PropagateFlowFunction;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.*;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.AliasHandler;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.DataFact;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.DefaultDataFact;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.IFDSAnalyzer;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.InfeasiblePathException;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.LocalDataFact;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.PathEdge;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.PropagationGraph;
+import kr.ac.kaist.wala.adlib.dataflow.ifds.PropagationPoint;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
@@ -29,9 +46,6 @@ import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
 import kr.ac.kaist.wala.adlib.util.GraphPrinter;
 import kr.ac.kaist.wala.adlib.util.PathFinder;
 import kr.ac.kaist.wala.adlib.util.PathOptimizer;
-
-import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
 
 
 /**
@@ -67,6 +81,14 @@ public class MaliciousPatternChecker {
         }
     }
 
+    public int getTotalProgramPoint(){
+        return icfg.getNumberOfNodes();
+    }
+
+    public Set<Pair> getTotalDF(){
+        return ifds.getTotalDF();
+    }
+
     public Set<Pair<CGNode, Integer>> getSeeds(){
         return this.seeds;
     }
@@ -76,6 +98,19 @@ public class MaliciousPatternChecker {
      * @param var A seed tracked by this analysis
      */
     public void addSeed(CGNode n, int var){
+        boolean isInit = false;
+        if(var == IFlowFunction.ANY)
+            var = 0;
+
+        for(Pair p : seeds){
+            if(p.fst.equals(n)){
+                isInit = true;
+            }
+        }
+
+        if(isInit == false)
+            seeds.add(Pair.make(n, 0));
+
         seeds.add(Pair.make(n, var));
     }
 
@@ -215,95 +250,86 @@ public class MaliciousPatternChecker {
         return res;
     }
 
+    private String dup(String s, int n){
+        String res = "";
+        for(int i=0; i<n; i++){
+            res += s;
+        }
+        return res;
+    }
+
     /**
      * Check whether malicious patterns exist in the super graph.
      * @return possible malicious patterns that exist in the super graph
      */
-    public Set<MaliciousPatternWarning> checkPatterns(){
+    public List<String> checkPatterns(){
         MaliciousFlowModelHandler mfmh = new MaliciousFlowModelHandler(mps, cha, new AliasHandler(icfg, pa));
         List<String> warn = new ArrayList<>();
 
         ifds.setModelHandler(mfmh);
         int index = 0;
+
+        //for progress prints
+        int numOfSeeds = seeds.size();
+        int curi = 0;
+
+        System.out.println();
+
         for(Pair p : seeds){
             CGNode n = (CGNode) p.fst;
             int var = (Integer) p.snd;
+            curi++;
 
             index++;
-
             Set<PathEdge> res = new HashSet<>();
-
+            System.err.print(dup(" ", 300)+"\r");
+            System.err.print("\t|" + dup("=", curi) + dup(" ", (numOfSeeds-curi)) + "| ( " + curi + " / " + numOfSeeds + " ) \t" + n.getMethod().getName() + " [ " + var + " ]\r");
             try {
                 BasicBlockInContext entry = icfg.getEntriesForProcedure(n)[0];
-		boolean isArray = false;
-                if(var == kr.ac.kaist.wala.adlib.dataflow.flows.IFlowFunction.ANY) {
+		        boolean isArray = false;
+
+                if(var == 0) {
                     res.addAll(ifds.analyze(entry, null));
                 }else{
-		    Field f = NoneField.getInstance();
-                    if(var > 1) {
+		            Field f = NoneField.getInstance();
+                    if(var > 1) { // except for this
                         if(entry.getNode().getMethod().getParameterType(var - 1).isArrayType()){
                             isArray = true;
                             f = FieldSeq.make(SingleField.make("["), f);
-		        }
+		                }
                     }
-
                     res.addAll(ifds.analyze(entry, new LocalDataFact(n, var, f)));
                 }
                 PropagationGraph graph = ifds.getPropagationGraph();
 
                 PathFinder pf = new PathFinder(cg, icfg, cha, graph);
 
-                PropagationPoint[] seedPPs = new PropagationPoint[((var == IFlowFunction.ANY)? 1 : 2)];
-                seedPPs[0] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], DataFact.DEFAULT_FACT);
-
-                if(var != IFlowFunction.ANY)
-                    seedPPs[1] = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], new LocalDataFact(n, var, ((isArray)? FieldSeq.make(SingleField.make("["), NoneField.getInstance()) : NoneField.getInstance())));
+                PropagationPoint seedPP = PropagationPoint.make(icfg.getEntriesForProcedure(n)[0], ((var == 0)? DataFact.DEFAULT_FACT : new LocalDataFact(n, var, ((isArray)? FieldSeq.make(SingleField.make("["), NoneField.getInstance()) : NoneField.getInstance()))));
 
                 for(MaliciousPattern mp : mps) {
-                    for(PropagationPoint seedPP : seedPPs) {
-                        Set<PathFinder.Path> paths = pf.findPaths(seedPP, mp);
-                        if (paths.size() != 0) {
-                            for (PathFinder.Path path : paths) {
-                                boolean isMatched = path.isMatched();
-                                warn.add("======");
-                                warn.add("SEED: " + n + " [ " + var + " ]");
-                                String fn = mp.patternName + "_I_" + (index++);
-                                String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
-                                //String svgF = GraphUtil.convertDotToSvg(dotF);
-				                String svgF = fn;
-                                warn.add("\t - The flows are printed in " + svgF + "\t( " + isMatched + " )");
-                                warn.add("======");
-                            }
+                    Set<PathFinder.Path> paths = pf.findPaths(seedPP, mp);
+                    if (paths.size() != 0) {
+                        for (PathFinder.Path path : paths) {
+                            boolean isMatched = path.isMatched();
+                            warn.add("SEED: " + n + " [ " + var + " ] + \t ( " + mp.patternName + " )");
+                            String fn = mp.patternName + "_I_" + (index++);
+                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
+                            //String svgF = GraphUtil.convertDotToSvg(dotF);
+                            String svgF = fn;
+                            warn.add("\t\t => The flows are printed in " + svgF + "\t( " + isMatched + " )");
                         }
                     }
                 }
 
-//                for(Pair<MaliciousPattern, Set<PathEdge>> mp : findPatterns(res)){
-//                    warn.add("[Found] " + mp.fst);
-//                    Set<PathEdge> reaches = mp.snd;
-//                    int i = 1;
-//
-//                    for(PathEdge<BasicBlockInContext, DataFact> reach : reaches) {
-//                        PropagationPoint pp = PropagationPoint.make(reach.getToNode(), reach.getToFact());
-//                        for(List<PropagationPoint> path : GraphUtil.findPathTo(graph, pp)){
-//                            String fn = mp.fst.patternName+ "_I_" + index + "(" + (i++) + ")";
-//                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path));
-//                            String svgF = GraphUtil.convertDotToSvg(dotF);
-//                            warn.add("\t - The flows are printed in " + svgF);
-//                        }
-//                    }
-//                }
                 //TODO: should we clear?
                 ifds.clearPE();
             } catch (InfeasiblePathException e) {
                 e.printStackTrace();
             }
         }
-
-        for(String s : warn){
-            System.out.println(s);
-        }
-        return warns;
+        System.err.println();
+        System.err.println();
+        return warn;
     }
 
 

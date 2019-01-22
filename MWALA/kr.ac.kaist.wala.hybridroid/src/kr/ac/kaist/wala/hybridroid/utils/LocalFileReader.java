@@ -24,7 +24,7 @@ public class LocalFileReader {
 	public static URI[] androidDexLibs(Properties walaProperties) {
 		List<URI> libs = new ArrayList<URI>();
 		File libFile = new File(walaProperties.getProperty(ANDROID_RT_JAVA_JAR));
-		System.err.println("#lib: "+libFile.getAbsolutePath()+"("+((libFile.isDirectory())? "Dir" : "File")+")");
+		//System.err.println("#lib: "+libFile.getAbsolutePath()+"("+((libFile.isDirectory())? "Dir" : "File")+")");
 		if(libFile.isFile())
 			return new URI[]{androidJar(walaProperties)};
 		for(File lib : libFile.listFiles(new FilenameFilter() {
@@ -40,7 +40,7 @@ public class LocalFileReader {
 	
 	public static URI androidJar(Properties walaProperties) {
 		File libFile = new File(walaProperties.getProperty(ANDROID_RT_JAVA_JAR));
-		System.err.println("#lib: "+libFile.getAbsolutePath()+"("+libFile.exists()+")");
+		//System.err.println("#lib: "+libFile.getAbsolutePath()+"("+libFile.exists()+")");
 		
 		return libFile.toURI();
 	}
@@ -54,7 +54,7 @@ public class LocalFileReader {
 	public static URI[] androidJarLibs(Properties walaProperties) {
 		List<URI> libs = new ArrayList<URI>();
 		File libFile = new File(walaProperties.getProperty(ANDROID_RT_JAVA_JAR));
-		System.err.println("#lib: "+libFile.getAbsolutePath()+"("+libFile.isDirectory()+")");
+		//System.err.println("#lib: "+libFile.getAbsolutePath()+"("+libFile.isDirectory()+")");
 		for(File lib : libFile.listFiles(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {

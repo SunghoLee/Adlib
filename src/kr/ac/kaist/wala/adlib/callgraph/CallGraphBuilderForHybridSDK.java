@@ -72,18 +72,17 @@ public class CallGraphBuilderForHybridSDK {
         this.scope = makeAnalysisScope(sdk);
         this.cha = buildClassHierarchy(this.scope);
 
-//        Iterator<IClass> iC = cha.iterator();
+//        for(IClass c: cha){
+//            if(c.toString().contains("Lcom/fyber/Fyber")){
+//                System.out.println("#C: " + c);
+//                for(IMethod m : c.getAllMethods()){
+//                    if(m.toString().contains("start"))
+//                        System.out.println("\t#M: " + m);
+//                }
 //
-//        while(iC.hasNext()){
-//            IClass k = iC.next();
-//            if(k.toString().contains("Vibrator")){
-//                System.out.println("K: " + k);
-//                for(IClass sub : cha.computeSubClasses(k.getReference()))
-//                    System.out.println("\tS: " + sub + "\t" + sub.isAbstract());
 //            }
 //        }
 //        System.exit(-1);
-
         this.entries = findEntrypoints(this.cha);
         this.options = makeAnalysisOptions(this.scope, this.entries);
         this.delegate = makeDelegateBuilder(this.cha, this.options);

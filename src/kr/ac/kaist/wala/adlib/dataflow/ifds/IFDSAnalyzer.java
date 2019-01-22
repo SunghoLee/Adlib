@@ -5,10 +5,11 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
 import com.ibm.wala.types.ClassLoaderReference;
-import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
-import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 import java.util.Set;
+
+import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
+import kr.ac.kaist.wala.hybridroid.util.data.Pair;
 
 /**
  * Created by leesh on 22/02/2018.
@@ -55,14 +56,18 @@ public class IFDSAnalyzer {
 
     public Set<PathEdge> analyze(BasicBlockInContext entry, DataFact seed) throws InfeasiblePathException {
         //TODO: need to put seed as an initial data fact
-        PathEdge<BasicBlockInContext, DataFact> initialEdge = new PathEdge<>(entry, DataFact.DEFAULT_FACT, entry, DataFact.DEFAULT_FACT);
-        propagate(null, initialEdge);
-        recorder.addSeed(initialEdge);
+//        PathEdge<BasicBlockInContext, DataFact> initialEdge = new PathEdge<>(entry, DataFact.DEFAULT_FACT, entry, DataFact.DEFAULT_FACT);
+//        propagate(null, initialEdge);
+//        recorder.addSeed(initialEdge);
 
         if(seed != null) {
             PathEdge<BasicBlockInContext, DataFact> seedEdge = new PathEdge<>(entry, seed, entry, seed);
             propagate(null, seedEdge);
             recorder.addSeed(seedEdge);
+        }else{
+            PathEdge<BasicBlockInContext, DataFact> initialEdge = new PathEdge<>(entry, DataFact.DEFAULT_FACT, entry, DataFact.DEFAULT_FACT);
+            propagate(null, initialEdge);
+            recorder.addSeed(initialEdge);
         }
 
         while(!workList.isEmpty()){
@@ -114,7 +119,6 @@ public class IFDSAnalyzer {
                 System.out.println();
         }
 
-        System.out.println("#PATHSIZE: " + peManager.size());
         return peManager.getEdges();
     }
 
@@ -131,5 +135,9 @@ public class IFDSAnalyzer {
 
     public PropagationGraph getPropagationGraph(){
         return this.recorder.getGraph();
+    }
+
+    public Set<com.ibm.wala.util.collections.Pair> getTotalDF(){
+        return peManager.getTotalDF();
     }
 }

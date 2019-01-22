@@ -1,7 +1,5 @@
 package kr.ac.kaist.wala.adlib.dataflow.ifds;
 
-import com.ibm.wala.classLoader.IClass;
-import com.ibm.wala.dalvik.dex.instructions.Constant;
 import com.ibm.wala.dataflow.IFDS.ICFGSupergraph;
 import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.propagation.ConstantKey;
@@ -9,25 +7,30 @@ import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
 import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cfg.BasicBlockInContext;
-import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.shrikeBT.IConditionalBranchInstruction;
-import com.ibm.wala.ssa.*;
-import com.ibm.wala.ssa.analysis.IExplodedBasicBlock;
+import com.ibm.wala.ssa.DefUse;
+import com.ibm.wala.ssa.IR;
+import com.ibm.wala.ssa.SSAAbstractInvokeInstruction;
+import com.ibm.wala.ssa.SSAConditionalBranchInstruction;
+import com.ibm.wala.ssa.SSAInstruction;
+import com.ibm.wala.ssa.SSAPhiInstruction;
+import com.ibm.wala.ssa.SSAReturnInstruction;
+import com.ibm.wala.ssa.SSASwitchInstruction;
 import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.util.debug.Assertions;
-import com.ibm.wala.util.graph.traverse.BFSPathFinder;
 import com.ibm.wala.util.intset.OrdinalSet;
-import kr.ac.kaist.wala.adlib.callgraph.IntConstantKey;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.NoneField;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.BuiltinFlowPropagationModel;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.model.FlowModelHandler;
 import kr.ac.kaist.wala.hybridroid.util.data.Pair;
-import nu.validator.htmlparser.annotation.Local;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /** Created by leesh on 23/02/2018. */
 public class GraphDataFlowManager {
@@ -492,34 +495,34 @@ public class GraphDataFlowManager {
               + df.getClass().getName());
   }
 
-  private Set<InstanceKey> calcFeasibleIntSet(OrdinalSet<InstanceKey> iks, BasicBlockInContext curBlock){
-    Set<InstanceKey> res = new HashSet<>();
-    for (InstanceKey ik : iks){
-      if(ik instanceof IntConstantKey){
-        IntConstantKey ick = (IntConstantKey) ik;
-        BFSPathFinder pathFinder = new BFSPathFinder(supergraph, supergraph.getEntriesForProcedure(ick.getNode())[0], curBlock);
-        List<BasicBlockInContext> l = pathFinder.find();
-        if(debug){
-          System.out.println(ik + " \t => \t " + (l != null));
-          if( l != null ){
-            for(BasicBlockInContext bb : l){
-              System.out.println(bb);
-            }
-          }
-        }
-        if(l != null)
-          res.add(ick);
-      }else
-        res.add(ik);
-    }
-    if(debug)
-      try {
-        System.in.read();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    return res;
-  }
+//  private Set<InstanceKey> calcFeasibleIntSet(OrdinalSet<InstanceKey> iks, BasicBlockInContext curBlock){
+//    Set<InstanceKey> res = new HashSet<>();
+//    for (InstanceKey ik : iks){
+//      if(ik instanceof IntConstantKey){
+//        IntConstantKey ick = (IntConstantKey) ik;
+//        BFSPathFinder pathFinder = new BFSPathFinder(supergraph, supergraph.getEntriesForProcedure(ick.getNode())[0], curBlock);
+//        List<BasicBlockInContext> l = pathFinder.find();
+//        if(debug){
+//          System.out.println(ik + " \t => \t " + (l != null));
+//          if( l != null ){
+//            for(BasicBlockInContext bb : l){
+//              System.out.println(bb);
+//            }
+//          }
+//        }
+//        if(l != null)
+//          res.add(ick);
+//      }else
+//        res.add(ik);
+//    }
+//    if(debug)
+//      try {
+//        System.in.read();
+//      } catch (IOException e) {
+//        e.printStackTrace();
+//      }
+//    return res;
+//  }
 
   protected Set<BasicBlockInContext> getNormalSuccessors(BasicBlockInContext bb)
       throws InfeasiblePathException {
@@ -545,10 +548,10 @@ public class GraphDataFlowManager {
         OrdinalSet<InstanceKey> ikSet = pa.getPointsToSet(condPK);
         if (ikSet.size() == 0) isSwitch = false;
         else {
-          Set<InstanceKey> iks = calcFeasibleIntSet(ikSet, bb);
-          possibleLabels = new int[iks.size()];
+//          Set<InstanceKey> iks = calcFeasibleIntSet(ikSet, bb);
+          possibleLabels = new int[ikSet.size()];
           int index = 0;
-          for (InstanceKey ik : iks) {
+          for (InstanceKey ik : ikSet) {
             // we only handle switch statements when all possible condition values are constant.
             if (ik instanceof ConstantKey) {
               isSwitch = true;
@@ -576,12 +579,12 @@ public class GraphDataFlowManager {
           PointerKey condPK1 = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV1);
           PointerKey condPK2 = pa.getHeapModel().getPointerKeyForLocal(bb.getNode(), condV2);
 
-          Set<InstanceKey> condIK1s = calcFeasibleIntSet(pa.getPointsToSet(condPK1), bb);
-          Set<InstanceKey> condIK2s = calcFeasibleIntSet(pa.getPointsToSet(condPK1), bb);
+//          Set<InstanceKey> condIK1s = calcFeasibleIntSet(pa.getPointsToSet(condPK1), bb);
+//          Set<InstanceKey> condIK2s = calcFeasibleIntSet(pa.getPointsToSet(condPK1), bb);
 
-          for (InstanceKey condIK1 : condIK1s) {
+          for (InstanceKey condIK1 : pa.getPointsToSet(condPK1)) {
             boolean partialRes = true;
-            for (InstanceKey condIK2 : condIK2s) {
+            for (InstanceKey condIK2 : pa.getPointsToSet(condPK2)) {
               if (condIK1 instanceof ConstantKey && condIK2 instanceof ConstantKey) {
                 int condValue1 = (Integer) ((ConstantKey) condIK1).getValue();
                 int condValue2 = (Integer) ((ConstantKey) condIK2).getValue();

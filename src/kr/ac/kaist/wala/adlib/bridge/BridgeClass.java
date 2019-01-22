@@ -15,7 +15,7 @@ import java.util.Set;
  * Created by leesh on 05/01/2017.
  */
 public class BridgeClass {
-
+    static private boolean DEBUG = true;
     private Set<BridgeMethod> mSet;
     private TypeReference bridgeClassReference;
     public BridgeClass(IClass c){
@@ -26,15 +26,25 @@ public class BridgeClass {
     private void initBridgeMethods(IClass c){
         mSet = new HashSet<BridgeMethod>();
 
+        if(DEBUG){
         System.err.println("##################### BRIDGE ######################");
         System.err.println("#Class: " + c);
+        int num = 0;
         for(IMethod m : c.getAllMethods()){
             if(HybriDroidTypes.hasJavascriptInterfaceAnnotation(m)) {
                 System.err.println("\t#Method: " + m);
+                num++;
+            }
+        }
+        System.out.println("\t\t=> " + num + " bridge methods exist.");
+        System.err.println("####################################################");
+        }
+
+        for(IMethod m : c.getAllMethods()){
+            if(HybriDroidTypes.hasJavascriptInterfaceAnnotation(m)) {
                 mSet.add(new BridgeMethod(m.getReference()));
             }
         }
-        System.err.println("####################################################");
     }
 
     public TypeReference getReference(){
