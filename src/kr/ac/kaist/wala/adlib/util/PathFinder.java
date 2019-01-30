@@ -240,7 +240,10 @@ public class PathFinder {
             if(pp.getBlock().isEntryBlock()){
                 s.add(pp.getBlock().getNode());
             }else if(pp.getBlock().isExitBlock() && i != 0){
-                s.pop();
+                CGNode popped = s.pop();
+                if(s.size() == 0)
+                    return false;
+                    //System.out.println("Why empty? " + popped);
                 CGNode n = s.peek();
                 PropagationPoint nextPP = path.get(i-1);
                 if(!nextPP.getBlock().getNode().equals(n))

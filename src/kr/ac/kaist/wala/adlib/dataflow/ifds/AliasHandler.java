@@ -32,13 +32,13 @@ import java.util.Set;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.Field;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.FieldSeq;
 import kr.ac.kaist.wala.adlib.dataflow.ifds.fields.SingleField;
+import kr.ac.kaist.wala.adlib.Config;
 
 /**
  * Created by leesh on 2018. 2. 19..
  */
 public class AliasHandler {
     private final static boolean DEBUG = false;
-    private final static boolean DO = false;
     private final ICFGSupergraph supergraph;
     private final PointerAnalysis<InstanceKey> pa;
     private final HeapGraph<InstanceKey> hg;
@@ -137,7 +137,7 @@ public class AliasHandler {
 //    }
 
     public Set<DataFact> findAlias(CGNode n, DataFact fact){
-        if(DO == false)
+        if(Config.COMPUTE_ALIAS == false)
             return Collections.emptySet();
 
         Set<DataFact> res = new HashSet<>();

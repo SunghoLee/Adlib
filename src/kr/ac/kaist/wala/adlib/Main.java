@@ -1,5 +1,7 @@
 package kr.ac.kaist.wala.adlib;
 
+import kr.ac.kaist.wala.hybridroid.util.graph.visualize.Visualizer;
+import java.util.Iterator;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.dalvik.classLoader.DexIRFactory;
 import com.ibm.wala.ipa.callgraph.CGNode;
@@ -43,6 +45,7 @@ public class Main {
 
         boolean onlyBridge = ((args.length > 3 && args[3].equals("b"))? true : false);
 
+        System.out.println(Config.describe());
         if(DEBUG) {
             System.out.println("##################### INIT Fs #####################");
             System.out.println("#PROP: " + prop);
@@ -87,12 +90,14 @@ public class Main {
 
         System.out.println("\n\nChecking malicious patterns...");
         for(IMethod entry : HybridSDKModel.getBridgeEntries()) {
-            CGNode entryNode = cg.getNode(entry, new FirstMethodContextSelector.FirstMethodContextPair(new FirstMethod(entry), Everywhere.EVERYWHERE));
-            if(entry.getNumberOfParameters() == 1){
-                mpc.addSeed(entryNode, IFlowFunction.ANY);
-            }
-            for(int i=1; i<entry.getNumberOfParameters(); i++){
-                mpc.addSeed(entryNode, (i+1));
+            for(CGNode entryNode : cg.getNodes(entry.getReference())){
+                //CGNode entryNode = cg.getNode(entry, new FirstMethodContextSelector.FirstMethodContextPair(new FirstMethod(entry), Everywhere.EVERYWHERE));
+                if(entry.getNumberOfParameters() == 1){
+                    mpc.addSeed(entryNode, IFlowFunction.ANY);
+                }
+                for(int i=1; i<entry.getNumberOfParameters(); i++){
+                    mpc.addSeed(entryNode, (i+1));
+                }
             }
         }
         List<String> warn = mpc.checkPatterns();
@@ -109,6 +114,8 @@ public class Main {
         System.out.println("\n\n#Total Analysis Time: " + ((pcEnd - start)/1000d) + "s");
         System.out.println("\n\n#Total Program Points: " + mpc.getTotalProgramPoint());
         System.out.println("\n\n#Total Data Facts: " + mpc.getTotalDF().size());
+
+        visualize(cg, "cg.dot");
     }
 
     private static IR makeIR(CGNode n) {
@@ -124,5 +131,16 @@ public class Main {
         }
 
         return ir;
+    }
+
+    private static void visualize(CallGraph cg, String out){
+        Visualizer vis = Visualizer.getInstance();
+        for(CGNode n : cg){
+            for(Iterator<CGNode> iSucc = cg.getSuccNodes(n); iSucc.hasNext();) {
+                CGNode succNode = iSucc.next();
+                vis.fromAtoB(n, succNode);
+            }
+        }
+        vis.printGraph(out);
     }
 }

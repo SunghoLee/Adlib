@@ -148,10 +148,14 @@ public class AliasAwareFlowFunction implements IFlowFunction {
             if(instruction.getUse(0) != ldf.getVar() && instruction.getUse(1) != ldf.getVar())
                 return Collections.emptySet();
 
-            if(!ldf.getField().equals(NoneField.getInstance()) &&!ldf.getField().equals(TopField.getInstance()))
-                Assertions.UNREACHABLE("A local data fact flowed to a binary operation must not have a field.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
-
             Set<DataFact> res = new HashSet<>();
+
+            if(!ldf.getField().equals(NoneField.getInstance()) && !ldf.getField().equals(TopField.getInstance())){
+                res.add(fact);
+                return res;    
+            //    Assertions.UNREACHABLE("A local data fact flowed to a binary operation must not have a field.\n\t Inst: " + instruction + "\n\t Fact: " + fact);
+            } 
+
             res.add(fact);
             res.add(new LocalDataFact(n, instruction.getDef(), NoneField.getInstance()));
             return res;

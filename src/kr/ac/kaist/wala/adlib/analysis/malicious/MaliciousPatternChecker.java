@@ -103,6 +103,7 @@ public class MaliciousPatternChecker {
             var = 0;
 
         for(Pair p : seeds){
+            //System.out.println("SEEDPAIR: " + p);
             if(p.fst.equals(n)){
                 isInit = true;
             }
@@ -282,8 +283,11 @@ public class MaliciousPatternChecker {
 
             index++;
             Set<PathEdge> res = new HashSet<>();
-            System.err.print(dup(" ", 300)+"\r");
-            System.err.print("\t|" + dup("=", curi) + dup(" ", (numOfSeeds-curi)) + "| ( " + curi + " / " + numOfSeeds + " ) \t" + n.getMethod().getName() + " [ " + var + " ]\r");
+            int count = 1;
+            //System.out.print(String.format("\033[%dA",count)); // Move up
+            System.out.print("\033[2K"); // Erase line content
+            //System.err.print(dup(" ", 50)+"\r");
+            System.out.print("\t|" + dup("=", curi) + dup(" ", (numOfSeeds-curi)) + "| ( " + curi + " / " + numOfSeeds + " ) \t" + n.getMethod().getName() + " [ " + var + " ]\r");
             try {
                 BasicBlockInContext entry = icfg.getEntriesForProcedure(n)[0];
 		        boolean isArray = false;
