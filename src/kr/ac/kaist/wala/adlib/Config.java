@@ -19,8 +19,8 @@ public class Config{
     };
 
     public static boolean COMPUTE_ALIAS = true;
-    public static CgOption CALLGRAPH_OPTION = CgOption.OBJ_SENSITIVITY;
-    public static int SENSITIVITY_DEPTH = 3;
+    public static CgOption CALLGRAPH_OPTION = CgOption.PATH_SEPERATION;
+    public static int SENSITIVITY_DEPTH = 0;
 
     public static String describe(){
         String res = "================================\n" +
