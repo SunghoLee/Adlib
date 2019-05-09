@@ -25,6 +25,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import kr.ac.kaist.wala.adlib.analysis.APICallNode;
@@ -263,9 +266,10 @@ public class MaliciousPatternChecker {
      * Check whether malicious patterns exist in the super graph.
      * @return possible malicious patterns that exist in the super graph
      */
-    public List<String> checkPatterns(){
+    public Results checkPatterns(){
         MaliciousFlowModelHandler mfmh = new MaliciousFlowModelHandler(mps, cha, new AliasHandler(icfg, pa));
         List<String> warn = new ArrayList<>();
+        Results results = new Results();
 
         ifds.setModelHandler(mfmh);
         int index = 0;
@@ -315,12 +319,8 @@ public class MaliciousPatternChecker {
                     if (paths.size() != 0) {
                         for (PathFinder.Path path : paths) {
                             boolean isMatched = path.isMatched();
-                            warn.add("SEED: " + n + " [ " + var + " ] + \t ( " + mp.patternName + " )");
-                            String fn = mp.patternName + "_I_" + (index++);
-                            String dotF = GraphPrinter.print(fn, PathOptimizer.optimize(path.getPath()));
-                            //String svgF = GraphUtil.convertDotToSvg(dotF);
-                            String svgF = fn;
-                            warn.add("\t\t => The flows are printed in " + svgF + "\t( " + isMatched + " )");
+                            //System.out.println("SEED: " + n + " [ " + var + " ] + \t ( " + mp.patternName + " )");
+                            results.add(mp.name, Pair.make(n, var));
                         }
                     }
                 }
@@ -333,7 +333,8 @@ public class MaliciousPatternChecker {
         }
         System.err.println();
         System.err.println();
-        return warn;
+
+        return results;
     }
 
 
@@ -404,8 +405,11 @@ public class MaliciousPatternChecker {
         private final Queue<MaliciousPoint> pattern = new LinkedBlockingQueue<>();
         private IClassHierarchy cha;
         private final String patternName;
+        private final String name;
 
         public MaliciousPattern(String name, MaliciousPoint... points){
+            //this.patternName = name.replaceAll("[0-9]","");
+            this.name = name.replaceAll("[0-9]","");
             this.patternName = name;
 
             for(int i=0; i<points.length; i++){
@@ -414,6 +418,7 @@ public class MaliciousPatternChecker {
         }
 
         private MaliciousPattern(String name, Queue<MaliciousPoint> queue){
+            this.name = name.replaceAll("[0-9]","");
             this.patternName = name;
             this.pattern.addAll(queue);
         }
@@ -535,6 +540,32 @@ public class MaliciousPatternChecker {
             }
             return false;
         }
+    }
+
+    public static class Results{
+      private Map<String, Set<Pair>> res = new HashMap<>();
+
+      public void add(String name, Pair x){
+        if(!res.containsKey(name)){
+          res.put(name, new HashSet());
+        }
+        res.get(name).add(x);
+      }
+
+      public void addAll(String name, Set<Pair> x){
+        if(!res.containsKey(name)){
+          res.put(name, new HashSet());
+        }
+        res.get(name).addAll(x);
+      }
+
+      public Set<String> patterns(){
+        return res.keySet();
+      }
+
+      public Set<Pair> getSeeds(String name){
+        return res.get(name);
+      }
     }
 }
 

@@ -34,8 +34,6 @@ dependencies {
 	compile project(':MWALA:com.ibm.wala.core')
 	compile project(':MWALA:com.ibm.wala.core.tests')
 	compile files('libs/apktool_2.0.2.jar')
-	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
-	// https://mvnrepository.com/artifact/commons-cli/commons-cli
-	compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
+	compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
 }

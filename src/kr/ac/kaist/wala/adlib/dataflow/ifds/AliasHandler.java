@@ -137,7 +137,7 @@ public class AliasHandler {
 //    }
 
     public Set<DataFact> findAlias(CGNode n, DataFact fact){
-        if(Config.COMPUTE_ALIAS == false)
+        if(Config.aliasMode() == false)
             return Collections.emptySet();
 
         Set<DataFact> res = new HashSet<>();

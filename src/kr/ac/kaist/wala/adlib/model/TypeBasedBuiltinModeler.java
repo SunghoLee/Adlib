@@ -48,21 +48,6 @@ public class TypeBasedBuiltinModeler{
         for(ModelClass newKlass : newKlasses){
             classMap.put(newKlass.getReference(), newKlass);
         }
-
-
-        try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter("model.log"));
-            for(String s : logs){
-                bw.write(s);
-                bw.newLine();
-            }
-            bw.flush();
-            bw.close();
-            logs.clear();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         return cha;
     }
 

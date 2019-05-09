@@ -175,9 +175,9 @@ public class CallGraphBuilderForHybridSDK {
      */
     protected CallGraphBuilder makeDelegateBuilder(IClassHierarchy cha, AnalysisOptions options) {
         SSAPropagationCallGraphBuilder builder = null;
-        switch(Config.CALLGRAPH_OPTION){
+        switch(Config.sensitivity()){
             case PATH_SEPERATION:
-                builder = new ReflectionResolvingCallGraphBuilderPathSeperation(Config.SENSITIVITY_DEPTH, 
+                builder = new ReflectionResolvingCallGraphBuilderPathSeperation(Config.sensitivityDepth(), 
                                             cha, options, new AnalysisCache(new DexIRFactory())){
                     @Override
                     protected ExplicitCallGraph createEmptyCallGraph(IClassHierarchy cha, AnalysisOptions options) {
@@ -204,7 +204,7 @@ public class CallGraphBuilderForHybridSDK {
             };
             break;
             case CALLSITE_SENSITIVITY:
-                builder = new ReflectionResolvingCallGraphBuilderCFA(Config.SENSITIVITY_DEPTH, cha, options, new AnalysisCache(new DexIRFactory())){
+                builder = new ReflectionResolvingCallGraphBuilderCFA(Config.sensitivityDepth(), cha, options, new AnalysisCache(new DexIRFactory())){
                 @Override
                 protected ExplicitCallGraph createEmptyCallGraph(IClassHierarchy cha, AnalysisOptions options) {
                     return new ExplicitCallGraph(cha, options, getAnalysisCache()) {
@@ -217,7 +217,7 @@ public class CallGraphBuilderForHybridSDK {
             };
             break;
             case OBJ_SENSITIVITY:
-                builder = new ReflectionResolvingCallGraphBuilderOBJ(cha, options, new AnalysisCache(new DexIRFactory()), null, null, Config.SENSITIVITY_DEPTH){
+                builder = new ReflectionResolvingCallGraphBuilderOBJ(cha, options, new AnalysisCache(new DexIRFactory()), null, null, Config.sensitivityDepth()){
                 @Override
                 protected ExplicitCallGraph createEmptyCallGraph(IClassHierarchy cha, AnalysisOptions options) {
                     return new ExplicitCallGraph(cha, options, getAnalysisCache()) {

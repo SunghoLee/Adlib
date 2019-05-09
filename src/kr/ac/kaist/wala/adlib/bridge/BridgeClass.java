@@ -15,7 +15,7 @@ import java.util.Set;
  * Created by leesh on 05/01/2017.
  */
 public class BridgeClass {
-    static private boolean DEBUG = true;
+    static private boolean DEBUG = false;
     private Set<BridgeMethod> mSet;
     private TypeReference bridgeClassReference;
     public BridgeClass(IClass c){

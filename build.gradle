@@ -4,18 +4,18 @@ apply plugin: 'application'
 mainClassName = 'kr/ac/kaist/wala/adlib/Main'
 
 repositories{
-mavenCentral()
-maven{
-url "https://repo.eclipse.org/content/groups/releases/"
-}
+  mavenCentral()
+  maven{
+    url "https://repo.eclipse.org/content/groups/releases/"
+  }
 }
 
 sourceSets{
-main{
-java{
-    	    srcDir 'src'
-}
-}
+  main{
+    java{
+      srcDir 'src'
+    }
+  }
 }
 
 jar {
@@ -27,8 +27,8 @@ jar {
 
   from({ (configurations.runtime).collect { it.isDirectory() ? it : zipTree(it) } }){
   	exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
   }
 
   from('src'){
@@ -38,23 +38,23 @@ jar {
 }
 
 dependencies {
-	compile project(':MWALA:kr.ac.kaist.wala.hybridroid')
-	compile project(':MWALA:kr.ac.kaist.wala.hybridroid.util')
-	compile project(':MWALA:com.ibm.wala.cast.js.rhino')
-	compile project(':MWALA:com.ibm.wala.util')
-	compile project(':MWALA:com.ibm.wala.cast.js.html.nu_validator')
-	compile project(':MWALA:com.ibm.wala.cast')
-	compile project(':MWALA:com.ibm.wala.dalvik')
-	compile project(':MWALA:com.ibm.wala.cast.js.rhino.test')
-	compile project(':MWALA:com.ibm.wala.shrike')
-	compile project(':MWALA:com.ibm.wala.cast.js')
-	compile project(':MWALA:com.ibm.wala.cast.js.test')
-	compile project(':MWALA:com.ibm.wala.cast.java')
-	compile project(':MWALA:com.ibm.wala.core')
-	compile project(':MWALA:com.ibm.wala.core.tests')
-	compile files('libs/apktool_2.3.0.jar', 'libs/sa-jdi.jar')
-	compile group: 'org.eclipse.core', name: 'org.eclipse.core.runtime', version: '3.10.0.v20140318-2214'
-	compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
-	compile group: 'com.google.guava', name: 'guava', version: '24.1-jre'
-    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+  compile project(':MWALA:kr.ac.kaist.wala.hybridroid')
+  compile project(':MWALA:kr.ac.kaist.wala.hybridroid.util')
+  compile project(':MWALA:com.ibm.wala.cast.js.rhino')
+  compile project(':MWALA:com.ibm.wala.util')
+  compile project(':MWALA:com.ibm.wala.cast.js.html.nu_validator')
+  compile project(':MWALA:com.ibm.wala.cast')
+  compile project(':MWALA:com.ibm.wala.dalvik')
+  compile project(':MWALA:com.ibm.wala.cast.js.rhino.test')
+  compile project(':MWALA:com.ibm.wala.shrike')
+  compile project(':MWALA:com.ibm.wala.cast.js')
+  compile project(':MWALA:com.ibm.wala.cast.js.test')
+  compile project(':MWALA:com.ibm.wala.cast.java')
+  compile project(':MWALA:com.ibm.wala.core')
+  compile project(':MWALA:com.ibm.wala.core.tests')
+  compile files('libs/apktool_2.3.0.jar', 'libs/sa-jdi.jar')
+  compile group: 'org.eclipse.core', name: 'org.eclipse.core.runtime', version: '3.10.0.v20140318-2214'
+  compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
+  compile group: 'com.google.guava', name: 'guava', version: '24.1-jre'
+  compile group: 'commons-cli', name: 'commons-cli', version: '1.4' 
 }
